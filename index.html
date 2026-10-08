@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tools</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --ink: #1d2330; --muted: #6a7385;
+    --line: #dfe3ea; --accent: #2457d6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151b; --card: #1b2029; --ink: #e7eaf0; --muted: #98a2b5;
+      --line: #2c3340; --accent: #7ba1ff;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 40px 16px 56px; }
+  h1 { font-size: 1.7rem; margin: 0 0 4px; }
+  .lead { margin: 0 0 24px; color: var(--muted); }
+  #search {
+    width: 100%; padding: 10px 12px; margin-bottom: 16px; font: inherit;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink);
+  }
+  #search:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  a.tool {
+    display: block; padding: 14px 16px; text-decoration: none; color: inherit;
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+  }
+  a.tool:hover, a.tool:focus-visible { border-color: var(--accent); outline: none; }
+  .name { font-weight: 600; color: var(--accent); }
+  .desc { display: block; color: var(--muted); font-size: 0.93rem; margin-top: 2px; }
+  .empty { color: var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Tools</h1>
+  <p class="lead">Small browser tools. Everything runs locally in your browser.</p>
+  <input id="search" type="search" placeholder="Filter tools…" aria-label="Filter tools" autocomplete="off">
+  <ul id="list"></ul>
+  <p class="empty" id="empty" hidden>No tool matches.</p>
+</main>
+<script>
+  // To add a page: drop the .html file next to this one and add a line here.
+  var TOOLS = [
+    { name: "SAPscript Explorer",      href: "sapscript.html",            desc: "Browse and inspect SAPscript as a tree." },
+    { name: "eDocument Status Checker", href: "edoc-status-checker.html", desc: "Check an eDocument status string against the flag rules." },
+    { name: "Base64 to PDF",            href: "base64-to-pdf.html",       desc: "Decode a Base64 string and save it as a PDF." }
+  ];
+
+  var list = document.getElementById("list"), empty = document.getElementById("empty");
+
+  function render(q) {
+    q = q.trim().toLowerCase();
+    list.textContent = "";
+    var n = 0;
+    TOOLS.forEach(function (t) {
+      if (q && (t.name + " " + t.desc).toLowerCase().indexOf(q) === -1) return;
+      var li = document.createElement("li"), a = document.createElement("a"),
+          nm = document.createElement("span"), ds = document.createElement("span");
+      a.className = "tool"; a.href = t.href;
+      nm.className = "name"; nm.textContent = t.name;
+      ds.className = "desc"; ds.textContent = t.desc;
+      a.appendChild(nm); a.appendChild(ds); li.appendChild(a); list.appendChild(li);
+      n++;
+    });
+    empty.hidden = n > 0;
+  }
+
+  document.getElementById("search").addEventListener("input", function () { render(this.value); });
+  render("");
+</script>
+</body>
+</html>
