@@ -1,0 +1,1741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>eDocument XML Viewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F3F1EC;
+    --paper: #FFFFFF;
+    --ink: #1D1F23;
+    --muted: #6A6F78;
+    --faint: #9A9FA7;
+    --line: #E2DED6;
+    --line-soft: #EEEBE5;
+    --chip: #F1EEE8;
+    --accent: #0F766E;
+    --accent-soft: #E3F2EF;
+    --from: #0F766E;
+    --from-soft: #E3F2EF;
+    --to: #B45309;
+    --to-soft: #FCF0E2;
+    --money: #166534;
+    --ok: #15803D;
+    --ok-bg: #E7F5EC;
+    --err: #B42318;
+    --err-bg: #FDECEA;
+    --shadow: 0 1px 2px rgba(30, 25, 15, 0.06), 0 4px 16px rgba(30, 25, 15, 0.05);
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141619; --paper: #1D2024; --ink: #ECEDEF; --muted: #A2A7AF; --faint: #737981;
+      --line: #32363C; --line-soft: #292D32; --chip: #2A2E33; --accent: #2DD4BF; --accent-soft: #12332F;
+      --from: #2DD4BF; --from-soft: #12332F; --to: #F5A623; --to-soft: #3A2B14; --money: #4ADE80;
+      --ok: #4ADE80; --ok-bg: #15301F; --err: #F87171; --err-bg: #3A1C1A; --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141619; --paper: #1D2024; --ink: #ECEDEF; --muted: #A2A7AF; --faint: #737981;
+    --line: #32363C; --line-soft: #292D32; --chip: #2A2E33; --accent: #2DD4BF; --accent-soft: #12332F;
+    --from: #2DD4BF; --from-soft: #12332F; --to: #F5A623; --to-soft: #3A2B14; --money: #4ADE80;
+    --ok: #4ADE80; --ok-bg: #15301F; --err: #F87171; --err-bg: #3A1C1A; --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: "Instrument Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: 15px; line-height: 1.45;
+  }
+  .mono { font-family: "JetBrains Mono", ui-monospace, Consolas, monospace; }
+  .num { font-variant-numeric: tabular-nums; }
+  main { max-width: 1280px; margin: 0 auto; padding: 12px 20px 3rem; }
+  button {
+    font: inherit; font-size: 0.86rem; font-weight: 500; padding: 0.36rem 0.8rem; border-radius: 8px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--paper); color: var(--ink);
+  }
+  button:hover { border-color: var(--faint); }
+  button:focus-visible, a:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.primary { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+  button.primary:hover { opacity: 0.88; }
+  button.mini { font-size: 0.76rem; padding: 0.1rem 0.5rem; }
+  a { color: var(--accent); }
+
+  /* Compact input bar */
+  .loadbar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    padding: 6px 8px 6px 12px; border: 1.5px dashed var(--line); border-radius: 10px; background: var(--paper);
+  }
+  .loadbar.dragging { border-color: var(--accent); background: var(--accent-soft); }
+  .loadbar.loaded { border-style: solid; }
+  .lb-msg { flex: 1 1 260px; color: var(--muted); font-size: 0.88rem; min-width: 0; overflow-wrap: anywhere; }
+  .lb-msg b { color: var(--ink); font-weight: 600; }
+  .lb-msg.bad { color: var(--err); }
+  #pasteArea {
+    display: block; width: 100%; height: 110px; margin-top: 6px; resize: vertical; padding: 8px 10px;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink);
+    font: 0.8rem/1.5 "JetBrains Mono", ui-monospace, Consolas, monospace;
+  }
+  #pasteArea[hidden] { display: none; }
+  input[type="file"] { display: none; }
+
+  /* Empty state */
+  .intro { margin-top: 28px; display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
+  .intro[hidden] { display: none; }
+  .intro div { background: var(--paper); border-radius: 12px; padding: 16px 18px; box-shadow: var(--shadow); }
+  .intro b { display: block; font-size: 1rem; margin-bottom: 4px; }
+  .intro span { color: var(--muted); font-size: 0.9rem; }
+  .intro i { display: inline-block; width: 28px; height: 4px; border-radius: 2px; margin-bottom: 10px; }
+
+  /* Hero */
+  .hero {
+    margin-top: 14px; display: flex; flex-wrap: wrap; gap: 18px 32px; align-items: stretch;
+    background: var(--paper); border-radius: 14px; padding: 20px 24px; box-shadow: var(--shadow);
+  }
+  .hero-main { flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+  .eyebrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; color: var(--muted); font-size: 0.86rem; }
+  .badge {
+    font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 999px; background: var(--ink); color: var(--paper);
+  }
+  .badge.cn { background: var(--to); }
+  .docno { font-size: 1.7rem; font-weight: 600; letter-spacing: -0.01em; overflow-wrap: anywhere; line-height: 1.2; }
+  .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 4px; }
+  .who { font-weight: 600; padding: 4px 10px; border-radius: 8px; overflow-wrap: anywhere; }
+  .who small { display: block; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.8; }
+  .who.from { background: var(--from-soft); color: var(--from); }
+  .who.to { background: var(--to-soft); color: var(--to); }
+  .who span { color: var(--ink); }
+  .arrow { color: var(--faint); font-size: 1.2rem; }
+  .hero-amount { flex: 0 1 300px; text-align: right; display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 2px; }
+  .hero-amount .lbl { color: var(--muted); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.06em; }
+  .hero-amount .big { font-size: 2.1rem; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .hero-amount .big .cur { font-size: 1rem; color: var(--muted); font-weight: 500; margin-left: 4px; }
+  .hero-amount .due { color: var(--muted); font-size: 0.9rem; }
+  .hero-amount .due b { color: var(--ink); }
+  .pill {
+    margin-top: 8px; display: inline-flex; gap: 6px; align-items: center; font-size: 0.82rem; font-weight: 600;
+    border: 0; border-radius: 999px; padding: 4px 12px;
+  }
+  .pill.ok { background: var(--ok-bg); color: var(--ok); }
+  .pill.bad { background: var(--err-bg); color: var(--err); }
+
+  .facts { margin-top: 12px; display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); }
+  .fact { background: var(--paper); border-radius: 10px; padding: 10px 14px; box-shadow: var(--shadow); min-width: 0; }
+  .fact .l { font-size: 0.74rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+  .fact .v { font-weight: 600; overflow-wrap: anywhere; }
+  .fact .s { font-size: 0.8rem; color: var(--muted); overflow-wrap: anywhere; }
+
+  /* Tabs */
+  .tabbar {
+    position: sticky; top: 0; z-index: 6; margin: 16px -20px 0; padding: 0 20px;
+    background: var(--bg); border-bottom: 1px solid var(--line);
+    display: flex; flex-wrap: wrap; align-items: flex-end; gap: 4px 16px;
+  }
+  .tabs { display: flex; gap: 2px; overflow-x: auto; }
+  .tab {
+    border: 0; border-radius: 0; background: none; padding: 10px 14px 9px; font-size: 0.92rem; color: var(--muted);
+    border-bottom: 2.5px solid transparent; white-space: nowrap;
+  }
+  .tab:hover { color: var(--ink); }
+  .tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+  .tab .n { margin-left: 5px; font-size: 0.75rem; background: var(--chip); color: var(--muted); padding: 0 6px; border-radius: 999px; }
+  .tab-tools { margin-left: auto; display: flex; gap: 12px; align-items: center; padding: 6px 0; }
+  .tab-tools[hidden] { display: none; }
+  .tab-tools input[type="search"] {
+    font: inherit; font-size: 0.86rem; padding: 5px 10px; width: 200px; border: 1px solid var(--line);
+    border-radius: 8px; background: var(--paper); color: var(--ink);
+  }
+  .tab-tools label { font-size: 0.84rem; color: var(--muted); display: flex; gap: 5px; align-items: center; white-space: nowrap; cursor: pointer; }
+  .tabpanel { padding-top: 16px; }
+  .tabpanel[hidden] { display: none; }
+
+  /* Overview "sheet" */
+  .sheet { background: var(--paper); border-radius: 14px; box-shadow: var(--shadow); padding: 22px 24px; }
+  .parties { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); }
+  .party { border-radius: 12px; padding: 14px 16px; border: 1px solid var(--line-soft); border-top: 4px solid var(--from); min-width: 0; }
+  .party.to { border-top-color: var(--to); }
+  .party .role { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--from); }
+  .party.to .role { color: var(--to); }
+  .party .pname { font-size: 1.12rem; font-weight: 600; margin: 2px 0 2px; overflow-wrap: anywhere; }
+  .party .trade { color: var(--muted); font-size: 0.86rem; }
+  .party .addr { color: var(--ink); font-size: 0.92rem; margin-top: 4px; white-space: pre-line; }
+  .kv { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 3px 14px; margin: 10px 0 0; font-size: 0.86rem; }
+  .kv dt { color: var(--muted); }
+  .kv dd { margin: 0; overflow-wrap: anywhere; }
+  .kv dd .scheme { color: var(--faint); font-size: 0.8em; margin-left: 4px; }
+
+  .sh { margin: 26px 0 8px; font-size: 0.76rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); display: flex; gap: 8px; align-items: center; }
+  .sh::after { content: ""; flex: 1; height: 1px; background: var(--line-soft); }
+  .notes { display: grid; gap: 6px; }
+  .note { font-size: 0.88rem; padding: 7px 10px; border-radius: 8px; background: var(--chip); overflow-wrap: anywhere; }
+  .note .tag { font-size: 0.7rem; font-weight: 600; color: var(--muted); margin-right: 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 600; white-space: nowrap; }
+  td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tablewrap { overflow-x: auto; }
+  #sec-vat th { white-space: normal; vertical-align: bottom; }
+  #sec-vat th .bt { display: block; width: max-content; margin: 2px 0 0; }
+  #sec-vat th.r .bt { margin-left: auto; }
+  table.inv tbody tr:hover td { background: var(--bg); }
+  table.inv td.pos { color: var(--faint); width: 2.5em; }
+  table.inv .iname { font-weight: 500; }
+  table.inv .isub { color: var(--muted); font-size: 0.8rem; }
+  .vat-chip { font-size: 0.78rem; background: var(--chip); padding: 1px 7px; border-radius: 999px; color: var(--muted); white-space: nowrap; }
+
+  .totals-wrap { display: flex; justify-content: flex-end; margin-top: 10px; }
+  .totals { width: min(100%, 420px); font-size: 0.92rem; }
+  .totals .t { display: flex; justify-content: space-between; gap: 16px; padding: 5px 2px; font-variant-numeric: tabular-nums; }
+  .totals .t span:first-child { color: var(--muted); }
+  .totals .t.strong { border-top: 1px solid var(--line); margin-top: 4px; padding-top: 8px; font-weight: 600; }
+  .totals .t.strong span:first-child { color: var(--ink); }
+  .totals .t.due { margin-top: 6px; padding: 10px 12px; border-radius: 10px; background: var(--ink); color: var(--paper); font-size: 1.1rem; font-weight: 600; }
+  .totals .t.due span:first-child { color: inherit; }
+
+  .info { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
+  .info > div { border: 1px solid var(--line-soft); border-radius: 12px; padding: 12px 14px; min-width: 0; }
+  .info h4 { margin: 0 0 4px; font-size: 0.92rem; }
+  .iban { font-family: "JetBrains Mono", ui-monospace, Consolas, monospace; font-size: 0.86rem; letter-spacing: 0.02em; }
+
+  .atts { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); }
+  .att { display: flex; gap: 12px; align-items: center; background: var(--paper); border: 1px solid var(--line-soft); border-radius: 12px; padding: 12px 14px; scroll-margin-top: 70px; min-width: 0; }
+  .att.flash { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .att-icon {
+    position: relative; flex: 0 0 auto; width: 42px; height: 52px; border-radius: 4px 12px 4px 4px; display: grid; place-items: end center;
+    padding-bottom: 6px; background: var(--chip); color: var(--muted); font: 600 0.66rem "JetBrains Mono", ui-monospace, monospace;
+  }
+  .att-icon.pdf { background: #FBE3E1; color: #B42318; }
+  .att-icon.img { background: #E3F2EF; color: #0F766E; }
+  .att-icon.xml { background: #FCF0E2; color: #B45309; }
+  .att-meta { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; font-size: 0.82rem; color: var(--muted); }
+  .att-meta b { color: var(--ink); font-size: 0.92rem; overflow-wrap: anywhere; font-weight: 600; }
+  .att-act { display: flex; flex-direction: column; gap: 6px; }
+  .warn { color: var(--err); }
+  .muted { color: var(--muted); }
+
+  /* All fields */
+  .secnav { display: flex; flex-wrap: wrap; gap: 6px; }
+  .secnav a {
+    text-decoration: none; color: var(--ink); font-size: 0.82rem; padding: 3px 10px; border-radius: 999px;
+    background: var(--paper); border: 1px solid var(--line-soft); white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .secnav a:hover { border-color: var(--faint); }
+  .secnav a .n { color: var(--muted); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: 0 0 auto; }
+  .dot.from { background: var(--from); } .dot.to { background: var(--to); } .dot.money { background: var(--money); }
+  .grid {
+    margin-top: 12px; display: grid; gap: 14px; align-items: start;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
+  }
+  .card { background: var(--paper); border-radius: 12px; padding: 12px 16px 14px; min-width: 0; scroll-margin-top: calc(var(--stick, 48px) + 14px); box-shadow: var(--shadow); }
+
+  /* All fields: sticky section menu on the left, blocks on the right; Lines full width with the menu on top */
+  .fields-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; align-items: start; }
+  .fgrid { display: grid; gap: 14px; align-items: start; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); }
+  .fnav-side {
+    position: sticky; top: calc(var(--stick, 48px) + 12px); max-height: calc(100vh - var(--stick, 48px) - 24px); overflow-y: auto;
+    background: var(--paper); border-radius: 12px; box-shadow: var(--shadow); padding: 6px;
+  }
+  .fnav .glabel { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--faint); margin: 10px 10px 3px; }
+  .fnav .glabel:first-child { margin-top: 4px; }
+  .fnav a {
+    display: flex; align-items: center; gap: 8px; padding: 5px 10px; border-radius: 8px; color: var(--ink);
+    text-decoration: none; font-size: 0.88rem; white-space: nowrap;
+  }
+  .fnav a:hover { background: var(--chip); }
+  .fnav a.active { background: var(--chip); font-weight: 600; box-shadow: inset 3px 0 0 var(--accent); }
+  .fnav a[hidden] { display: none; }
+  .fnav a .n { margin-left: auto; color: var(--muted); font-size: 0.76rem; font-weight: 400; }
+  .lines-zone { margin-top: 18px; }
+  @media (max-width: 900px) {
+    .fields-layout { grid-template-columns: minmax(0, 1fr); }
+    .fnav-side {
+      top: var(--stick, 48px); z-index: 4; max-height: none; display: flex; gap: 6px; overflow-x: auto;
+      background: var(--bg); box-shadow: none; border-radius: 0; padding: 8px 0; border-bottom: 1px solid var(--line-soft);
+    }
+    .fnav-side .glabel { display: none; }
+    .fnav-side a { background: var(--paper); border-radius: 999px; padding: 4px 12px; box-shadow: var(--shadow); }
+    .fnav-side a.active { background: var(--ink); color: var(--paper); box-shadow: none; }
+  }
+  .card.full { grid-column: 1 / -1; }
+  .card[hidden], .sub[hidden] { display: none; }
+  .card h2 { margin: 0 0 6px; font-size: 0.98rem; font-weight: 600; display: flex; gap: 8px; align-items: center; }
+  .card h2 .n { color: var(--muted); font-weight: 400; font-size: 0.86rem; }
+  .card h2 .act { margin-left: auto; display: flex; gap: 6px; }
+  .sub { border: 1px solid var(--line-soft); border-radius: 8px; padding: 4px 10px 6px; margin-top: 8px; }
+  .sub h3 { margin: 4px 0 2px; font-size: 0.84rem; font-weight: 600; color: var(--muted); }
+  .extras-h { margin: 10px 0 0; font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+  .none { color: var(--muted); font-size: 0.9rem; padding: 6px 0; }
+  .row {
+    display: grid; grid-template-columns: minmax(130px, 38%) minmax(0, 1fr); gap: 2px 12px;
+    padding: 5px 0; border-top: 1px solid var(--line-soft);
+  }
+  .row:first-of-type { border-top: 0; }
+  .row[hidden], tr[hidden] { display: none; }
+  .k { color: var(--muted); font-size: 0.84rem; overflow-wrap: anywhere; }
+  .bt {
+    display: inline-block; font: 0.66rem/1.45 "JetBrains Mono", ui-monospace, Consolas, monospace; padding: 0 4px; margin-left: 5px;
+    background: var(--chip); border-radius: 4px; color: var(--faint); vertical-align: 1px; white-space: nowrap;
+  }
+  .v { overflow-wrap: anywhere; min-width: 0; }
+  .row.empty .v { color: var(--faint); }
+  .row.empty .k { opacity: 0.7; }
+  .row.extra .k { font-style: italic; }
+  .chip {
+    display: inline-block; font-size: 0.74rem; padding: 0 7px; border-radius: 999px; background: var(--chip);
+    color: var(--muted); margin-left: 6px; white-space: nowrap; vertical-align: 1px;
+  }
+  .dec { color: var(--muted); }
+  .amt { font-variant-numeric: tabular-nums; }
+  .unit { color: var(--muted); font-size: 0.85em; margin-left: 4px; }
+  tr.line { cursor: pointer; }
+  tr.line:hover td { background: var(--bg); }
+  tr.line td:first-child::before { content: "▸"; color: var(--faint); display: inline-block; width: 1em; }
+  tr.line.open td:first-child::before { content: "▾"; }
+  tr.detail > td { background: var(--bg); padding: 4px 14px 10px; }
+  .detail-grid { display: grid; gap: 0 28px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); }
+  .small { font-size: 0.8rem; color: var(--muted); }
+  table.tot { font-size: 0.9rem; }
+  table.tot td { padding: 7px 4px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+  table.tot td.k { color: var(--muted); font-size: 0.86rem; }
+  table.tot td.r { width: 30%; font-variant-numeric: tabular-nums; }
+  table.tot td.cur { width: 3.2em; color: var(--muted); font-size: 0.8rem; padding-left: 6px; }
+  table.tot tr.empty td.r { color: var(--faint); }
+  table.tot tr.key td { font-weight: 600; }
+  table.tot tr.key td.k { color: var(--ink); }
+  table.tot tr.due td { font-weight: 600; font-size: 1rem; border-bottom: 0; background: var(--chip); }
+  table.tot tr.due td.k { color: var(--ink); border-radius: 8px 0 0 8px; padding-left: 10px; }
+  table.tot tr.due td.cur { border-radius: 0 8px 8px 0; }
+  .checks { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 4px; }
+  .checks li { font-size: 0.84rem; padding: 5px 9px; border-radius: 7px; }
+  .checks li.ok { background: var(--ok-bg); color: var(--ok); }
+  .checks li.bad { background: var(--err-bg); color: var(--err); }
+
+  .xmlbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .xmlbar .hint { color: var(--muted); font-size: 0.84rem; margin-right: auto; }
+  .xml {
+    --x-tag: #0F766E; --x-attr: #B45309; --x-val: #1D6FB8; --x-text: var(--ink); --x-punct: #9A9FA7; --x-ns: #A3A7AE; --x-cmt: #7C8A6E;
+    padding: 14px 16px 14px 8px; max-height: 78vh; overflow: auto; background: var(--paper); border-radius: 12px; box-shadow: var(--shadow);
+    font: 0.8rem/1.6 "JetBrains Mono", ui-monospace, Consolas, monospace; white-space: nowrap;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .xml { --x-tag: #2DD4BF; --x-attr: #F5A623; --x-val: #8AB4F8; --x-punct: #737981; --x-ns: #6B7078; --x-cmt: #8FA07E; }
+  }
+  :root[data-theme="dark"] .xml { --x-tag: #2DD4BF; --x-attr: #F5A623; --x-val: #8AB4F8; --x-punct: #737981; --x-ns: #6B7078; --x-cmt: #8FA07E; }
+  .xml .ln { padding-left: 16px; position: relative; }
+  .xml .kids { margin-left: 7px; padding-left: 12px; border-left: 1px solid var(--line-soft); }
+  .xml .fold {
+    position: absolute; left: 0; top: 0; width: 16px; text-align: center; cursor: pointer; color: var(--faint);
+    user-select: none; border: 0; background: none; padding: 0; font: inherit; line-height: inherit; border-radius: 3px;
+  }
+  .xml .fold:hover { color: var(--ink); }
+  .xml .node.closed > .kids, .xml .node.closed > .close-tag { display: none; }
+  .xml .node .more { display: none; color: var(--muted); background: var(--chip); border-radius: 4px; padding: 0 5px; margin: 0 2px; cursor: pointer; }
+  .xml .node.closed > .ln .more { display: inline; }
+  .xml .p { color: var(--x-punct); }
+  .xml .t { color: var(--x-tag); }
+  .xml .a { color: var(--x-attr); }
+  .xml .a.ns { color: var(--x-ns); }
+  .xml .s { color: var(--x-val); }
+  .xml .s.ns { color: var(--x-ns); }
+  .xml .x { color: var(--x-text); white-space: pre-wrap; }
+  .xml .c { color: var(--x-cmt); font-style: italic; }
+  .xml .b64 { font-family: "Instrument Sans", system-ui, sans-serif; font-size: 0.78rem; background: var(--chip); color: var(--muted); border-radius: 5px; padding: 1px 7px; text-decoration: none; }
+  .xml .b64:hover { color: var(--ink); }
+
+  dialog#viewer {
+    width: min(1150px, 96vw); height: 94vh; max-height: 94vh; padding: 0; border: 0; border-radius: 14px;
+    background: var(--paper); color: var(--ink); overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+  }
+  dialog#viewer[open] { display: flex; flex-direction: column; }
+  dialog#viewer::backdrop { background: rgba(20, 18, 14, 0.6); }
+  .vbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+  .vbar .t { flex: 1 1 200px; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+  .vbar a { font-size: 0.88rem; font-weight: 500; }
+  .vbody { flex: 1 1 auto; min-height: 0; background: var(--bg); overflow: auto; }
+  .vbody iframe { display: block; width: 100%; height: 100%; border: 0; background: #fff; }
+  .vbody img { display: block; max-width: 100%; margin: 0 auto; }
+  .vbody pre { margin: 0; padding: 12px; font: 0.8rem/1.5 "JetBrains Mono", ui-monospace, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .vbody .msg { padding: 2rem; text-align: center; color: var(--muted); }
+
+  @media (max-width: 640px) {
+    main { padding: 10px 16px 2rem; }
+    .tabbar { margin: 16px -16px 0; padding: 0 16px; }
+    .tab-tools { margin-left: 0; width: 100%; }
+    .tab-tools input[type="search"] { flex: 1; width: auto; }
+    .row { grid-template-columns: 1fr; }
+    .hero, .sheet { padding: 16px; }
+    .hero-amount { text-align: left; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<style>
+  #toolsNav { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px clamp(16px,4vw,40px);
+    background: rgba(127,127,127,.10); border-bottom: 1px solid rgba(127,127,127,.28);
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  #toolsNav h1 { margin: 0; font: inherit; font-weight: 600; }
+  #toolsNav a { color: inherit; text-decoration: none; font-weight: 500; padding: 2px 6px; margin-right: -6px; border-radius: 6px; }
+  #toolsNav a:hover, #toolsNav a:focus-visible { background: rgba(127,127,127,.22); outline: none; }
+</style>
+<nav id="toolsNav" aria-label="Site"><h1>eDocument XML Viewer</h1><a href="index.html">All tools</a></nav>
+
+<main>
+  <div class="loadbar" id="drop">
+    <span class="lb-msg" id="lbMsg" role="status">Drop a UBL invoice or credit note XML here, or paste it anywhere with Ctrl+V.</span>
+    <button class="primary" id="pickBtn" type="button">Choose file</button>
+    <button id="pasteBtn" type="button" aria-expanded="false" aria-controls="pasteArea">Paste text</button>
+    <button id="clearBtn" type="button" hidden>Clear</button>
+    <input type="file" id="file" accept=".xml,text/xml,application/xml">
+  </div>
+  <textarea id="pasteArea" hidden spellcheck="false" aria-label="XML input" placeholder="Paste the XML here; it is read as soon as it's complete."></textarea>
+
+  <div class="intro" id="intro">
+    <div><i style="background:var(--from)"></i><b>Overview</b><span>Reads like the invoice: who bills whom, the amount due, the lines and the totals, checked for you.</span></div>
+    <div><i style="background:var(--to)"></i><b>All fields</b><span>Every UBL field by section, with its EN&nbsp;16931 business term (BT-xx) and decoded codes.</span></div>
+    <div><i style="background:var(--money)"></i><b>Attachments</b><span>Preview or download the PDFs and files embedded in the XML. Nothing leaves your browser.</span></div>
+  </div>
+
+  <div id="out" hidden>
+    <div class="hero" id="hero"></div>
+    <div class="facts" id="facts"></div>
+    <div class="tabbar" id="tabbar">
+      <div class="tabs" role="tablist" aria-label="Views">
+        <button class="tab" role="tab" id="tab-overview" data-tab="overview" aria-selected="true" aria-controls="pOverview">Overview</button>
+        <button class="tab" role="tab" id="tab-fields" data-tab="fields" aria-selected="false" aria-controls="pFields">All fields</button>
+        <button class="tab" role="tab" id="tab-atts" data-tab="atts" aria-selected="false" aria-controls="pAtts">Attachments<span class="n" id="attCount">0</span></button>
+        <button class="tab" role="tab" id="tab-raw" data-tab="raw" aria-selected="false" aria-controls="pRaw">Raw XML</button>
+      </div>
+      <div class="tab-tools" id="fieldTools" hidden>
+        <input type="search" id="filter" placeholder="Filter fields…" aria-label="Filter fields">
+        <label><input type="checkbox" id="showEmpty"> Show empty fields</label>
+      </div>
+    </div>
+    <div class="tabpanel" id="pOverview" role="tabpanel" aria-labelledby="tab-overview"></div>
+    <div class="tabpanel" id="pFields" role="tabpanel" aria-labelledby="tab-fields" hidden>
+      <div id="content"></div>
+    </div>
+    <div class="tabpanel" id="pAtts" role="tabpanel" aria-labelledby="tab-atts" hidden></div>
+    <div class="tabpanel" id="pRaw" role="tabpanel" aria-labelledby="tab-raw" hidden>
+      <div class="xmlbar">
+        <span class="hint">Click ▾ to fold an element. Attachment data is shortened.</span>
+        <button type="button" data-xml="expand">Expand all</button>
+        <button type="button" data-xml="collapse">Collapse to sections</button>
+        <button type="button" data-xml="copy">Copy XML</button>
+      </div>
+      <div class="xml" id="rawXml"></div>
+    </div>
+  </div>
+</main>
+
+<dialog id="viewer" aria-labelledby="vTitle">
+  <div class="vbar">
+    <span class="t" id="vTitle"></span>
+    <a id="vOpen" href="#" target="_blank" rel="noopener">Open in new tab</a>
+    <button id="vDownload" type="button">Download</button>
+    <button id="vClose" type="button" class="primary">Close</button>
+  </div>
+  <div class="vbody" id="vBody"></div>
+</dialog>
+
+<script>
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+
+  // ---------- Code lists ----------
+  const DOC_TYPES = {
+    "71": "Request for payment", "80": "Debit note related to goods or services", "82": "Metered services invoice",
+    "84": "Debit note related to financial adjustments", "261": "Self-billed credit note", "262": "Consolidated credit note",
+    "296": "Credit note for price variation", "308": "Delcredere credit note", "325": "Proforma invoice", "326": "Partial invoice",
+    "380": "Commercial invoice", "381": "Credit note", "383": "Debit note", "384": "Corrected invoice", "385": "Consolidated invoice",
+    "386": "Prepayment invoice", "387": "Hire invoice", "388": "Tax invoice", "389": "Self-billed invoice", "390": "Delcredere invoice",
+    "393": "Factored invoice", "394": "Lease invoice", "395": "Consignment invoice", "396": "Factored credit note",
+    "527": "Self-billed debit note", "532": "Forwarder's credit note", "575": "Insurer's invoice", "623": "Forwarder's invoice",
+    "633": "Port charges document", "751": "Invoice information for accounting purposes", "780": "Freight invoice",
+    "870": "Consular invoice", "875": "Partial construction invoice", "876": "Partial final construction invoice",
+    "877": "Final construction invoice", "935": "Customs invoice"
+  };
+  const PAY_MEANS = {
+    "1": "Instrument not defined", "10": "In cash", "20": "Cheque", "30": "Credit transfer", "31": "Debit transfer",
+    "42": "Payment to bank account", "48": "Bank card", "49": "Direct debit", "54": "Credit card", "55": "Debit card",
+    "57": "Standing agreement", "58": "SEPA credit transfer", "59": "SEPA direct debit", "68": "Online payment service",
+    "97": "Clearing between partners", "ZZZ": "Mutually defined"
+  };
+  const VAT_CAT = {
+    S: "Standard rate", Z: "Zero rated", E: "Exempt from tax", AE: "VAT reverse charge",
+    K: "Intra-community supply (VAT exempt)", G: "Export outside the EU (tax not charged)",
+    O: "Outside the scope of VAT", L: "Canary Islands (IGIC)", M: "Ceuta and Melilla (IPSI)", B: "Transferred VAT (Italy)"
+  };
+  const DATE_CODE = { "3": "Invoice issue date", "35": "Actual delivery date", "432": "Paid to date" };
+  const AC_REASON = {
+    "41": "Bonus for works ahead of schedule", "42": "Other bonus", "60": "Manufacturer's consumer discount",
+    "62": "Due to military status", "63": "Due to work accident", "64": "Special agreement", "65": "Production error discount",
+    "66": "New outlet discount", "67": "Sample discount", "68": "End-of-range discount", "70": "Incoterm discount",
+    "71": "Point of sales threshold allowance", "88": "Material surcharge/deduction", "95": "Discount", "100": "Special rebate",
+    "102": "Fixed long term", "103": "Temporary", "104": "Standard", "105": "Yearly turnover",
+    AA: "Advertising", ABL: "Additional packaging", ADR: "Other services", FC: "Freight service", FI: "Financing",
+    LA: "Labelling", PC: "Packing", ZZZ: "Mutually defined"
+  };
+  const NOTE_SUBJECT = {
+    AAI: "General information", AAB: "Terms of payments", PMT: "Payment information", PMD: "Payment detail / remittance information",
+    SUR: "Supplier remarks", REG: "Regulatory information", ABL: "Government information", TXD: "Tax declaration",
+    CUS: "Customs declaration information", AAK: "Price conditions"
+  };
+  const SCHEMES = {
+    "0002": "SIREN", "0007": "SE organisation number", "0009": "SIRET", "0037": "FI LY-tunnus", "0060": "DUNS",
+    "0088": "GLN", "0096": "DK P-number", "0106": "NL KvK", "0130": "EU Commission directorates", "0151": "AU ABN",
+    "0183": "CH UID", "0184": "DK CVR", "0188": "JP Corporate number", "0190": "NL OIN", "0191": "EE company code",
+    "0192": "NO organisation number", "0195": "SG UEN", "0196": "IS kennitala", "0199": "LEI", "0200": "LT legal entity code",
+    "0201": "IT iPA code", "0204": "DE Leitweg-ID", "0208": "BE enterprise number", "0209": "GS1 key", "0210": "IT codice fiscale",
+    "0211": "IT partita IVA", "0212": "FI organisation ID", "0213": "FI VAT", "0221": "JP invoice issuer number",
+    "0224": "FR CTC routing code", "0225": "FR CTC electronic address",
+    "9906": "IT VAT", "9907": "IT codice fiscale", "9920": "ES VAT", "9925": "BE VAT", "9930": "DE VAT", "9938": "LU VAT",
+    "9944": "NL VAT", "9957": "FR VAT", "9959": "US EIN", "EM": "Email", SEPA: "SEPA creditor ID"
+  };
+  const UNITS = {
+    C62: "one", H87: "piece", EA: "each", XUN: "unit", XPP: "piece", HUR: "hour", DAY: "day", WEE: "week", MON: "month",
+    ANN: "year", MIN: "minute", KGM: "kilogram", GRM: "gram", TNE: "tonne", MTR: "metre", KMT: "kilometre", MTK: "square metre",
+    MTQ: "cubic metre", LTR: "litre", KWH: "kilowatt hour", SET: "set", PR: "pair", LS: "lump sum", E48: "service unit", ZZ: "mutually defined"
+  };
+  let regionNames = null, currencyNames = null;
+  try { regionNames = new Intl.DisplayNames(["en"], { type: "region" }); } catch (e) {}
+  try { currencyNames = new Intl.DisplayNames(["en"], { type: "currency" }); } catch (e) {}
+
+  // ---------- Field specs: [path, label, bt (string or {role: bt}), options] ----------
+  const DOC_SPEC = [
+    ["ID", "Document number", "BT-1"],
+    ["IssueDate", "Issue date", "BT-2"],
+    ["IssueTime", "Issue time"],
+    ["InvoiceTypeCode", "Invoice type code", "BT-3", { only: "Invoice" }],
+    ["CreditNoteTypeCode", "Credit note type code", "BT-3", { only: "CreditNote" }],
+    ["DueDate", "Payment due date", "BT-9"],
+    ["TaxPointDate", "VAT point date", "BT-7"],
+    ["DocumentCurrencyCode", "Invoice currency", "BT-5"],
+    ["TaxCurrencyCode", "VAT accounting currency", "BT-6"],
+    ["BuyerReference", "Buyer reference", "BT-10"],
+    ["AccountingCost", "Buyer accounting reference", "BT-19"],
+    ["Note", "Invoice note", "BT-22"],
+    ["ProfileID", "Business process type", "BT-23"],
+    ["CustomizationID", "Specification identifier", "BT-24"],
+    ["UBLVersionID", "UBL version"]
+  ];
+  const DOC_CLAIMS = ["ID", "IssueDate", "IssueTime", "InvoiceTypeCode", "CreditNoteTypeCode", "DueDate", "TaxPointDate",
+    "DocumentCurrencyCode", "TaxCurrencyCode", "BuyerReference", "AccountingCost", "Note", "ProfileID", "CustomizationID", "UBLVersionID"];
+
+  const REF_SPEC = [
+    ["ProjectReference/ID", "Project reference", "BT-11"],
+    ["ContractDocumentReference/ID", "Contract reference", "BT-12"],
+    ["OrderReference/ID", "Purchase order reference", "BT-13"],
+    ["OrderReference/SalesOrderID", "Sales order reference", "BT-14"],
+    ["ReceiptDocumentReference/ID", "Receiving advice reference", "BT-15"],
+    ["DespatchDocumentReference/ID", "Despatch advice reference", "BT-16"],
+    ["OriginatorDocumentReference/ID", "Tender or lot reference", "BT-17"],
+    ["InvoicePeriod/StartDate", "Invoicing period start", "BT-73"],
+    ["InvoicePeriod/EndDate", "Invoicing period end", "BT-74"],
+    ["InvoicePeriod/DescriptionCode", "VAT point date code", "BT-8"],
+    ["BillingReference/InvoiceDocumentReference/ID", "Preceding invoice reference", "BT-25"],
+    ["BillingReference/InvoiceDocumentReference/IssueDate", "Preceding invoice date", "BT-26"]
+  ];
+  const REF_CLAIMS = ["ProjectReference", "ContractDocumentReference", "OrderReference", "ReceiptDocumentReference",
+    "DespatchDocumentReference", "OriginatorDocumentReference", "InvoicePeriod", "BillingReference"];
+
+  const ADR_SPEC = [
+    ["ID", "Document identifier", { N: "BT-122", O: "BT-18" }],
+    ["DocumentTypeCode", "Document type code"],
+    ["DocumentDescription", "Description", "BT-123"],
+    ["Attachment/ExternalReference/URI", "External document location", "BT-124"],
+    ["Attachment/EmbeddedDocumentBinaryObject", "Attached document", "BT-125"]
+  ];
+
+  // Party fields; BT numbers by role: S seller, B buyer, P payee, T tax representative.
+  const PARTY_SPEC = [
+    ["PartyLegalEntity/RegistrationName", "Legal name", { S: "BT-27", B: "BT-44" }],
+    ["PartyName/Name", "Trading name", { S: "BT-28", B: "BT-45", P: "BT-59", T: "BT-62" }],
+    ["PartyIdentification/ID", "Party identifier", { S: "BT-29", B: "BT-46", P: "BT-60" }],
+    ["PartyLegalEntity/CompanyID", "Legal registration identifier", { S: "BT-30", B: "BT-47", P: "BT-61" }],
+    ["PartyTaxScheme/CompanyID", "VAT / tax registration identifier", { S: "BT-31 / BT-32", B: "BT-48", T: "BT-63" }],
+    ["PartyTaxScheme/TaxScheme/ID", "Tax scheme"],
+    ["PartyLegalEntity/CompanyLegalForm", "Additional legal information", { S: "BT-33" }],
+    ["EndpointID", "Electronic address", { S: "BT-34", B: "BT-49" }],
+    ["PostalAddress/StreetName", "Address line 1", { S: "BT-35", B: "BT-50", T: "BT-64" }],
+    ["PostalAddress/AdditionalStreetName", "Address line 2", { S: "BT-36", B: "BT-51", T: "BT-65" }],
+    ["PostalAddress/AddressLine/Line", "Address line 3", { S: "BT-162", B: "BT-163", T: "BT-164" }],
+    ["PostalAddress/CityName", "City", { S: "BT-37", B: "BT-52", T: "BT-66" }],
+    ["PostalAddress/PostalZone", "Post code", { S: "BT-38", B: "BT-53", T: "BT-67" }],
+    ["PostalAddress/CountrySubentity", "Country subdivision", { S: "BT-39", B: "BT-54", T: "BT-68" }],
+    ["PostalAddress/Country/IdentificationCode", "Country", { S: "BT-40", B: "BT-55", T: "BT-69" }],
+    ["Contact/Name", "Contact point", { S: "BT-41", B: "BT-56" }],
+    ["Contact/Telephone", "Contact telephone", { S: "BT-42", B: "BT-57" }],
+    ["Contact/ElectronicMail", "Contact email", { S: "BT-43", B: "BT-58" }]
+  ];
+  // Which party fields exist in EN 16931 for each role (used for "show empty fields").
+  const PARTY_ROLE_FIELDS = (role) => PARTY_SPEC.filter((f) => !f[2] || typeof f[2] === "string" || f[2][role]);
+
+  const DELIVERY_SPEC = [
+    ["DeliveryParty/PartyName/Name", "Deliver to party name", "BT-70"],
+    ["DeliveryLocation/ID", "Deliver to location identifier", "BT-71"],
+    ["ActualDeliveryDate", "Actual delivery date", "BT-72"],
+    ["DeliveryLocation/Address/StreetName", "Deliver to address line 1", "BT-75"],
+    ["DeliveryLocation/Address/AdditionalStreetName", "Deliver to address line 2", "BT-76"],
+    ["DeliveryLocation/Address/AddressLine/Line", "Deliver to address line 3", "BT-165"],
+    ["DeliveryLocation/Address/CityName", "Deliver to city", "BT-77"],
+    ["DeliveryLocation/Address/PostalZone", "Deliver to post code", "BT-78"],
+    ["DeliveryLocation/Address/CountrySubentity", "Deliver to country subdivision", "BT-79"],
+    ["DeliveryLocation/Address/Country/IdentificationCode", "Deliver to country", "BT-80"]
+  ];
+
+  const PAYMEANS_SPEC = [
+    ["PaymentMeansCode", "Payment means type", "BT-81 / BT-82"],
+    ["PaymentID", "Remittance information", "BT-83"],
+    ["PaymentDueDate", "Payment due date"],
+    ["PayeeFinancialAccount/ID", "Payment account (IBAN)", "BT-84"],
+    ["PayeeFinancialAccount/Name", "Payment account name", "BT-85"],
+    ["PayeeFinancialAccount/FinancialInstitutionBranch/ID", "Payment service provider (BIC)", "BT-86"],
+    ["CardAccount/PrimaryAccountNumberID", "Card number (last digits)", "BT-87"],
+    ["CardAccount/NetworkID", "Card network"],
+    ["CardAccount/HolderName", "Card holder name", "BT-88"],
+    ["PaymentMandate/ID", "Mandate reference", "BT-89"],
+    ["PaymentMandate/PayerFinancialAccount/ID", "Debited account", "BT-91"]
+  ];
+  const PAYTERMS_SPEC = [
+    ["Note", "Payment terms", "BT-20"],
+    ["PaymentDueDate", "Payment due date"],
+    ["Amount", "Amount"]
+  ];
+
+  const AC_SPEC = [
+    ["ChargeIndicator", "Type"],
+    ["AllowanceChargeReasonCode", "Reason code", { A: "BT-98", C: "BT-105" }],
+    ["AllowanceChargeReason", "Reason", { A: "BT-97", C: "BT-104" }],
+    ["MultiplierFactorNumeric", "Percentage", { A: "BT-94", C: "BT-101" }],
+    ["Amount", "Amount", { A: "BT-92", C: "BT-99" }],
+    ["BaseAmount", "Base amount", { A: "BT-93", C: "BT-100" }],
+    ["TaxCategory/ID", "VAT category", { A: "BT-95", C: "BT-102" }],
+    ["TaxCategory/Percent", "VAT rate", { A: "BT-96", C: "BT-103" }],
+    ["TaxCategory/TaxScheme/ID", "Tax scheme"]
+  ];
+  const LINE_AC_SPEC = [
+    ["ChargeIndicator", "Type"],
+    ["AllowanceChargeReasonCode", "Reason code", { A: "BT-140", C: "BT-145" }],
+    ["AllowanceChargeReason", "Reason", { A: "BT-139", C: "BT-144" }],
+    ["MultiplierFactorNumeric", "Percentage", { A: "BT-138", C: "BT-143" }],
+    ["Amount", "Amount", { A: "BT-136", C: "BT-141" }],
+    ["BaseAmount", "Base amount", { A: "BT-137", C: "BT-142" }]
+  ];
+
+  const TOTAL_SPEC = [
+    ["LineExtensionAmount", "Sum of line net amounts", "BT-106"],
+    ["AllowanceTotalAmount", "Sum of allowances", "BT-107"],
+    ["ChargeTotalAmount", "Sum of charges", "BT-108"],
+    ["TaxExclusiveAmount", "Total without VAT", "BT-109"],
+    ["TaxInclusiveAmount", "Total with VAT", "BT-112"],
+    ["PrepaidAmount", "Paid amount", "BT-113"],
+    ["PayableRoundingAmount", "Rounding amount", "BT-114"],
+    ["PayableAmount", "Amount due for payment", "BT-115"]
+  ];
+
+  const LINE_SPEC = [
+    ["ID", "Line identifier", "BT-126"],
+    ["Note", "Line note", "BT-127"],
+    ["DocumentReference/ID", "Invoiced object identifier", "BT-128"],
+    ["InvoicedQuantity", "Invoiced quantity", "BT-129 / BT-130", { only: "Invoice" }],
+    ["CreditedQuantity", "Credited quantity", "BT-129 / BT-130", { only: "CreditNote" }],
+    ["LineExtensionAmount", "Line net amount", "BT-131"],
+    ["OrderLineReference/LineID", "Referenced purchase order line", "BT-132"],
+    ["OrderLineReference/OrderReference/ID", "Purchase order (line level)"],
+    ["AccountingCost", "Buyer accounting reference", "BT-133"],
+    ["InvoicePeriod/StartDate", "Line period start", "BT-134"],
+    ["InvoicePeriod/EndDate", "Line period end", "BT-135"],
+    ["Price/PriceAmount", "Item net price", "BT-146"],
+    ["Price/AllowanceCharge/Amount", "Item price discount", "BT-147"],
+    ["Price/AllowanceCharge/BaseAmount", "Item gross price", "BT-148"],
+    ["Price/AllowanceCharge/ChargeIndicator", "Price discount indicator"],
+    ["Price/BaseQuantity", "Item price base quantity", "BT-149 / BT-150"],
+    ["Item/ClassifiedTaxCategory/ID", "VAT category", "BT-151"],
+    ["Item/ClassifiedTaxCategory/Percent", "VAT rate", "BT-152"],
+    ["Item/ClassifiedTaxCategory/TaxScheme/ID", "Tax scheme"],
+    ["Item/Name", "Item name", "BT-153"],
+    ["Item/Description", "Item description", "BT-154"],
+    ["Item/SellersItemIdentification/ID", "Seller's item identifier", "BT-155"],
+    ["Item/BuyersItemIdentification/ID", "Buyer's item identifier", "BT-156"],
+    ["Item/StandardItemIdentification/ID", "Item standard identifier", "BT-157"],
+    ["Item/CommodityClassification/ItemClassificationCode", "Item classification", "BT-158"],
+    ["Item/OriginCountry/IdentificationCode", "Item country of origin", "BT-159"],
+    ["Item/AdditionalItemProperty", "Item attribute", "BT-160 / BT-161", { fmt: itemProperty }]
+  ];
+
+  // ---------- State ----------
+  const state = { root: null, kind: null, name: "", size: 0, wrapped: "", showEmpty: false, atts: [], attIndex: new Map(), cache: new Map() };
+  try { state.showEmpty = localStorage.getItem("edocxml.showEmpty") === "1"; } catch (e) {}
+
+  // ---------- Helpers ----------
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const txt = (el) => (el ? el.textContent.trim() : "");
+  function byPath(ctx, path) {
+    if (!ctx) return [];
+    let cur = [ctx];
+    for (const seg of path.split("/")) {
+      const next = [];
+      for (const c of cur) for (const k of c.children) if (k.localName === seg) next.push(k);
+      cur = next;
+      if (!cur.length) break;
+    }
+    return cur;
+  }
+  const first = (ctx, path) => byPath(ctx, path)[0] || null;
+  const val = (ctx, path) => txt(first(ctx, path));
+  function humanize(name) {
+    const words = name.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2").split(" ");
+    return words.map((w, i) => (i && !/^[A-Z0-9]+$/.test(w) ? w.toLowerCase() : w)).join(" ");
+  }
+  function formatSize(n) {
+    if (n < 1024) return n + " B";
+    if (n < 1048576) return (n / 1024).toFixed(1) + " KB";
+    return (n / 1048576).toFixed(2) + " MB";
+  }
+  function num(raw) { const n = Number(String(raw).trim()); return isFinite(n) && String(raw).trim() !== "" ? n : null; }
+  function fmtAmount(raw, cur) {
+    const n = num(raw);
+    if (n === null) return esc(raw) + (cur ? ' <span class="unit">' + esc(cur) + "</span>" : "");
+    const dec = (String(raw).split(".")[1] || "").length;
+    const s = n.toLocaleString(undefined, { minimumFractionDigits: Math.max(2, Math.min(dec, 6)), maximumFractionDigits: Math.max(2, Math.min(dec, 6)) });
+    return '<span class="amt" title="' + esc(raw) + '">' + s + "</span>" + (cur ? ' <span class="unit">' + esc(cur) + "</span>" : "");
+  }
+  const dec = (code, table) => (table[code] ? ' <span class="dec">· ' + esc(table[code]) + "</span>" : "");
+
+  function decodeValue(el, raw) {
+    const n = el.localName, p = el.parentElement ? el.parentElement.localName : "";
+    if (n === "InvoiceTypeCode" || n === "CreditNoteTypeCode" || (n === "DocumentTypeCode" && DOC_TYPES[raw])) return dec(raw, DOC_TYPES);
+    if (n === "PaymentMeansCode") return dec(raw, PAY_MEANS);
+    if (n === "ID" && (p === "TaxCategory" || p === "ClassifiedTaxCategory")) return dec(raw, VAT_CAT);
+    if (n === "DescriptionCode") return dec(raw, DATE_CODE);
+    if (n === "AllowanceChargeReasonCode") return dec(raw, AC_REASON);
+    if (n === "IdentificationCode" && p.endsWith("Country") && regionNames) {
+      try { const r = regionNames.of(raw.toUpperCase()); if (r && r !== raw.toUpperCase()) return ' <span class="dec">· ' + esc(r) + "</span>"; } catch (e) {}
+    }
+    if (/CurrencyCode$/.test(n) && currencyNames) {
+      try { const c = currencyNames.of(raw.toUpperCase()); if (c && c !== raw.toUpperCase()) return ' <span class="dec">· ' + esc(c) + "</span>"; } catch (e) {}
+    }
+    return "";
+  }
+
+  // Render one leaf element's value, including decoded codes and attribute chips.
+  function renderValue(el) {
+    const n = el.localName;
+    if (n === "EmbeddedDocumentBinaryObject") {
+      const i = state.attIndex.get(el);
+      const a = state.atts[i];
+      return '<a href="#att-' + i + '">' + esc(a.filename) + "</a>" +
+        '<span class="chip">' + esc(a.mime || "unknown type") + " · " + formatSize(a.size) + "</span> " +
+        '<button class="mini" type="button" data-act="preview" data-att="' + i + '">Preview</button>';
+    }
+    if (el.children.length) return '<span class="dec">(group)</span>';
+    const raw = txt(el);
+    const attrs = Array.from(el.attributes).filter((a) => !/^xmlns/.test(a.name));
+    const cur = el.getAttribute("currencyID");
+    let html;
+    if (cur) html = fmtAmount(raw, cur);
+    else if (n === "ChargeIndicator") html = raw === "true" ? "Charge" : raw === "false" ? "Allowance" : esc(raw);
+    else if ((n === "Percent" || n === "MultiplierFactorNumeric") && num(raw) !== null) html = '<span class="amt">' + esc(raw) + "</span> %";
+    else if (n === "Note" && /^#([A-Z0-9]{2,4})#/.test(raw)) {
+      const m = raw.match(/^#([A-Z0-9]{2,4})#/);
+      html = '<span class="chip" style="margin-left:0" title="Subject code (BT-21)">' + esc(m[1]) + (NOTE_SUBJECT[m[1]] ? " · " + esc(NOTE_SUBJECT[m[1]]) : "") + "</span> " + esc(raw.slice(m[0].length));
+    } else if (n === "URI" && /^https?:\/\//i.test(raw)) html = '<a href="' + esc(raw) + '" target="_blank" rel="noopener noreferrer">' + esc(raw) + "</a>";
+    else html = raw === "" ? '<span class="dec">(empty)</span>' : esc(raw) + decodeValue(el, raw);
+
+    for (const a of attrs) {
+      if (a.name === "currencyID") continue;
+      if (a.name === "unitCode") { html += ' <span class="unit" title="Unit of measure">' + esc(a.value) + (UNITS[a.value] ? " · " + esc(UNITS[a.value]) : "") + "</span>"; continue; }
+      if (a.name === "name" && n === "PaymentMeansCode") { html += '<span class="chip" title="Payment means text (BT-82)">' + esc(a.value) + "</span>"; continue; }
+      let label = a.value;
+      if (a.name === "schemeID" && SCHEMES[a.value]) label += " · " + SCHEMES[a.value];
+      html += '<span class="chip" title="' + esc(a.name) + '">' + esc(a.name) + ": " + esc(label) + "</span>";
+    }
+    return html;
+  }
+
+  function btFor(bt, role) {
+    if (!bt) return "";
+    if (typeof bt === "string") return bt;
+    return (role && bt[role]) || Object.values(bt).filter((v, i, arr) => arr.indexOf(v) === i).join(" / ");
+  }
+  function row(label, bt, valueHtml, cls) {
+    return '<div class="row' + (cls ? " " + cls : "") + '"><div class="k">' + esc(label) + (bt ? '<span class="bt">' + esc(bt) + "</span>" : "") +
+      '</div><div class="v">' + valueHtml + "</div></div>";
+  }
+  function markDeep(el, used) { used.add(el); for (const k of el.querySelectorAll("*")) used.add(k); }
+
+  // Render spec fields for ctx; marks rendered elements in `used`.
+  function renderFields(ctx, spec, role, used) {
+    let html = "";
+    for (const [path, label, bt, opts] of spec) {
+      if (opts && opts.only && opts.only !== state.kind) continue;
+      const els = byPath(ctx, path);
+      if (!els.length) {
+        if (state.showEmpty) html += row(label, btFor(bt, role), "—", "empty");
+        continue;
+      }
+      for (const el of els) {
+        if (opts && opts.fmt) { markDeep(el, used); html += row(label, btFor(bt, role), opts.fmt(el)); }
+        else { used.add(el); html += row(label, btFor(bt, role), renderValue(el)); }
+      }
+    }
+    return html;
+  }
+  // Every leaf under the given elements that no spec field picked up.
+  function extras(elements, used, withSelf) {
+    let html = "";
+    const walk = (el, trail) => {
+      for (const k of el.children) {
+        if (used.has(k)) continue;
+        const t = trail.concat(humanize(k.localName));
+        if (k.children.length) walk(k, t);
+        else html += row(t.join(" › "), "", renderValue(k), "extra");
+      }
+    };
+    for (const el of elements) {
+      if (!el || used.has(el)) continue;
+      if (!el.children.length) { if (withSelf) html += row(humanize(el.localName), "", renderValue(el), "extra"); }
+      else walk(el, withSelf ? [humanize(el.localName)] : []);
+    }
+    return html ? '<div class="extras-h">More fields</div>' + html : "";
+  }
+  function itemProperty(el) {
+    return "<b>" + esc(val(el, "Name")) + "</b>: " + esc(val(el, "Value")) +
+      (first(el, "ValueQuantity") ? " " + renderValue(first(el, "ValueQuantity")) : "");
+  }
+
+  // ---------- Sections ----------
+  function card(id, title, body, opts) {
+    opts = opts || {};
+    return '<section class="card' + (opts.full ? " full" : "") + '" id="sec-' + id + '"><h2><span class="dot ' + (SECTION_DOT[id] || "") + '"></span>' + esc(title) +
+      (opts.count != null ? '<span class="n">' + opts.count + "</span>" : "") + (opts.act ? '<span class="act">' + opts.act + "</span>" : "") +
+      "</h2>" + (body || '<div class="none">Not present in this document.</div>') + "</section>";
+  }
+  function sub(title, body) { return '<div class="sub"><h3>' + esc(title) + "</h3>" + body + "</div>"; }
+
+  function buildSections() {
+    const R = state.root, kind = state.kind;
+    const claimed = new Set();
+    const claim = (...names) => names.forEach((n) => claimed.add(n));
+    const out = [];
+    const docCur = val(R, "DocumentCurrencyCode");
+
+    // Document
+    {
+      claim(...DOC_CLAIMS);
+      const used = new Set();
+      const spec = DOC_SPEC.map((f) => (f[0] === "ID" ? ["ID", kind === "CreditNote" ? "Credit note number" : "Invoice number", "BT-1"] : f));
+      out.push({ id: "doc", title: "Document", html: card("doc", "Document", renderFields(R, spec, null, used)) });
+    }
+    // References + supporting documents
+    {
+      claim(...REF_CLAIMS, "AdditionalDocumentReference");
+      const used = new Set();
+      let body = renderFields(R, REF_SPEC, null, used);
+      body += extras(REF_CLAIMS.flatMap((n) => byPath(R, n)), used, true);
+      byPath(R, "AdditionalDocumentReference").forEach((adr, i) => {
+        const u = new Set();
+        const role = val(adr, "DocumentTypeCode") === "130" ? "O" : "N";
+        body += sub((role === "O" ? "Invoiced object " : "Supporting document ") + (i + 1), renderFields(adr, ADR_SPEC, role, u) + extras([adr], u));
+      });
+      if (!byPath(R, "AdditionalDocumentReference").length && state.showEmpty) body += sub("Supporting document", renderFields(null, ADR_SPEC, "N", new Set()));
+      out.push({ id: "refs", title: "References", html: card("refs", "References", body) });
+    }
+    // Parties
+    const party = (id, title, tag, role) => {
+      claim(tag);
+      const els = byPath(R, tag);
+      if (!els.length && !state.showEmpty) return;
+      const spec = PARTY_ROLE_FIELDS(role).map((f) => [(tag === "TaxRepresentativeParty" || tag === "PayeeParty" ? "" : "Party/") + f[0], f[1], f[2], f[3]]);
+      let body = "";
+      if (!els.length) body = renderFields(null, spec, role, new Set());
+      els.forEach((el) => { const u = new Set(); body += renderFields(el, spec, role, u) + extras([el], u); });
+      out.push({ id, title, html: card(id, title, body) });
+    };
+    party("seller", "Seller", "AccountingSupplierParty", "S");
+    party("buyer", "Buyer", "AccountingCustomerParty", "B");
+    party("payee", "Payee", "PayeeParty", "P");
+    party("taxrep", "Seller tax representative", "TaxRepresentativeParty", "T");
+
+    // Repeating top-level groups rendered with one spec
+    const groups = (id, title, tag, spec, roleFn, subTitle, full) => {
+      claim(tag);
+      const els = byPath(R, tag);
+      if (!els.length && !state.showEmpty) return;
+      let body = "";
+      if (!els.length) body = renderFields(null, spec, null, new Set());
+      els.forEach((el, i) => {
+        const u = new Set();
+        const inner = renderFields(el, spec, roleFn ? roleFn(el) : null, u) + extras([el], u);
+        body += els.length > 1 || subTitle ? sub(subTitle ? subTitle(el, i) : title + " " + (i + 1), inner) : inner;
+      });
+      out.push({ id, title, count: els.length > 1 ? els.length : null, html: card(id, title, body, { count: els.length > 1 ? els.length : null, full }) });
+    };
+    groups("delivery", "Delivery", "Delivery", DELIVERY_SPEC);
+    // Payment: means + terms + prepaid in one card
+    {
+      claim("PaymentMeans", "PaymentTerms", "PrepaidPayment");
+      const pm = byPath(R, "PaymentMeans"), pt = byPath(R, "PaymentTerms"), pp = byPath(R, "PrepaidPayment");
+      let body = "";
+      pm.forEach((el, i) => { const u = new Set(); body += sub("Payment means" + (pm.length > 1 ? " " + (i + 1) : ""), renderFields(el, PAYMEANS_SPEC, null, u) + extras([el], u)); });
+      if (!pm.length && state.showEmpty) body += sub("Payment means", renderFields(null, PAYMEANS_SPEC, null, new Set()));
+      pt.forEach((el, i) => { const u = new Set(); body += sub("Payment terms" + (pt.length > 1 ? " " + (i + 1) : ""), renderFields(el, PAYTERMS_SPEC, null, u) + extras([el], u)); });
+      if (!pt.length && state.showEmpty) body += sub("Payment terms", renderFields(null, PAYTERMS_SPEC, null, new Set()));
+      pp.forEach((el, i) => { body += sub("Prepaid payment " + (i + 1), extras([el], new Set()).replace('<div class="extras-h">More fields</div>', "")); });
+      if (body) out.push({ id: "payment", title: "Payment", html: card("payment", "Payment", body) });
+    }
+    // Document-level allowances and charges, as two separate blocks
+    {
+      claim("AllowanceCharge");
+      const all = byPath(R, "AllowanceCharge");
+      const spec = AC_SPEC.filter((f) => f[0] !== "ChargeIndicator");
+      const kinds = [
+        ["allowances", "Allowances", "Allowance", "A", all.filter((e) => val(e, "ChargeIndicator") !== "true")],
+        ["charges", "Charges", "Charge", "C", all.filter((e) => val(e, "ChargeIndicator") === "true")]
+      ];
+      for (const [id, title, single, role, els] of kinds) {
+        if (!els.length && !state.showEmpty) continue;
+        let body = els.length ? "" : renderFields(null, spec, role, new Set());
+        els.forEach((el, i) => {
+          const u = new Set([first(el, "ChargeIndicator")]);
+          const inner = renderFields(el, spec, role, u) + extras([el], u);
+          body += els.length > 1 ? sub(single + " " + (i + 1), inner) : inner;
+        });
+        out.push({ id, title, html: card(id, title, body) });
+      }
+    }
+
+    // VAT
+    {
+      claim("TaxTotal", "WithholdingTaxTotal");
+      const tts = byPath(R, "TaxTotal");
+      const taxCur = val(R, "TaxCurrencyCode");
+      let body = "";
+      tts.forEach((tt) => {
+        const u = new Set();
+        const amt = first(tt, "TaxAmount");
+        let inner = "";
+        if (amt) {
+          u.add(amt);
+          const inTaxCur = taxCur && taxCur !== docCur && amt.getAttribute("currencyID") === taxCur;
+          inner += row(inTaxCur ? "VAT total in accounting currency" : "Invoice total VAT amount", inTaxCur ? "BT-111" : "BT-110", renderValue(amt));
+        }
+        const subs = byPath(tt, "TaxSubtotal");
+        if (subs.length) {
+          inner += '<div class="tablewrap"><table><thead><tr><th>Category <span class="bt">BT-118</span></th><th class="r">Rate <span class="bt">BT-119</span></th>' +
+            '<th class="r">Taxable <span class="bt">BT-116</span></th><th class="r">VAT <span class="bt">BT-117</span></th>' +
+            "<th>Exemption reason <span class=\"bt\">BT-120/121</span></th></tr></thead><tbody>";
+          for (const st of subs) {
+            const g = (p) => { const e = first(st, p); if (e) u.add(e); return e; };
+            const cat = g("TaxCategory/ID"), pct = g("TaxCategory/Percent"), tb = g("TaxableAmount"), ta = g("TaxAmount");
+            const rc = g("TaxCategory/TaxExemptionReasonCode"), rt = g("TaxCategory/TaxExemptionReason");
+            g("TaxCategory/TaxScheme/ID");
+            inner += '<tr class="frow"><td>' + (cat ? renderValue(cat) : "—") + '</td><td class="r">' + (pct ? esc(txt(pct)) + " %" : "—") +
+              '</td><td class="r">' + (tb ? renderValue(tb) : "—") + '</td><td class="r">' + (ta ? renderValue(ta) : "—") +
+              "</td><td>" + [rc ? esc(txt(rc)) : "", rt ? esc(txt(rt)) : ""].filter(Boolean).join(" · ") + "</td></tr>";
+          }
+          inner += "</tbody></table></div>";
+        }
+        inner += extras([tt], u);
+        body += tts.length > 1 ? sub("Tax total " + (tts.indexOf(tt) + 1), inner) : inner;
+      });
+      body += extras(byPath(R, "WithholdingTaxTotal"), new Set(), true);
+      out.push({ id: "vat", title: "VAT", html: card("vat", "VAT", body, { full: true }) });
+    }
+
+    // Totals + checks
+    {
+      claim("LegalMonetaryTotal");
+      const lmt = first(R, "LegalMonetaryTotal");
+      const u = new Set();
+      // Totals as a table: amounts right-aligned in one column so they line up.
+      const strong = { TaxExclusiveAmount: "key", TaxInclusiveAmount: "key", PayableAmount: "due" };
+      const sign = { AllowanceTotalAmount: "− ", PrepaidAmount: "− ", ChargeTotalAmount: "+ " };
+      const trs = TOTAL_SPEC.map(([path, label, bt]) => {
+        const e = first(lmt, path);
+        if (!e && !state.showEmpty) return "";
+        if (e) u.add(e);
+        return '<tr class="frow' + (e ? "" : " empty") + (strong[path] ? " " + strong[path] : "") + '"><td class="k">' + esc(label) + '<span class="bt">' + bt + "</span></td>" +
+          '<td class="r">' + (e ? (sign[path] || "") + fmtAmount(txt(e), "") : "—") + '</td><td class="cur">' + (e ? esc(e.getAttribute("currencyID") || "") : "") + "</td></tr>";
+      }).join("");
+      let body = trs ? '<table class="tot"><tbody>' + trs + "</tbody></table>" + extras([lmt], u) : "";
+      out.push({ id: "totals", title: "Totals", html: card("totals", "Totals", body) });
+      const checks = computeChecks();
+      if (checks.length) {
+        const bad = checks.filter((c) => !c.ok).length;
+        out.push({ id: "checks", title: "Checks", html: card("checks", "Checks", checksHtml(),
+          { count: bad ? bad + " failing" : "all pass" }) });
+      }
+    }
+
+    // Lines
+    {
+      const lineTag = kind === "CreditNote" ? "CreditNoteLine" : "InvoiceLine";
+      claim("InvoiceLine", "CreditNoteLine");
+      const lines = byPath(R, lineTag);
+      let body = "";
+      if (lines.length) {
+        body = '<div class="tablewrap"><table><thead><tr><th>Line</th><th>Item</th><th class="r">Quantity</th><th class="r">Net price</th><th>VAT</th><th class="r">Net amount</th></tr></thead><tbody>';
+        lines.forEach((ln, i) => {
+          const q = first(ln, "InvoicedQuantity") || first(ln, "CreditedQuantity");
+          const unit = q ? q.getAttribute("unitCode") || "" : "";
+          const price = first(ln, "Price/PriceAmount"), net = first(ln, "LineExtensionAmount");
+          const cat = val(ln, "Item/ClassifiedTaxCategory/ID"), pct = val(ln, "Item/ClassifiedTaxCategory/Percent");
+          const sid = val(ln, "Item/SellersItemIdentification/ID");
+          const u = new Set();
+          let detail = renderFields(ln, LINE_SPEC, null, u);
+          byPath(ln, "AllowanceCharge").forEach((ac, j) => {
+            markDeep(ac, u);
+            const role = val(ac, "ChargeIndicator") === "true" ? "C" : "A";
+            const uu = new Set();
+            detail += sub((role === "C" ? "Line charge " : "Line allowance ") + (j + 1), renderFields(ac, LINE_AC_SPEC, role, uu) + extras([ac], uu));
+          });
+          detail += extras([ln], u);
+          body += '<tr class="line frow" data-line="' + i + '" tabindex="0" aria-expanded="false"><td>' + esc(val(ln, "ID") || i + 1) + "</td><td>" +
+            esc(val(ln, "Item/Name") || "—") + (sid ? '<div class="small">' + esc(sid) + "</div>" : "") + '</td><td class="r">' +
+            (q ? esc(txt(q)) + (unit ? ' <span class="unit" title="' + esc(UNITS[unit] || unit) + '">' + esc(unit) + "</span>" : "") : "—") +
+            '</td><td class="r">' + (price ? fmtAmount(txt(price), "") : "—") + "</td><td>" + esc(cat) + (pct ? " " + esc(pct) + " %" : "") +
+            '</td><td class="r">' + (net ? renderValue(net) : "—") + "</td></tr>" +
+            '<tr class="detail" data-detail="' + i + '" hidden><td colspan="6"><div class="detail-grid">' + detail + "</div></td></tr>";
+        });
+        body += "</tbody></table></div>";
+      }
+      out.push({ id: "lines", title: "Lines", count: lines.length, html: card("lines", "Lines", body, {
+        full: true, count: lines.length,
+        act: lines.length ? '<button class="mini" type="button" data-act="expand">Expand all</button><button class="mini" type="button" data-act="collapse">Collapse all</button>' : ""
+      }) });
+    }
+
+    // Anything else at the top level (extensions, signatures, other parties…)
+    {
+      const rest = Array.from(R.children).filter((k) => !claimed.has(k.localName));
+      if (rest.length) {
+        let body = "";
+        for (const el of rest) {
+          if (!el.children.length) body += row(humanize(el.localName), "", renderValue(el), "extra");
+          else body += sub(humanize(el.localName), extras([el], new Set()).replace('<div class="extras-h">More fields</div>', ""));
+        }
+        out.push({ id: "other", title: "Other elements", count: rest.length, html: card("other", "Other elements", body, { full: true, count: rest.length }) });
+      }
+    }
+
+    return out;
+  }
+
+  // Coloured, foldable XML view.
+  function xmlHtml(doc) {
+    const P = (t) => '<span class="p">' + esc(t) + "</span>";
+    const attrs = (el) => Array.from(el.attributes).map((a) => {
+      const ns = /^xmlns/.test(a.name) ? " ns" : "";
+      return ' <span class="a' + ns + '">' + esc(a.name) + "</span>" + P("=") + '<span class="s' + ns + '">"' + esc(a.value) + '"</span>';
+    }).join("");
+    const open = (el) => P("<") + '<span class="t">' + esc(el.nodeName) + "</span>" + attrs(el);
+    const close = (el) => P("</") + '<span class="t">' + esc(el.nodeName) + "</span>" + P(">");
+    const node = (el) => {
+      const kids = Array.from(el.childNodes).filter((n) => n.nodeType === 1 || n.nodeType === 8 || n.nodeType === 4 || (n.nodeType === 3 && n.nodeValue.trim()));
+      if (!kids.length) return '<div class="ln">' + open(el) + P("/>") + "</div>";
+      if (kids.every((n) => n.nodeType === 3 || n.nodeType === 4)) {
+        const t = el.textContent.trim();
+        let body;
+        if (el.localName === "EmbeddedDocumentBinaryObject" && t.length > 120) {
+          body = '<span class="x">' + esc(t.slice(0, 40)) + '</span><span class="p">…</span> <a class="b64" href="#att-' + state.attIndex.get(el) + '">' +
+            t.length.toLocaleString() + " characters of Base64 · open attachment</a>";
+        } else body = '<span class="x">' + esc(t) + "</span>";
+        return '<div class="ln">' + open(el) + P(">") + body + close(el) + "</div>";
+      }
+      const childCount = kids.filter((n) => n.nodeType === 1).length;
+      return '<div class="node"><div class="ln"><button type="button" class="fold" aria-label="Fold ' + esc(el.nodeName) + '">▾</button>' + open(el) + P(">") +
+        '<span class="more" title="Expand">… ' + childCount + "</span></div>" +
+        '<div class="kids">' + kids.map((n) => (n.nodeType === 1 ? node(n)
+          : n.nodeType === 8 ? '<div class="ln c">' + esc("<!--" + n.nodeValue + "-->") + "</div>"
+          : '<div class="ln"><span class="x">' + esc(n.nodeValue.trim()) + "</span></div>")).join("") +
+        '</div><div class="ln close-tag">' + close(el) + "</div></div>";
+    };
+    const decl = doc.xmlVersion ? '<div class="ln">' + P("<?") + '<span class="t">xml</span> <span class="a">version</span>' + P("=") + '<span class="s">"' + esc(doc.xmlVersion) + '"</span>' +
+      (doc.xmlEncoding ? ' <span class="a">encoding</span>' + P("=") + '<span class="s">"' + esc(doc.xmlEncoding) + '"</span>' : "") + P("?>") + "</div>" : "";
+    return decl + node(doc.documentElement);
+  }
+
+
+  // ---------- Attachments ----------
+  function collectAttachments() {
+    state.atts = []; state.attIndex = new Map(); state.cache.forEach((c) => c.url && URL.revokeObjectURL(c.url)); state.cache = new Map();
+    const all = state.root.getElementsByTagName("*");
+    for (const el of all) {
+      if (el.localName !== "EmbeddedDocumentBinaryObject") continue;
+      let adr = el.parentElement;
+      while (adr && adr.localName !== "AdditionalDocumentReference" && adr.localName !== "DocumentReference") adr = adr.parentElement;
+      const b64 = el.textContent.replace(/\s+/g, "");
+      const pad = (b64.match(/=+$/) || [""])[0].length;
+      const i = state.atts.length;
+      const head = sniffB64(b64);
+      const mime = el.getAttribute("mimeCode") || head || "";
+      const filename = el.getAttribute("filename") || (adr ? val(adr, "ID") : "") || "attachment-" + (i + 1) + extFor(mime);
+      let warn = "";
+      if (mime === "application/pdf" && head && head !== "application/pdf") warn = "Declared as PDF, but the content doesn't start with %PDF.";
+      state.atts.push({ el, b64, filename, mime, sniffed: head, size: Math.max(0, Math.floor(b64.length * 3 / 4) - pad),
+        desc: adr ? val(adr, "DocumentDescription") : "", ref: adr ? val(adr, "ID") : "", warn });
+      state.attIndex.set(el, i);
+    }
+  }
+  function sniffB64(b64) {
+    let bytes;
+    try { bytes = atob(b64.slice(0, 16).replace(/[^A-Za-z0-9+/]/g, "").slice(0, 12)); } catch (e) { return ""; }
+    if (bytes.startsWith("%PDF")) return "application/pdf";
+    if (bytes.startsWith("\x89PNG")) return "image/png";
+    if (bytes.startsWith("\xFF\xD8\xFF")) return "image/jpeg";
+    if (bytes.startsWith("GIF8")) return "image/gif";
+    if (bytes.startsWith("PK")) return "application/zip";
+    if (/^\s*</.test(bytes) || bytes.startsWith("\xEF\xBB\xBF<")) return "application/xml";
+    return "";
+  }
+  function extFor(mime) {
+    return ({ "application/pdf": ".pdf", "image/png": ".png", "image/jpeg": ".jpg", "image/gif": ".gif", "application/zip": ".zip",
+      "application/xml": ".xml", "text/xml": ".xml", "text/csv": ".csv", "text/plain": ".txt",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx", "application/vnd.oasis.opendocument.spreadsheet": ".ods" })[mime] || "";
+  }
+  function attBytes(i) {
+    const a = state.atts[i];
+    let c = state.cache.get(i);
+    if (!c) {
+      let b64 = a.b64.replace(/-/g, "+").replace(/_/g, "/");
+      if (b64.length % 4) b64 += "=".repeat(4 - (b64.length % 4));
+      const bin = atob(b64);
+      const u8 = new Uint8Array(bin.length);
+      for (let j = 0; j < bin.length; j++) u8[j] = bin.charCodeAt(j);
+      const type = a.sniffed || a.mime || "application/octet-stream";
+      c = { u8, type, url: URL.createObjectURL(new Blob([u8], { type })) };
+      state.cache.set(i, c);
+    }
+    return c;
+  }
+
+  const viewer = $("viewer"), vBody = $("vBody");
+  let viewing = -1;
+  function preview(i) {
+    const a = state.atts[i];
+    let c;
+    try { c = attBytes(i); } catch (e) { alert("This attachment isn't valid Base64, so it can't be opened."); return; }
+    viewing = i;
+    $("vTitle").textContent = a.filename + " · " + formatSize(c.u8.length);
+    $("vOpen").href = c.url;
+    vBody.textContent = "";
+    const t = c.type;
+    if (t === "application/pdf") {
+      const f = document.createElement("iframe");
+      f.title = "Preview of " + a.filename; f.src = c.url;
+      vBody.appendChild(f);
+    } else if (/^image\//.test(t)) {
+      const img = document.createElement("img"); img.alt = a.filename; img.src = c.url; vBody.appendChild(img);
+    } else if (/xml|json|csv|text\//.test(t) || /\.(xml|txt|csv|json)$/i.test(a.filename)) {
+      const pre = document.createElement("pre");
+      pre.textContent = new TextDecoder("utf-8").decode(c.u8.subarray(0, 3 * 1048576));
+      vBody.appendChild(pre);
+    } else {
+      const d = document.createElement("div"); d.className = "msg";
+      d.textContent = "No in-page preview for " + (t || "this file type") + ". Use Download to open it.";
+      vBody.appendChild(d);
+    }
+    if (typeof viewer.showModal === "function") viewer.showModal(); else viewer.setAttribute("open", "");
+  }
+  function closeViewer() { vBody.textContent = ""; viewing = -1; if (viewer.open) viewer.close(); }
+  function download(i) {
+    const a = state.atts[i];
+    let c;
+    try { c = attBytes(i); } catch (e) { alert("This attachment isn't valid Base64, so it can't be saved."); return; }
+    const blob = new Blob([c.u8], { type: c.type });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob); link.download = a.filename;
+    document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(link.href), 5000);
+  }
+  $("vClose").addEventListener("click", closeViewer);
+  $("vDownload").addEventListener("click", () => { if (viewing >= 0) download(viewing); });
+  viewer.addEventListener("close", () => { vBody.textContent = ""; viewing = -1; });
+  viewer.addEventListener("click", (e) => { if (e.target === viewer) closeViewer(); });
+
+  // ---------- Render ----------
+  const fmtMoney = (raw) => (raw === "" || raw == null ? "—" : fmtAmount(raw, ""));
+  function parseDate(raw) { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw || ""); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; }
+  function fmtDate(raw) {
+    const d = parseDate(raw);
+    return d ? '<span title="' + esc(raw) + '">' + esc(d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })) + "</span>" : esc(raw || "");
+  }
+  function countryName(code) {
+    if (!code) return "";
+    try { const r = regionNames && regionNames.of(code.toUpperCase()); if (r && r !== code.toUpperCase()) return r; } catch (e) {}
+    return code;
+  }
+  const schemeLabel = (el) => {
+    const s = el && el.getAttribute("schemeID");
+    return s ? '<span class="scheme" title="schemeID ' + esc(s) + '">' + esc(SCHEMES[s] || s) + "</span>" : "";
+  };
+  const kv = (items) => {
+    const list = items.filter((i) => i && i[1]);
+    return list.length ? '<dl class="kv">' + list.map((i) => "<dt>" + esc(i[0]) + "</dt><dd>" + i[1] + "</dd>").join("") + "</dl>" : "";
+  };
+  const iban = (s) => '<span class="iban">' + esc(String(s).replace(/\s+/g, "").replace(/(.{4})(?=.)/g, "$1 ")) + "</span>";
+
+  // EN 16931 applies the rounding amount (BT-114) only to the amount due (BR-CO-16).
+  // Older UBL 2.1 samples fold it into the total incl. VAT instead; detect that so the checks follow the file.
+  function roundingInInclusive() {
+    const R = state.root, lmt = first(R, "LegalMonetaryTotal");
+    if (!lmt) return false;
+    const g = (p) => num(val(lmt, p));
+    const docCur = val(R, "DocumentCurrencyCode");
+    const vatEl = byPath(R, "TaxTotal/TaxAmount").find((e) => !docCur || e.getAttribute("currencyID") === docCur);
+    const vat = vatEl ? num(txt(vatEl)) : null, b109 = g("TaxExclusiveAmount"), b112 = g("TaxInclusiveAmount"), b114 = g("PayableRoundingAmount");
+    if (!b114 || vat === null || b109 === null || b112 === null) return false;
+    const same = (a, b) => Math.abs(Math.round(a * 100) - Math.round(b * 100)) < 1;
+    return !same(b109 + vat, b112) && same(b109 + vat + b114, b112);
+  }
+
+  function computeChecks() {
+    const R = state.root;
+    const lmt = first(R, "LegalMonetaryTotal");
+    if (!lmt) return [];
+    const g = (p) => num(val(lmt, p));
+    const docCur = val(R, "DocumentCurrencyCode");
+    const lines = byPath(R, state.kind === "CreditNote" ? "CreditNoteLine" : "InvoiceLine");
+    const round = (x) => Math.round(x * 100) / 100;
+    const same = (a, b) => Math.abs(round(a) - round(b)) < 0.005;
+    const f = (x) => round(x).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const out = [];
+    const add = (exp, actual, text, bt) => out.push({ ok: same(exp, actual),
+      text: text + " " + f(exp) + (same(exp, actual) ? " = " : " ≠ ") + bt + " " + f(actual) });
+    const inIncl = roundingInInclusive();
+
+    const b106 = g("LineExtensionAmount"), b107 = g("AllowanceTotalAmount") || 0, b108 = g("ChargeTotalAmount") || 0;
+    const b109 = g("TaxExclusiveAmount"), b112 = g("TaxInclusiveAmount"), b113 = g("PrepaidAmount") || 0;
+    const b114 = g("PayableRoundingAmount") || 0, b115 = g("PayableAmount");
+    if (lines.length && b106 !== null) add(lines.reduce((s, l) => s + (num(val(l, "LineExtensionAmount")) || 0), 0), b106, "Sum of line amounts", "BT-106");
+    if (b106 !== null && b109 !== null) add(b106 - b107 + b108, b109, "Lines − allowances + charges", "BT-109");
+    const vatEl = byPath(R, "TaxTotal/TaxAmount").find((e) => !docCur || e.getAttribute("currencyID") === docCur);
+    const vat = vatEl ? num(txt(vatEl)) : null;
+    if (b109 !== null && b112 !== null && vat !== null) {
+      if (inIncl) add(b109 + vat + b114, b112, "Total excl. VAT + VAT + rounding", "BT-112");
+      else add(b109 + vat, b112, "Total excl. VAT + VAT", "BT-112");
+    }
+    if (vatEl) {
+      const subs = byPath(vatEl.parentElement, "TaxSubtotal/TaxAmount");
+      if (subs.length && vat !== null) add(subs.reduce((s, e) => s + (num(txt(e)) || 0), 0), vat, "Sum of VAT breakdown", "BT-110");
+    }
+    if (b112 !== null && b115 !== null) {
+      if (inIncl) add(b112 - b113, b115, "Total incl. VAT − paid (rounding already included)", "BT-115");
+      else add(b112 - b113 + b114, b115, b114 ? "Total incl. VAT − paid + rounding" : "Total incl. VAT − paid", "BT-115");
+    }
+    return out;
+  }
+  function checksHtml() {
+    const c = computeChecks();
+    return c.length ? '<ul class="checks">' + c.map((x) => '<li class="' + (x.ok ? "ok" : "bad") + '">' + (x.ok ? "✓ " : "✗ ") + esc(x.text) + "</li>").join("") + "</ul>" : "";
+  }
+
+  function renderHero() {
+    const R = state.root, kind = state.kind;
+    const code = val(R, kind === "CreditNote" ? "CreditNoteTypeCode" : "InvoiceTypeCode");
+    const partyName = (tag) => val(R, tag + "/Party/PartyLegalEntity/RegistrationName") || val(R, tag + "/Party/PartyName/Name");
+    const pay = first(R, "LegalMonetaryTotal/PayableAmount");
+    const issue = val(R, "IssueDate"), due = val(R, "DueDate") || val(R, "PaymentMeans/PaymentDueDate");
+    const di = parseDate(issue), dd = parseDate(due);
+    const days = di && dd ? Math.round((dd - di) / 86400000) : null;
+    const checks = computeChecks(), bad = checks.filter((c) => !c.ok).length;
+    $("hero").innerHTML =
+      '<div class="hero-main"><div class="eyebrow"><span class="badge' + (kind === "CreditNote" ? " cn" : "") + '">' + (kind === "CreditNote" ? "Credit note" : "Invoice") + "</span>" +
+      (code ? "<span>" + esc(code) + (DOC_TYPES[code] ? " · " + esc(DOC_TYPES[code]) : "") + "</span>" : "") +
+      (state.wrapped ? "<span>inside &lt;" + esc(state.wrapped) + "&gt;</span>" : "") + "</div>" +
+      '<div class="docno">' + esc(val(R, "ID") || "(no number)") + "</div>" +
+      '<div class="flow"><div class="who from"><small>From</small><span>' + esc(partyName("AccountingSupplierParty") || "Unknown seller") + "</span></div>" +
+      '<span class="arrow" aria-hidden="true">→</span><div class="who to"><small>To</small><span>' + esc(partyName("AccountingCustomerParty") || "Unknown buyer") + "</span></div></div></div>" +
+      '<div class="hero-amount">' +
+      (pay ? '<div class="lbl">' + (kind === "CreditNote" ? "Amount credited" : "Amount due") + '</div><div class="big">' + fmtMoney(txt(pay)) + '<span class="cur">' + esc(pay.getAttribute("currencyID") || "") + "</span></div>" : "") +
+      (due ? '<div class="due">Due <b>' + fmtDate(due) + "</b>" + (days !== null ? " · " + days + " days after issue" : "") + "</div>" : "") +
+      (checks.length ? '<button type="button" class="pill ' + (bad ? "bad" : "ok") + '" data-act="checks">' +
+        (bad ? "✗ " + bad + " of " + checks.length + " total checks fail" : "✓ Totals add up") + "</button>" : "") + "</div>";
+
+    const pm = first(R, "PaymentMeans/PaymentMeansCode");
+    const pmText = pm ? PAY_MEANS[txt(pm)] || pm.getAttribute("name") || txt(pm) : "";
+    const ps = val(R, "InvoicePeriod/StartDate"), pe = val(R, "InvoicePeriod/EndDate");
+    const lines = byPath(R, kind === "CreditNote" ? "CreditNoteLine" : "InvoiceLine");
+    const facts = [
+      ["Issued", issue ? fmtDate(issue) : "", val(R, "IssueTime")],
+      ["Invoicing period", ps || pe ? fmtDate(ps) + " – " + fmtDate(pe) : "", ""],
+      ["Purchase order", esc(val(R, "OrderReference/ID")), val(R, "BuyerReference") ? "Buyer ref. " + val(R, "BuyerReference") : ""],
+      ["Buyer reference", first(R, "OrderReference/ID") ? "" : esc(val(R, "BuyerReference")), ""],
+      ["Payment", esc(pmText), val(R, "PaymentTerms/Note")],
+      ["Lines", lines.length ? String(lines.length) : "", (state.atts.length ? state.atts.length + " attachment" + (state.atts.length > 1 ? "s" : "") : "")],
+      ["Currency", esc(val(R, "DocumentCurrencyCode")), currencyNames && val(R, "DocumentCurrencyCode") ? (function () { try { return currencyNames.of(val(R, "DocumentCurrencyCode")); } catch (e) { return ""; } })() : ""]
+    ].filter((f) => f[1]);
+    $("facts").innerHTML = facts.map((f) => '<div class="fact"><div class="l">' + esc(f[0]) + '</div><div class="v">' + f[1] + "</div>" + (f[2] ? '<div class="s">' + esc(f[2]) + "</div>" : "") + "</div>").join("");
+  }
+
+  function partyBlock(el, cls, roleLabel) {
+    if (!el) return '<div class="party ' + cls + '"><div class="role">' + esc(roleLabel) + '</div><div class="pname muted">Not provided</div></div>';
+    const legal = val(el, "PartyLegalEntity/RegistrationName"), trade = val(el, "PartyName/Name");
+    const a = first(el, "PostalAddress");
+    const addr = a ? [val(a, "StreetName"), val(a, "AdditionalStreetName")].concat(byPath(a, "AddressLine/Line").map(txt),
+      [[val(a, "PostalZone"), val(a, "CityName")].filter(Boolean).join(" "), val(a, "CountrySubentity"), countryName(val(a, "Country/IdentificationCode"))]).filter(Boolean).join("\n") : "";
+    const items = [];
+    byPath(el, "PartyTaxScheme").forEach((pts) => {
+      const scheme = val(pts, "TaxScheme/ID");
+      items.push([scheme && scheme !== "VAT" ? "Tax number" : "VAT number", esc(val(pts, "CompanyID"))]);
+    });
+    const lid = first(el, "PartyLegalEntity/CompanyID");
+    if (lid) items.push(["Legal ID", esc(txt(lid)) + schemeLabel(lid)]);
+    byPath(el, "PartyIdentification/ID").forEach((id) => items.push(["Identifier", esc(txt(id)) + schemeLabel(id)]));
+    const ep = first(el, "EndpointID");
+    if (ep) items.push(["Electronic address", esc(txt(ep)) + schemeLabel(ep)]);
+    items.push(["Legal form", esc(val(el, "PartyLegalEntity/CompanyLegalForm"))]);
+    const contact = [val(el, "Contact/Name"), val(el, "Contact/Telephone"), val(el, "Contact/ElectronicMail")].filter(Boolean).map(esc).join(" · ");
+    items.push(["Contact", contact]);
+    return '<div class="party ' + cls + '"><div class="role">' + esc(roleLabel) + '</div><div class="pname">' + esc(legal || trade || "(no name)") + "</div>" +
+      (legal && trade && trade !== legal ? '<div class="trade">Trading as ' + esc(trade) + "</div>" : "") +
+      (addr ? '<div class="addr">' + esc(addr) + "</div>" : "") + kv(items) + "</div>";
+  }
+
+  function attTile(i) {
+    const a = state.atts[i];
+    const type = a.sniffed || a.mime || "";
+    const ext = (a.filename.includes(".") ? a.filename.split(".").pop() : extFor(type).slice(1) || "file").slice(0, 4).toUpperCase();
+    const cls = /pdf/.test(type) ? "pdf" : /^image\//.test(type) ? "img" : /xml/.test(type) ? "xml" : "";
+    return '<div class="att" id="att-' + i + '"><div class="att-icon ' + cls + '">' + esc(ext) + '</div><div class="att-meta"><b>' + esc(a.filename) + "</b>" +
+      "<span>" + esc(a.mime || "unknown type") + " · " + formatSize(a.size) + (a.desc ? " · " + esc(a.desc) : "") + "</span>" +
+      (a.ref && a.ref !== a.filename ? "<span>Reference: " + esc(a.ref) + "</span>" : "") + (a.warn ? '<span class="warn">' + esc(a.warn) + "</span>" : "") +
+      '</div><div class="att-act"><button class="primary" type="button" data-act="preview" data-att="' + i + '">Preview</button>' +
+      '<button type="button" data-act="download" data-att="' + i + '">Download</button></div></div>';
+  }
+
+  function renderOverview() {
+    const R = state.root, kind = state.kind;
+    const docCur = val(R, "DocumentCurrencyCode");
+    let h = '<div class="sheet">';
+
+    // Parties
+    h += '<div class="parties">' + partyBlock(first(R, "AccountingSupplierParty/Party"), "from", "From · Seller") +
+      partyBlock(first(R, "AccountingCustomerParty/Party"), "to", "To · Buyer") + "</div>";
+    const payee = first(R, "PayeeParty"), rep = first(R, "TaxRepresentativeParty");
+    if (payee || rep) h += '<div class="parties" style="margin-top:14px">' + (payee ? partyBlock(payee, "from", "Payee (paid to)") : "") + (rep ? partyBlock(rep, "from", "Seller tax representative") : "") + "</div>";
+
+    // Notes
+    const notes = byPath(R, "Note").map(txt).filter(Boolean);
+    if (notes.length) {
+      h += '<h3 class="sh">Notes</h3><div class="notes">' + notes.map((n) => {
+        const m = n.match(/^#([A-Z0-9]{2,4})#/);
+        return '<div class="note">' + (m ? '<span class="tag" title="Subject code ' + esc(m[1]) + '">' + esc(NOTE_SUBJECT[m[1]] || m[1]) + "</span>" : "") + esc(m ? n.slice(m[0].length) : n) + "</div>";
+      }).join("") + "</div>";
+    }
+
+    // Lines
+    const lines = byPath(R, kind === "CreditNote" ? "CreditNoteLine" : "InvoiceLine");
+    h += '<h3 class="sh">Lines' + (lines.length ? " · " + lines.length : "") + "</h3>";
+    if (lines.length) {
+      h += '<div class="tablewrap"><table class="inv"><thead><tr><th></th><th>Description</th><th class="r">Quantity</th><th class="r">Unit price</th><th>VAT</th><th class="r">Amount</th></tr></thead><tbody>';
+      lines.forEach((ln, i) => {
+        const q = first(ln, "InvoicedQuantity") || first(ln, "CreditedQuantity");
+        const unit = q ? q.getAttribute("unitCode") || "" : "";
+        const base = first(ln, "Price/BaseQuantity");
+        const subs = [val(ln, "Item/Description"), val(ln, "Item/SellersItemIdentification/ID") ? "Item " + val(ln, "Item/SellersItemIdentification/ID") : "",
+          val(ln, "OrderLineReference/LineID") && val(ln, "OrderLineReference/LineID") !== "0" ? "PO line " + val(ln, "OrderLineReference/LineID") : "",
+          val(ln, "InvoicePeriod/StartDate") ? "Period " + val(ln, "InvoicePeriod/StartDate") + " – " + val(ln, "InvoicePeriod/EndDate") : ""].filter(Boolean);
+        byPath(ln, "AllowanceCharge").forEach((ac) => {
+          const charge = val(ac, "ChargeIndicator") === "true";
+          subs.push((charge ? "Charge + " : "Allowance − ") + (num(val(ac, "Amount")) !== null ? num(val(ac, "Amount")).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : val(ac, "Amount")) + (val(ac, "AllowanceChargeReason") || AC_REASON[val(ac, "AllowanceChargeReasonCode")] ? " (" + (val(ac, "AllowanceChargeReason") || AC_REASON[val(ac, "AllowanceChargeReasonCode")]) + ")" : ""));
+        });
+        const cat = val(ln, "Item/ClassifiedTaxCategory/ID"), pct = val(ln, "Item/ClassifiedTaxCategory/Percent");
+        h += '<tr><td class="pos">' + esc(val(ln, "ID") || i + 1) + '</td><td><div class="iname">' + esc(val(ln, "Item/Name") || "—") + "</div>" +
+          subs.map((s) => '<div class="isub">' + esc(s) + "</div>").join("") + '</td><td class="r">' + (q ? esc(txt(q)) + (unit ? ' <span class="unit" title="' + esc(unit) + '">' + esc(UNITS[unit] || unit) + "</span>" : "") : "—") +
+          '</td><td class="r">' + fmtMoney(val(ln, "Price/PriceAmount")) + (base && txt(base) !== "1" ? '<div class="isub">per ' + esc(txt(base)) + "</div>" : "") +
+          "</td><td>" + (cat || pct ? '<span class="vat-chip" title="' + esc(VAT_CAT[cat] || cat) + '">' + (pct ? esc(pct) + " %" : "") + (cat ? " " + esc(cat) : "") + "</span>" : "") +
+          '</td><td class="r">' + fmtMoney(val(ln, "LineExtensionAmount")) + "</td></tr>";
+      });
+      h += "</tbody></table></div>";
+    } else h += '<div class="none">No lines in this document.</div>';
+
+    // Totals block
+    const lmt = first(R, "LegalMonetaryTotal");
+    if (lmt) {
+      const t = (label, raw, cls, sign) => (raw === "" ? "" : '<div class="t' + (cls ? " " + cls : "") + '"><span>' + label + "</span><span>" + (sign || "") + fmtMoney(raw) + "</span></div>");
+      const tt = byPath(R, "TaxTotal").find((x) => { const a = first(x, "TaxAmount"); return a && (!docCur || a.getAttribute("currencyID") === docCur); });
+      let vatRows = "";
+      if (tt) {
+        const subs = byPath(tt, "TaxSubtotal");
+        if (subs.length) subs.forEach((st) => {
+          const cat = val(st, "TaxCategory/ID"), pct = val(st, "TaxCategory/Percent");
+          vatRows += t("VAT " + (pct ? esc(pct) + " % " : "") + (cat ? '<span class="vat-chip" title="' + esc(VAT_CAT[cat] || cat) + '">' + esc(cat) + "</span>" : "") +
+            ' <span class="muted">on ' + fmtMoney(val(st, "TaxableAmount")) + "</span>", val(st, "TaxAmount"));
+        });
+        else vatRows = t("VAT", val(tt, "TaxAmount"));
+      }
+      h += '<div class="totals-wrap"><div class="totals">' +
+        t("Lines total", val(lmt, "LineExtensionAmount")) +
+        t("Allowances", val(lmt, "AllowanceTotalAmount"), "", "− ") +
+        t("Charges", val(lmt, "ChargeTotalAmount"), "", "+ ") +
+        t("Total excl. VAT", val(lmt, "TaxExclusiveAmount"), "strong") + vatRows +
+        (roundingInInclusive() ? t("Rounding", val(lmt, "PayableRoundingAmount")) : "") +
+        t("Total incl. VAT", val(lmt, "TaxInclusiveAmount"), "strong") +
+        t("Already paid", val(lmt, "PrepaidAmount"), "", "− ") +
+        (roundingInInclusive() ? "" : t("Rounding", val(lmt, "PayableRoundingAmount"))) +
+        t((kind === "CreditNote" ? "Amount credited" : "Amount due") + " " + esc(docCur), val(lmt, "PayableAmount"), "due") +
+        "</div></div>";
+    }
+
+    // Payment, references, delivery, allowances
+    const cards = [];
+    {
+      let body = "";
+      byPath(R, "PaymentMeans").forEach((pm) => {
+        const c = first(pm, "PaymentMeansCode");
+        const name = c ? PAY_MEANS[txt(c)] || c.getAttribute("name") || txt(c) : "Payment";
+        body += "<h4>" + esc(name) + (c ? ' <span class="muted" style="font-weight:400">· code ' + esc(txt(c)) + "</span>" : "") + "</h4>" + kv([
+          ["IBAN / account", val(pm, "PayeeFinancialAccount/ID") ? iban(val(pm, "PayeeFinancialAccount/ID")) : ""],
+          ["Account name", esc(val(pm, "PayeeFinancialAccount/Name"))],
+          ["BIC", esc(val(pm, "PayeeFinancialAccount/FinancialInstitutionBranch/ID"))],
+          ["Remittance info", esc(val(pm, "PaymentID"))],
+          ["Card", esc([val(pm, "CardAccount/NetworkID"), val(pm, "CardAccount/PrimaryAccountNumberID"), val(pm, "CardAccount/HolderName")].filter(Boolean).join(" · "))],
+          ["Mandate", esc(val(pm, "PaymentMandate/ID"))],
+          ["Debited account", val(pm, "PaymentMandate/PayerFinancialAccount/ID") ? iban(val(pm, "PaymentMandate/PayerFinancialAccount/ID")) : ""]
+        ]);
+      });
+      const terms = byPath(R, "PaymentTerms/Note").map(txt).filter(Boolean);
+      body += kv([["Terms", terms.map(esc).join("<br>")], ["Due date", val(R, "DueDate") ? fmtDate(val(R, "DueDate")) : ""]]);
+      if (body) cards.push("<div>" + (body.startsWith("<h4") ? "" : "<h4>Payment</h4>") + body + "</div>");
+    }
+    {
+      const refs = kv([
+        ["Purchase order", esc(val(R, "OrderReference/ID"))], ["Sales order", esc(val(R, "OrderReference/SalesOrderID"))],
+        ["Buyer reference", esc(val(R, "BuyerReference"))], ["Accounting ref.", esc(val(R, "AccountingCost"))],
+        ["Contract", esc(val(R, "ContractDocumentReference/ID"))], ["Project", esc(val(R, "ProjectReference/ID"))],
+        ["Preceding invoice", esc(byPath(R, "BillingReference/InvoiceDocumentReference").map((d) => val(d, "ID") + (val(d, "IssueDate") ? " (" + val(d, "IssueDate") + ")" : "")).join(", "))],
+        ["Despatch advice", esc(val(R, "DespatchDocumentReference/ID"))], ["Receiving advice", esc(val(R, "ReceiptDocumentReference/ID"))],
+        ["Tender / lot", esc(val(R, "OriginatorDocumentReference/ID"))],
+        ["VAT point date", val(R, "TaxPointDate") ? fmtDate(val(R, "TaxPointDate")) : ""],
+        ["Period code", esc(val(R, "InvoicePeriod/DescriptionCode") ? val(R, "InvoicePeriod/DescriptionCode") + (DATE_CODE[val(R, "InvoicePeriod/DescriptionCode")] ? " · " + DATE_CODE[val(R, "InvoicePeriod/DescriptionCode")] : "") : "")]
+      ]);
+      if (refs) cards.push("<div><h4>References</h4>" + refs + "</div>");
+    }
+    byPath(R, "Delivery").forEach((d) => {
+      const a = first(d, "DeliveryLocation/Address");
+      const addr = a ? [val(a, "StreetName"), val(a, "AdditionalStreetName"), [val(a, "PostalZone"), val(a, "CityName")].filter(Boolean).join(" "), countryName(val(a, "Country/IdentificationCode"))].filter(Boolean).map(esc).join("<br>") : "";
+      const loc = first(d, "DeliveryLocation/ID");
+      const body = kv([["Delivered", val(d, "ActualDeliveryDate") ? fmtDate(val(d, "ActualDeliveryDate")) : ""], ["Deliver to", esc(val(d, "DeliveryParty/PartyName/Name"))],
+        ["Location ID", loc ? esc(txt(loc)) + schemeLabel(loc) : ""], ["Address", addr]]);
+      if (body) cards.push("<div><h4>Delivery</h4>" + body + "</div>");
+    });
+    const acs = byPath(R, "AllowanceCharge");
+    [["Allowances", false], ["Charges", true]].forEach(([title, isCharge]) => {
+      const list = acs.filter((ac) => (val(ac, "ChargeIndicator") === "true") === isCharge);
+      if (!list.length) return;
+      cards.push("<div><h4>" + title + "</h4>" + kv(list.map((ac, i) => {
+        const charge = isCharge;
+        const reason = val(ac, "AllowanceChargeReason") || AC_REASON[val(ac, "AllowanceChargeReasonCode")] || val(ac, "AllowanceChargeReasonCode");
+        return [reason || (charge ? "Charge" : "Allowance") + (list.length > 1 ? " " + (i + 1) : ""), (charge ? "+ " : "− ") + fmtMoney(val(ac, "Amount")) +
+          (val(ac, "MultiplierFactorNumeric") ? ' <span class="muted">(' + esc(val(ac, "MultiplierFactorNumeric")) + " %)</span>" : "") +
+          (val(ac, "TaxCategory/Percent") ? ' <span class="vat-chip">' + esc(val(ac, "TaxCategory/Percent")) + " % " + esc(val(ac, "TaxCategory/ID")) + "</span>" : "")];
+      })) + "</div>");
+    });
+    if (cards.length) h += '<h3 class="sh">Payment &amp; references</h3><div class="info">' + cards.join("") + "</div>";
+
+    // Attachments
+    if (state.atts.length) h += '<h3 class="sh">Attachments · ' + state.atts.length + '</h3><div class="atts">' + state.atts.map((a, i) => attTile(i).replace('id="att-' + i + '"', "")).join("") + "</div>";
+
+    h += "</div>";
+    $("pOverview").innerHTML = h;
+  }
+
+  const SECTION_DOT = { seller: "from", payee: "from", taxrep: "from", buyer: "to", payment: "money", allowances: "money", charges: "money", vat: "money", totals: "money", checks: "money" };
+  const NAV_GROUPS = [
+    ["Document", ["doc", "refs"]],
+    ["Parties", ["seller", "buyer", "payee", "taxrep"]],
+    ["Delivery & payment", ["delivery", "payment", "allowances", "charges"]],
+    ["Amounts", ["vat", "totals", "checks"]],
+    ["More", ["other"]],
+    ["Lines", ["lines"]]
+  ];
+  let navObserver = null;
+  function renderFieldsTab() {
+    const sections = buildSections();
+    const byId = new Map(sections.map((s) => [s.id, s]));
+    const menu = (cls) => '<nav class="fnav ' + cls + '" aria-label="Sections">' + NAV_GROUPS.map(([label, ids]) => {
+      const items = ids.filter((id) => byId.has(id)).map((id) => {
+        const s = byId.get(id);
+        return '<a href="#sec-' + id + '" data-sec="' + id + '"><span class="dot ' + (SECTION_DOT[id] || "") + '"></span>' + esc(s.title) +
+          (s.count ? '<span class="n">' + s.count + "</span>" : "") + "</a>";
+      }).join("");
+      return items ? '<div class="glabel">' + esc(label) + "</div>" + items : "";
+    }).join("") + "</nav>";
+    const main = sections.filter((s) => s.id !== "lines").map((s) => s.html).join("");
+    const lines = byId.get("lines");
+    $("content").innerHTML =
+      '<div class="fields-layout">' + menu("fnav-side") + '<div class="fgrid">' + main + "</div></div>" +
+      (lines ? '<div class="lines-zone">' + lines.html + "</div>" : "");
+    if ($("filter").value) applyFilter();
+    measureStick();
+    watchSections();
+  }
+
+  // Height of the sticky tab bar, used to offset the sticky menus and scroll targets.
+  function measureStick() {
+    const bar = $("tabbar");
+    if (bar && bar.offsetHeight) document.documentElement.style.setProperty("--stick", bar.offsetHeight + "px");
+  }
+  window.addEventListener("resize", measureStick);
+
+  // Highlight the section currently in view in the menu.
+  function watchSections() {
+    if (navObserver) navObserver.disconnect();
+    if (!("IntersectionObserver" in window)) return;
+    const visible = new Map();
+    const stick = $("tabbar") ? $("tabbar").offsetHeight : 48;
+    navObserver = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting) visible.set(e.target.id, e.target.getBoundingClientRect().top); else visible.delete(e.target.id); });
+      let best = null, bestTop = Infinity;
+      visible.forEach((_, id) => { const t = $(id).getBoundingClientRect().top; if (t < bestTop) { bestTop = t; best = id; } });
+      if (best) setActive(best.replace(/^sec-/, ""));
+    }, { rootMargin: "-" + (stick + 20) + "px 0px -55% 0px" });
+    $("content").querySelectorAll(".card").forEach((c) => navObserver.observe(c));
+  }
+  function setActive(id) {
+    $("content").querySelectorAll(".fnav a").forEach((a) => a.classList.toggle("active", a.dataset.sec === id));
+  }
+  $("content").addEventListener("click", (e) => {
+    const a = e.target.closest(".fnav a[data-sec]");
+    if (!a) return;
+    e.preventDefault();
+    const el = $("sec-" + a.dataset.sec);
+    if (el) { el.scrollIntoView({ behavior: "smooth", block: "start" }); setActive(a.dataset.sec); }
+  });
+
+  function renderAttachments() {
+    $("attCount").textContent = state.atts.length;
+    $("pAtts").innerHTML = state.atts.length
+      ? '<div class="atts">' + state.atts.map((a, i) => attTile(i)).join("") + "</div>"
+      : '<div class="sheet"><div class="none">This document has no embedded attachments.</div></div>';
+  }
+
+  function render() {
+    collectAttachments();
+    renderHero();
+    renderOverview();
+    renderFieldsTab();
+    renderAttachments();
+    $("rawXml").innerHTML = xmlHtml(state.root.ownerDocument);
+    $("showEmpty").checked = state.showEmpty;
+    $("out").hidden = false;
+    $("intro").hidden = true;
+  }
+
+  function showTab(name) {
+    document.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", t.dataset.tab === name ? "true" : "false"));
+    $("pOverview").hidden = name !== "overview";
+    $("pFields").hidden = name !== "fields";
+    $("pAtts").hidden = name !== "atts";
+    $("pRaw").hidden = name !== "raw";
+    $("fieldTools").hidden = name !== "fields";
+    if (name === "fields") measureStick();
+  }
+  document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => showTab(t.dataset.tab)));
+
+  const setFold = (n, closed) => {
+    n.classList.toggle("closed", closed);
+    n.querySelector(":scope > .ln > .fold").textContent = closed ? "▸" : "▾";
+  };
+  $("rawXml").addEventListener("click", (e) => {
+    const f = e.target.closest(".fold, .more");
+    if (f) { const n = f.closest(".node"); setFold(n, !n.classList.contains("closed")); }
+  });
+  $("pRaw").querySelector(".xmlbar").addEventListener("click", async (e) => {
+    const b = e.target.closest("[data-xml]");
+    if (!b) return;
+    const nodes = $("rawXml").querySelectorAll(".node");
+    if (b.dataset.xml === "expand") nodes.forEach((n) => setFold(n, false));
+    else if (b.dataset.xml === "collapse") {
+      // Keep the document root open and fold each section below it.
+      nodes.forEach((n) => {
+        const parent = n.parentElement.closest(".node");
+        setFold(n, !!parent && !parent.parentElement.closest(".node"));
+      });
+    } else if (b.dataset.xml === "copy") {
+      const label = b.textContent;
+      try { await navigator.clipboard.writeText(state.text || ""); b.textContent = "Copied"; }
+      catch (err) {
+        const ta = document.createElement("textarea");
+        ta.value = state.text || ""; document.body.appendChild(ta); ta.select();
+        try { document.execCommand("copy"); b.textContent = "Copied"; } catch (e2) { b.textContent = "Copy failed"; }
+        ta.remove();
+      }
+      setTimeout(() => { b.textContent = label; }, 1500);
+    }
+  });
+  function goTo(el) {
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  $("filter").addEventListener("input", applyFilter);
+  $("showEmpty").addEventListener("change", (e) => {
+    state.showEmpty = e.target.checked;
+    try { localStorage.setItem("edocxml.showEmpty", state.showEmpty ? "1" : "0"); } catch (err) {}
+    renderFieldsTab();
+  });
+
+  function applyFilter() {
+    const q = $("filter").value.trim().toLowerCase();
+    const content = $("content");
+    content.querySelectorAll(".row").forEach((r) => { r.hidden = q && !r.textContent.toLowerCase().includes(q); });
+    content.querySelectorAll("tr.line").forEach((tr) => {
+      const d = content.querySelector('tr[data-detail="' + tr.dataset.line + '"]');
+      const hit = !q || tr.textContent.toLowerCase().includes(q) || (d && d.textContent.toLowerCase().includes(q));
+      tr.hidden = !hit;
+      if (d) { if (q && hit) setLine(tr, true); if (!hit) d.hidden = true; }
+    });
+    content.querySelectorAll("tr.frow:not(.line)").forEach((tr) => { tr.hidden = q && !tr.textContent.toLowerCase().includes(q); });
+    content.querySelectorAll(".sub").forEach((s) => { s.hidden = q && !s.querySelector(".row:not([hidden]), tr.frow:not([hidden])"); });
+    content.querySelectorAll(".card").forEach((c) => { c.hidden = q && !c.querySelector(".row:not([hidden]), tr.frow:not([hidden])"); });
+    content.querySelectorAll(".fnav a[data-sec]").forEach((a) => { const c = $("sec-" + a.dataset.sec); a.hidden = !!(c && c.hidden); });
+  }
+
+  function setLine(tr, open) {
+    const d = $("content").querySelector('tr[data-detail="' + tr.dataset.line + '"]');
+    if (!d) return;
+    d.hidden = !open;
+    tr.classList.toggle("open", open);
+    tr.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  $("out").addEventListener("click", (e) => {
+    const link = e.target.closest('a[href^="#att-"]');
+    if (link) {
+      e.preventDefault();
+      showTab("atts");
+      const el = $(link.getAttribute("href").slice(1));
+      if (el) { goTo(el); el.classList.add("flash"); setTimeout(() => el.classList.remove("flash"), 1600); }
+      return;
+    }
+    const btn = e.target.closest("[data-act]");
+    if (btn) {
+      const act = btn.dataset.act;
+      if (act === "preview") preview(+btn.dataset.att);
+      else if (act === "download") download(+btn.dataset.att);
+      else if (act === "checks") { showTab("fields"); goTo($("sec-checks")); }
+      else if (act === "expand" || act === "collapse") $("content").querySelectorAll("tr.line:not([hidden])").forEach((tr) => setLine(tr, act === "expand"));
+      return;
+    }
+    const tr = e.target.closest("tr.line");
+    if (tr && !e.target.closest("a")) setLine(tr, !tr.classList.contains("open"));
+  });
+  $("out").addEventListener("keydown", (e) => {
+    const tr = e.target.closest && e.target.closest("tr.line");
+    if (tr && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); setLine(tr, !tr.classList.contains("open")); }
+  });
+
+  // ---------- Loading ----------
+  const lbMsg = $("lbMsg"), drop = $("drop"), pasteArea = $("pasteArea"), pasteBtn = $("pasteBtn");
+  function setMsg(html, bad) { lbMsg.innerHTML = html; lbMsg.className = "lb-msg" + (bad ? " bad" : ""); }
+
+  function load(text, name) {
+    text = String(text || "").replace(/^﻿/, "").trim();
+    if (!text) return false;
+    if (!text.startsWith("<")) {
+      // Accept a Base64-encoded XML too.
+      try {
+        const bin = atob(text.replace(/\s+/g, ""));
+        const dec = new TextDecoder("utf-8").decode(Uint8Array.from(bin, (ch) => ch.charCodeAt(0))).replace(/^﻿/, "").trim();
+        if (dec.startsWith("<")) text = dec;
+      } catch (e) {}
+    }
+    const doc = new DOMParser().parseFromString(text, "application/xml");
+    const err = doc.getElementsByTagName("parsererror")[0];
+    if (err) {
+      setMsg("<b>Not valid XML.</b> " + esc((err.textContent || "").split("\n").filter(Boolean)[0] || ""), true);
+      return false;
+    }
+    let root = doc.documentElement, wrapped = "";
+    const kinds = ["Invoice", "CreditNote"];
+    if (!kinds.includes(root.localName)) {
+      const found = Array.from(root.getElementsByTagName("*")).find((e) => kinds.includes(e.localName));
+      if (!found) {
+        const hint = /CrossIndustryInvoice/.test(root.localName) ? " This is a CII (UN/CEFACT) invoice; this viewer reads UBL." : "";
+        setMsg("<b>No UBL Invoice or CreditNote found.</b> Root element is &lt;" + esc(root.localName) + "&gt;." + hint, true);
+        return false;
+      }
+      wrapped = root.localName; root = found;
+    }
+    Object.assign(state, { root, kind: root.localName, name: name || "Pasted XML", size: text.length, wrapped, text });
+    $("filter").value = "";
+    render();
+    showTab("overview");
+    drop.classList.add("loaded");
+    setMsg("<b>" + esc(state.name) + "</b> · " + formatSize(new Blob([text]).size) + " · " +
+      (state.kind === "CreditNote" ? "credit note" : "invoice") + " " + esc(val(root, "ID")));
+    $("clearBtn").hidden = false;
+    pasteArea.hidden = true; pasteBtn.setAttribute("aria-expanded", "false");
+    return true;
+  }
+
+  function clearAll() {
+    closeViewer();
+    state.cache.forEach((c) => c.url && URL.revokeObjectURL(c.url));
+    Object.assign(state, { root: null, kind: null, atts: [], attIndex: new Map(), cache: new Map() });
+    $("out").hidden = true; $("intro").hidden = false;
+    ["content", "hero", "facts", "pOverview", "pAtts", "rawXml"].forEach((id) => { $(id).innerHTML = ""; });
+    $("filter").value = "";
+    pasteArea.value = "";
+    drop.classList.remove("loaded");
+    $("clearBtn").hidden = true;
+    setMsg("Drop a UBL invoice or credit note XML here, or paste it anywhere with Ctrl+V.");
+  }
+
+  function loadFile(f) {
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => load(String(r.result), f.name);
+    r.onerror = () => setMsg("Couldn't read " + esc(f.name) + ".", true);
+    r.readAsText(f);
+  }
+
+  $("pickBtn").addEventListener("click", () => $("file").click());
+  $("file").addEventListener("change", (e) => { loadFile(e.target.files[0]); e.target.value = ""; });
+  $("clearBtn").addEventListener("click", clearAll);
+  pasteBtn.addEventListener("click", () => {
+    pasteArea.hidden = !pasteArea.hidden;
+    pasteBtn.setAttribute("aria-expanded", pasteArea.hidden ? "false" : "true");
+    if (!pasteArea.hidden) pasteArea.focus();
+  });
+  let t;
+  pasteArea.addEventListener("input", () => { clearTimeout(t); t = setTimeout(() => load(pasteArea.value, "Pasted XML"), 250); });
+
+  // Paste anywhere (except into the filter box or the paste area itself).
+  document.addEventListener("paste", (e) => {
+    const tgt = e.target;
+    if (tgt === pasteArea || (tgt && (tgt.tagName === "INPUT" || tgt.tagName === "TEXTAREA" || tgt.isContentEditable))) return;
+    const dt = e.clipboardData;
+    if (!dt) return;
+    if (dt.files && dt.files.length) { e.preventDefault(); loadFile(dt.files[0]); return; }
+    const text = dt.getData("text");
+    if (text && text.trim()) { e.preventDefault(); load(text, "Pasted XML"); }
+  });
+
+  // Drop anywhere on the page.
+  let depth = 0;
+  window.addEventListener("dragenter", (e) => { if (e.dataTransfer && Array.from(e.dataTransfer.types || []).includes("Files")) { depth++; drop.classList.add("dragging"); } });
+  window.addEventListener("dragleave", () => { depth = Math.max(0, depth - 1); if (!depth) drop.classList.remove("dragging"); });
+  window.addEventListener("dragover", (e) => e.preventDefault());
+  window.addEventListener("drop", (e) => {
+    e.preventDefault(); depth = 0; drop.classList.remove("dragging");
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) loadFile(f);
+  });
+})();
+</script>
+</body>
+</html>
