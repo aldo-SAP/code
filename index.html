@@ -4,77 +4,197 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f6f7f9; --card: #ffffff; --ink: #1d2330; --muted: #6a7385;
-    --line: #dfe3ea; --accent: #2457d6;
+    --bg: #F3F1EC; --paper: #FFFFFF; --ink: #1D1F23; --muted: #6A6F78; --faint: #9A9FA7;
+    --line: #E2DED6; --line-soft: #EEEBE5; --chip: #F1EEE8;
+    --teal: #0F766E; --teal-soft: #E3F2EF; --amber: #B45309; --amber-soft: #FCF0E2;
+    --green: #166534; --green-soft: #E5F3E8;
+    --shadow: 0 1px 2px rgba(30, 25, 15, 0.06), 0 4px 16px rgba(30, 25, 15, 0.05);
+    --shadow-hover: 0 2px 4px rgba(30, 25, 15, 0.08), 0 10px 28px rgba(30, 25, 15, 0.10);
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #12151b; --card: #1b2029; --ink: #e7eaf0; --muted: #98a2b5;
-      --line: #2c3340; --accent: #7ba1ff;
+      --bg: #141619; --paper: #1D2024; --ink: #ECEDEF; --muted: #A2A7AF; --faint: #737981;
+      --line: #32363C; --line-soft: #292D32; --chip: #2A2E33;
+      --teal: #2DD4BF; --teal-soft: #12332F; --amber: #F5A623; --amber-soft: #3A2B14;
+      --green: #4ADE80; --green-soft: #15301F;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4); --shadow-hover: 0 6px 20px rgba(0, 0, 0, 0.5);
     }
   }
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--ink);
-    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font: 15px/1.5 "Instrument Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
-  main { max-width: 760px; margin: 0 auto; padding: 40px 16px 56px; }
-  h1 { font-size: 1.7rem; margin: 0 0 4px; }
-  .lead { margin: 0 0 24px; color: var(--muted); }
+  main { max-width: 1040px; margin: 0 auto; padding: 22px 20px 56px; }
+
+  .top { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; margin-bottom: 22px; }
+  .top p { margin: 0; color: var(--muted); }
+  .top p b { color: var(--ink); font-weight: 600; }
+  .search { position: relative; flex: 0 1 340px; min-width: 220px; }
+  .search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--faint); pointer-events: none; }
   #search {
-    width: 100%; padding: 10px 12px; margin-bottom: 16px; font: inherit;
-    border: 1px solid var(--line); border-radius: 8px; background: var(--card); color: var(--ink);
+    width: 100%; padding: 9px 40px 9px 34px; font: inherit; border: 1px solid var(--line); border-radius: 10px;
+    background: var(--paper); color: var(--ink);
   }
-  #search:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
-  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  #search:focus { outline: 2px solid var(--teal); outline-offset: 1px; border-color: transparent; }
+  .search kbd {
+    position: absolute; right: 9px; top: 50%; transform: translateY(-50%); font: 500 0.72rem/1 "Instrument Sans", sans-serif;
+    color: var(--faint); border: 1px solid var(--line); border-radius: 5px; padding: 3px 6px; background: var(--bg);
+  }
+
+  .group { margin-top: 26px; }
+  .group[hidden] { display: none; }
+  .ghead { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .gicon { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; flex: 0 0 auto; }
+  .gicon svg { width: 18px; height: 18px; }
+  .gtitle { font-size: 1.05rem; font-weight: 600; margin: 0; }
+  .gdesc { color: var(--muted); font-size: 0.88rem; }
+  .gcount { margin-left: auto; font-size: 0.78rem; color: var(--muted); background: var(--chip); border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
+
+  .tools { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+  .tools li[hidden] { display: none; }
   a.tool {
-    display: block; padding: 14px 16px; text-decoration: none; color: inherit;
-    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    position: relative; height: 100%; display: flex; gap: 14px; padding: 16px 16px 14px; text-decoration: none; color: inherit;
+    background: var(--paper); border-radius: 14px; box-shadow: var(--shadow); border: 1px solid transparent;
+    transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease;
   }
-  a.tool:hover, a.tool:focus-visible { border-color: var(--accent); outline: none; }
-  .name { font-weight: 600; color: var(--accent); }
-  .desc { display: block; color: var(--muted); font-size: 0.93rem; margin-top: 2px; }
-  .empty { color: var(--muted); }
+  a.tool:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
+  a.tool:focus-visible { outline: none; border-color: var(--c); box-shadow: 0 0 0 3px var(--cs); }
+  .ticon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; flex: 0 0 auto; background: var(--cs); color: var(--c); }
+  .ticon svg { width: 22px; height: 22px; }
+  .tbody { min-width: 0; display: flex; flex-direction: column; gap: 3px; flex: 1; }
+  .tname { font-weight: 600; font-size: 1rem; }
+  .tdesc { color: var(--muted); font-size: 0.88rem; }
+  .tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: auto; padding-top: 8px; }
+  .tag { font-size: 0.72rem; color: var(--muted); background: var(--chip); border-radius: 999px; padding: 1px 8px; }
+  .go { position: absolute; right: 14px; top: 14px; color: var(--faint); transition: color .15s ease, transform .15s ease; }
+  .go svg { width: 16px; height: 16px; display: block; }
+  a.tool:hover .go, a.tool:focus-visible .go { color: var(--c); transform: translateX(2px); }
+  mark { background: var(--cs); color: inherit; border-radius: 3px; padding: 0 1px; }
+
+  .empty { margin-top: 40px; text-align: center; color: var(--muted); }
+  .empty[hidden] { display: none; }
+  .foot { margin-top: 44px; color: var(--faint); font-size: 0.8rem; text-align: center; }
+
+  .c-teal { --c: var(--teal); --cs: var(--teal-soft); }
+  .c-amber { --c: var(--amber); --cs: var(--amber-soft); }
+  .c-green { --c: var(--green); --cs: var(--green-soft); }
+  .gicon { background: var(--cs); color: var(--c); }
+
+  @media (max-width: 560px) {
+    main { padding: 16px 16px 40px; }
+    .search { flex: 1 1 100%; }
+    .search kbd { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { a.tool, .go { transition: none; } a.tool:hover { transform: none; } }
 </style>
 </head>
 <body>
+<style>
+  #toolsNav { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px clamp(16px,4vw,40px);
+    background: rgba(127,127,127,.10); border-bottom: 1px solid rgba(127,127,127,.28);
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  #toolsNav h1 { margin: 0; font: inherit; font-weight: 600; }
+  #toolsNav a, #toolsNav span { color: inherit; text-decoration: none; font-weight: 500; padding: 2px 6px; margin-right: -6px; border-radius: 6px; }
+  #toolsNav span { opacity: .7; }
+  #toolsNav a:hover, #toolsNav a:focus-visible { background: rgba(127,127,127,.22); outline: none; }
+</style>
+<nav id="toolsNav" aria-label="Site"><h1>Tools</h1><span>Runs locally in your browser</span></nav>
 <main>
-  <h1>Tools</h1>
-  <p class="lead">Small browser tools. Everything runs locally in your browser.</p>
-  <input id="search" type="search" placeholder="Filter tools…" aria-label="Filter tools" autocomplete="off">
-  <ul id="list"></ul>
-  <p class="empty" id="empty" hidden>No tool matches.</p>
+  <div class="top">
+    <p id="summary"></p>
+    <label class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="search" type="search" placeholder="Find a tool…" aria-label="Find a tool" autocomplete="off">
+      <kbd aria-hidden="true">/</kbd>
+    </label>
+  </div>
+  <div id="groups"></div>
+  <p class="empty" id="empty" hidden>No tool matches “<span id="q"></span>”.</p>
+  <p class="foot">Everything runs in your browser; files you open are never uploaded.</p>
 </main>
 <script>
-  // To add a page: drop the .html file next to this one and add a line here.
-  var TOOLS = [
-    { name: "SAPscript Explorer",      href: "sapscript.html",            desc: "Browse and inspect SAPscript as a tree." },
-    { name: "eDocument Status Checker", href: "edoc-status-checker.html", desc: "Check an eDocument status string against the flag rules." },
-    { name: "Base64 to PDF",            href: "base64-to-pdf.html",       desc: "Decode a Base64 string and save it as a PDF." }
+  // To add a page: drop the .html file next to this one and add it to a group below.
+  var ICONS = {
+    edoc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>',
+    check: '<path d="M9 11l3 3 7-7"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/>',
+    xml: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m10 12-2 2 2 2M14 12l2 2-2 2"/>',
+    form: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h5M8 15h8"/>',
+    tree: '<path d="M6 4v16M6 8h6M6 14h6"/><rect x="12" y="5" width="7" height="6" rx="1.5"/><rect x="12" y="11.5" width="7" height="5" rx="1.5"/>',
+    tool: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>',
+    pdf: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6M9.5 14.5 12 17l2.5-2.5"/>'
+  };
+  var GROUPS = [
+    { name: "eDocument", desc: "Electronic invoicing: statuses and UBL documents", color: "teal", icon: "edoc", tools: [
+      { name: "eDocument XML Viewer", href: "edocument_xml.html", icon: "xml",
+        desc: "Read a UBL invoice or credit note like a paper invoice, check its totals and preview the attachments.",
+        tags: ["UBL", "EN 16931", "Attachments"] },
+      { name: "eDocument Status Checker", href: "edoc-status-checker.html", icon: "check",
+        desc: "Check an eDocument status string against the configured flag rules.",
+        tags: ["Status flags", "Config JSON"] }
+    ] },
+    { name: "SAPscript", desc: "Forms and print programs", color: "amber", icon: "form", tools: [
+      { name: "SAPscript Explorer", href: "sapscript.html", icon: "tree",
+        desc: "Paste a SAPscript export and browse it as a tree or code, with IF/CASE blocks nested.",
+        tags: ["Tree view", "Validation"] }
+    ] },
+    { name: "Utilities", desc: "Small converters", color: "green", icon: "tool", tools: [
+      { name: "Base64 to PDF", href: "base64-to-pdf.html", icon: "pdf",
+        desc: "Decode a Base64 string, preview the PDF and download it.",
+        tags: ["Base64", "PDF"] }
+    ] }
   ];
 
-  var list = document.getElementById("list"), empty = document.getElementById("empty");
+  var groupsEl = document.getElementById("groups"), empty = document.getElementById("empty"), search = document.getElementById("search");
+  var svg = function (k) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICONS[k] + "</svg>"; };
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+  function hl(text, q) {
+    if (!q) return esc(text);
+    var i = text.toLowerCase().indexOf(q);
+    return i < 0 ? esc(text) : esc(text.slice(0, i)) + "<mark>" + esc(text.slice(i, i + q.length)) + "</mark>" + esc(text.slice(i + q.length));
+  }
+
+  var total = GROUPS.reduce(function (n, g) { return n + g.tools.length; }, 0);
+  document.getElementById("summary").innerHTML = "<b>" + total + " tools</b> in " + GROUPS.length + " groups";
 
   function render(q) {
     q = q.trim().toLowerCase();
-    list.textContent = "";
-    var n = 0;
-    TOOLS.forEach(function (t) {
-      if (q && (t.name + " " + t.desc).toLowerCase().indexOf(q) === -1) return;
-      var li = document.createElement("li"), a = document.createElement("a"),
-          nm = document.createElement("span"), ds = document.createElement("span");
-      a.className = "tool"; a.href = t.href;
-      nm.className = "name"; nm.textContent = t.name;
-      ds.className = "desc"; ds.textContent = t.desc;
-      a.appendChild(nm); a.appendChild(ds); li.appendChild(a); list.appendChild(li);
-      n++;
+    var shown = 0, html = "";
+    GROUPS.forEach(function (g) {
+      var groupHit = q && g.name.toLowerCase().indexOf(q) >= 0;
+      var items = g.tools.filter(function (t) {
+        return !q || groupHit || (t.name + " " + t.desc + " " + t.tags.join(" ")).toLowerCase().indexOf(q) >= 0;
+      });
+      if (!items.length) return;
+      shown += items.length;
+      html += '<section class="group c-' + g.color + '"><div class="ghead"><div class="gicon">' + svg(g.icon) + "</div>" +
+        '<div><h2 class="gtitle">' + hl(g.name, q) + '</h2><div class="gdesc">' + esc(g.desc) + "</div></div>" +
+        '<span class="gcount">' + items.length + (items.length === 1 ? " tool" : " tools") + "</span></div><ul class=\"tools\">" +
+        items.map(function (t) {
+          return '<li><a class="tool" href="' + esc(t.href) + '"><div class="ticon">' + svg(t.icon) + '</div><div class="tbody">' +
+            '<span class="tname">' + hl(t.name, q) + '</span><span class="tdesc">' + hl(t.desc, q) + "</span>" +
+            '<span class="tags">' + t.tags.map(function (x) { return '<span class="tag">' + hl(x, q) + "</span>"; }).join("") + "</span></div>" +
+            '<span class="go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span></a></li>';
+        }).join("") + "</ul></section>";
     });
-    empty.hidden = n > 0;
+    groupsEl.innerHTML = html;
+    empty.hidden = shown > 0;
+    document.getElementById("q").textContent = q;
   }
 
-  document.getElementById("search").addEventListener("input", function () { render(this.value); });
+  search.addEventListener("input", function () { render(this.value); });
+  search.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { var a = groupsEl.querySelector("a.tool"); if (a) location.href = a.href; }
+    if (e.key === "Escape") { this.value = ""; render(""); }
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "/" && document.activeElement !== search) { e.preventDefault(); search.focus(); }
+  });
   render("");
 </script>
 </body>
