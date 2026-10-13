@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PDF Merger</title>
+<link rel="stylesheet" href="../shared/fonts.css">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="../shared/nav.css">
+</head>
+<body>
+<nav id="toolsNav" aria-label="Site"><h1>PDF Merger</h1><a href="../index.html">All tools</a></nav>
+
+<main class="wrap">
+  <p class="sub">Add PDFs and photos, set the order, and save one combined file. Photos added together share a page, up to 4 per page. Merging happens on this device. Nothing is uploaded or stored.</p>
+
+  <label class="drop" id="drop">
+    <input id="picker" type="file" accept="application/pdf,.pdf,image/*" multiple>
+    <strong>Choose PDFs or photos</strong>
+    <span class="for-mouse">or drop them here. Files are merged top to bottom.</span>
+    <span class="for-touch">From your files or photo gallery. Files are merged top to bottom.</span>
+  </label>
+
+  <div class="opt">
+    <input id="onepage" type="checkbox" checked>
+    <label for="onepage">Put photos from the same selection on one page (up to 4)</label>
+  </div>
+
+  <ol class="list" id="list" aria-label="Files to merge, in order"></ol>
+  <p class="note hint" id="hint">Drag a row by its number to change the order. For a PDF, type the pages to keep, like 1,2,4,7-10.</p>
+
+  <div class="bar">
+    <div class="field">
+      <label for="outname">Output file name</label>
+      <input id="outname" type="text" value="merged.pdf" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="btns">
+      <button class="btn" id="clear" type="button" disabled>Clear all</button>
+      <button class="btn" id="share" type="button" hidden>Share</button>
+      <button class="btn primary" id="merge" type="button" disabled>Merge and save</button>
+    </div>
+  </div>
+
+  <p class="status" id="status" role="status" aria-live="polite">Add at least one PDF or photo to begin.</p>
+  <p class="note">Password-protected PDFs cannot be merged. Remove the password first. Photos in HEIC format may not open in every browser; JPG and PNG always work.</p>
+</main>
+
+<script src="../shared/vendor/pdf-lib.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

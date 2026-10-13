@@ -7,7 +7,8 @@ var ICONS = {
   form: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h5M8 15h8"/>',
   tree: '<path d="M6 4v16M6 8h6M6 14h6"/><rect x="12" y="5" width="7" height="6" rx="1.5"/><rect x="12" y="11.5" width="7" height="5" rx="1.5"/>',
   tool: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>',
-  pdf: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6M9.5 14.5 12 17l2.5-2.5"/>'
+  pdf: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6M9.5 14.5 12 17l2.5-2.5"/>',
+  merge: '<rect x="3" y="3" width="9" height="12" rx="1.5"/><rect x="12" y="9" width="9" height="12" rx="1.5"/>'
 };
 var GROUPS = [
   { name: "eDocument", desc: "Electronic invoicing: statuses and UBL documents", color: "teal", icon: "edoc", tools: [
@@ -29,7 +30,10 @@ var GROUPS = [
   { name: "Utilities", desc: "Small converters", color: "green", icon: "tool", tools: [
     { name: "Base64 to PDF", href: "base64-to-pdf/index.html", icon: "pdf",
       desc: "Decode a Base64 string, preview the PDF and download it.",
-      tags: ["Base64", "PDF"] }
+      tags: ["Base64", "PDF"] },
+    { name: "PDF Merger", href: "pdf-merger/index.html", icon: "merge",
+      desc: "Combine PDFs and photos into one PDF, in the order you choose.",
+      tags: ["PDF", "Photos", "Merge"] }
   ] }
 ];
 
