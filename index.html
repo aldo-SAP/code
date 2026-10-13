@@ -124,6 +124,7 @@
     edoc: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/>',
     check: '<path d="M9 11l3 3 7-7"/><path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/>',
     xml: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="m10 12-2 2 2 2M14 12l2 2-2 2"/>',
+    flow: '<circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="12" r="2.5"/><circle cx="6" cy="18" r="2.5"/><path d="M8.5 6H13a3 3 0 0 1 3 3v.5M15.5 12H11a3 3 0 0 0-3 3v.5"/>',
     form: '<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h5M8 15h8"/>',
     tree: '<path d="M6 4v16M6 8h6M6 14h6"/><rect x="12" y="5" width="7" height="6" rx="1.5"/><rect x="12" y="11.5" width="7" height="5" rx="1.5"/>',
     tool: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>',
@@ -132,11 +133,14 @@
   var GROUPS = [
     { name: "eDocument", desc: "Electronic invoicing: statuses and UBL documents", color: "teal", icon: "edoc", tools: [
       { name: "eDocument XML Viewer", href: "edocument_xml.html", icon: "xml",
-        desc: "Read a UBL invoice or credit note like a paper invoice, check its totals and preview the attachments.",
+        desc: "Read a UBL invoice or credit note like a paper invoice, check it against the EN 16931 rules and preview the attachments.",
         tags: ["UBL", "EN 16931", "Attachments"] },
       { name: "eDocument Status Checker", href: "edoc-status-checker.html", icon: "check",
         desc: "Check an eDocument status string against the configured flag rules.",
-        tags: ["Status flags", "Config JSON"] }
+        tags: ["Status flags", "Config JSON"] },
+      { name: "eDocument Flow Tester", href: "edoc-flow-tester.html", icon: "flow",
+        desc: "Replay EDOPROCSETFLAG process steps one after another and watch the status string change.",
+        tags: ["Process steps", "Status flags", "Config JSON"] }
     ] },
     { name: "SAPscript", desc: "Forms and print programs", color: "amber", icon: "form", tools: [
       { name: "SAPscript Explorer", href: "sapscript.html", icon: "tree",

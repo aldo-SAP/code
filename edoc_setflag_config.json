@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 2,
+  "steps": [
+    {
+      "process": "EUINV",
+      "procVersion": "0001",
+      "step": "CREATE",
+      "variant": "",
+      "pattern": "+ooooooooooooooooooooooooooooooooooooooo"
+    },
+    {
+      "process": "EUINV",
+      "procVersion": "0001",
+      "step": "PROC_BLR",
+      "variant": "ACCEPT",
+      "pattern": "oo-ooooooooooooo+ooooooooooooooooooooooo"
+    },
+    {
+      "process": "EUINV",
+      "procVersion": "0001",
+      "step": "PROC_BLR",
+      "variant": "ACK",
+      "pattern": "oooooooooooo+ooooooooooooooooooooooooooo"
+    },
+    {
+      "process": "EUINV",
+      "procVersion": "0001",
+      "step": "PROC_BLR",
+      "variant": "CONACC",
+      "pattern": "ooooooooooooooo+oooooooooooooooooooooooo"
+    }
+  ],
+  "checks": [
+    {
+      "process": "EUINV",
+      "procVersion": "0001",
+      "step": "RESTART",
+      "variant": "",
+      "seq": 40,
+      "pattern": "o++oo-o+-oooooooo-oooooooooooooooooooooo",
+      "method": "RESET_SENT"
+    },
+    {
+      "process": "EUINV",
+      "procVersion": "0001",
+      "step": "RESTART",
+      "variant": "",
+      "seq": 50,
+      "pattern": "o+ooo-oo-o+oooooo-oooooooooooooooooooooo",
+      "method": "RESET_SENT"
+    },
+    {
+      "process": "EUINV",
+      "procVersion": "0001",
+      "step": "REVERSE",
+      "variant": "",
+      "seq": 10,
+      "pattern": "oooooooo-o--oooo+ooooooooooooooooooooooo",
+      "method": ""
+    },
+    {
+      "process": "EUINV",
+      "procVersion": "0001",
+      "step": "REVERSE",
+      "variant": "",
+      "seq": 20,
+      "pattern": "oooooooo-o--oooo+ooooooooooooooooooooooo",
+      "method": ""
+    },
+    {
+      "process": "EUINV",
+      "procVersion": "0001",
+      "step": "SENDEDOC",
+      "variant": "",
+      "seq": 10,
+      "pattern": "o+-ooooooooooooooooooooooooooooooooooooo",
+      "method": ""
+    },
+    {
+      "process": "EUINV",
+      "procVersion": "0001",
+      "step": "TRIGG_SEND",
+      "variant": "",
+      "seq": 10,
+      "pattern": "oooooooooooooooooooooooooooooooooooooooo",
+      "method": ""
+    }
+  ]
+}

@@ -230,7 +230,30 @@
   .secnav a:hover { border-color: var(--faint); }
   .secnav a .n { color: var(--muted); }
   .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--faint); flex: 0 0 auto; }
-  .dot.from { background: var(--from); } .dot.to { background: var(--to); } .dot.money { background: var(--money); }
+  .dot.ok { background: var(--ok); } .dot.bad { background: var(--err); } .dot.warn { background: var(--to); }
+  /* A line with a failed rule is tinted across the whole row, with a red edge on the left. */
+  tr.has-err > td, tr.line.has-err:hover > td, table.inv tbody tr.has-err:hover td { background: var(--err-bg); }
+  tr.has-err > td:first-child { box-shadow: inset 3px 0 0 var(--err); }
+  .lerr { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 999px; background: var(--err-bg); color: var(--err); font-size: 0.72rem; font-weight: 600; white-space: nowrap; }
+  .lerr.warn { background: var(--to-soft); color: var(--to); }
+  button.lerr { border: 0; font-family: inherit; line-height: inherit; cursor: pointer; }
+  tr.has-err > td { border-bottom-color: transparent; }
+  tr.line-err > td { padding: 0 8px 8px; border-top: 0; background: var(--err-bg); box-shadow: inset 3px 0 0 var(--err); }
+  .line-checks { margin: 0; }
+  .card-errs { margin: 0 0 8px; }
+  .rulesets { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 0.84rem; }
+  .rulesets > span { color: var(--muted); margin-right: 2px; }
+  .rulesets label { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 999px; background: var(--chip); cursor: pointer; }
+  .rulesets label.on { background: var(--accent-soft); color: var(--accent); }
+  .rulesets input { margin: 0; accent-color: var(--accent); }
+  .rulesets small { color: var(--muted); font-size: 0.72rem; }
+  .line-checks li { background: transparent !important; padding: 2px 4px; }
+  .checks li.go { cursor: pointer; }
+  .checks li.go:hover, .checks li.go:focus-visible { outline: 2px solid currentColor; outline-offset: -2px; }
+  .checks .rid { display: flex; flex-direction: column; }
+  .checks .arrow { font-size: 0.95rem; line-height: 1; margin-top: 3px; }
+  .card.flash { box-shadow: 0 0 0 3px var(--accent), var(--shadow); }
+  tr.line.flash > td { background: var(--accent-soft); }
   .grid {
     margin-top: 12px; display: grid; gap: 14px; align-items: start;
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr));
@@ -239,7 +262,9 @@
 
   /* All fields: sticky section menu on the left, blocks on the right; Lines full width with the menu on top */
   .fields-layout { display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 20px; align-items: start; }
-  .fgrid { display: grid; gap: 14px; align-items: start; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); }
+  /* Two columns so related blocks sit side by side: Document | References, Seller | Buyer … */
+  .fgrid { display: grid; gap: 14px; align-items: start; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  @media (max-width: 760px) { .fgrid { grid-template-columns: minmax(0, 1fr); } }
   .fnav-side {
     position: sticky; top: calc(var(--stick, 48px) + 12px); max-height: calc(100vh - var(--stick, 48px) - 24px); overflow-y: auto;
     background: var(--paper); border-radius: 12px; box-shadow: var(--shadow); padding: 6px;
@@ -278,6 +303,8 @@
     display: grid; grid-template-columns: minmax(130px, 38%) minmax(0, 1fr); gap: 2px 12px;
     padding: 5px 0; border-top: 1px solid var(--line-soft);
   }
+  /* Full-width blocks (Notes, VAT): a 38 % label column would be far too wide, so cap it. */
+  .card.full > .row, .card.full > .sub > .row { grid-template-columns: minmax(130px, 220px) minmax(0, 1fr); }
   .row:first-of-type { border-top: 0; }
   .row[hidden], tr[hidden] { display: none; }
   .k { color: var(--muted); font-size: 0.84rem; overflow-wrap: anywhere; }
@@ -302,6 +329,13 @@
   tr.line.open td:first-child::before { content: "▾"; }
   tr.detail > td { background: var(--bg); padding: 4px 14px 10px; }
   .detail-grid { display: grid; gap: 0 28px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); }
+  /* Line allowances/charges: an inner block across the full width, its own fields laid out in the same columns */
+  .detail-grid > .sub {
+    grid-column: 1 / -1; display: grid; gap: 0 28px; align-items: start; margin: 8px 0 4px;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr));
+  }
+  .detail-grid > .sub > h3, .detail-grid > .sub > .extras-h, .detail-grid > .extras-h { grid-column: 1 / -1; }
+  .detail-grid > .sub[hidden] { display: none; }
   .small { font-size: 0.8rem; color: var(--muted); }
   table.tot { font-size: 0.9rem; }
   table.tot td { padding: 7px 4px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
@@ -318,6 +352,12 @@
   .checks li { font-size: 0.84rem; padding: 5px 9px; border-radius: 7px; }
   .checks li.ok { background: var(--ok-bg); color: var(--ok); }
   .checks li.bad { background: var(--err-bg); color: var(--err); }
+  .checks li { display: flex; gap: 10px; align-items: baseline; }
+  .checks li.warn { background: var(--to-soft); color: var(--to); }
+  .checks .rid { flex: none; min-width: 6.4em; font: 0.7rem/1.4 "JetBrains Mono", ui-monospace, Consolas, monospace; opacity: 0.85; }
+  .checks li small { display: block; opacity: 0.85; font-size: 0.78rem; overflow-wrap: anywhere; }
+  details.passed { margin-top: 8px; }
+  details.passed summary { cursor: pointer; font-size: 0.86rem; color: var(--muted); padding: 4px 2px; }
 
   .xmlbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
   .xmlbar .hint { color: var(--muted); font-size: 0.84rem; margin-right: auto; }
@@ -371,7 +411,7 @@
     .tabbar { margin: 16px -16px 0; padding: 0 16px; }
     .tab-tools { margin-left: 0; width: 100%; }
     .tab-tools input[type="search"] { flex: 1; width: auto; }
-    .row { grid-template-columns: 1fr; }
+    .row, .card.full > .row, .card.full > .sub > .row { grid-template-columns: 1fr; }
     .hero, .sheet { padding: 16px; }
     .hero-amount { text-align: left; align-items: flex-start; }
   }
@@ -446,6 +486,9 @@
   <div class="vbody" id="vBody"></div>
 </dialog>
 
+<script src="en16931-rules.js"></script>
+<script src="rules-peppol.js"></script>
+<script src="rules-fr.js"></script>
 <script>
 (function () {
   "use strict";
@@ -523,7 +566,6 @@
     ["TaxCurrencyCode", "VAT accounting currency", "BT-6"],
     ["BuyerReference", "Buyer reference", "BT-10"],
     ["AccountingCost", "Buyer accounting reference", "BT-19"],
-    ["Note", "Invoice note", "BT-22"],
     ["ProfileID", "Business process type", "BT-23"],
     ["CustomizationID", "Specification identifier", "BT-24"],
     ["UBLVersionID", "UBL version"]
@@ -541,9 +583,7 @@
     ["OriginatorDocumentReference/ID", "Tender or lot reference", "BT-17"],
     ["InvoicePeriod/StartDate", "Invoicing period start", "BT-73"],
     ["InvoicePeriod/EndDate", "Invoicing period end", "BT-74"],
-    ["InvoicePeriod/DescriptionCode", "VAT point date code", "BT-8"],
-    ["BillingReference/InvoiceDocumentReference/ID", "Preceding invoice reference", "BT-25"],
-    ["BillingReference/InvoiceDocumentReference/IssueDate", "Preceding invoice date", "BT-26"]
+    ["InvoicePeriod/DescriptionCode", "VAT point date code", "BT-8"]
   ];
   const REF_CLAIMS = ["ProjectReference", "ContractDocumentReference", "OrderReference", "ReceiptDocumentReference",
     "DespatchDocumentReference", "OriginatorDocumentReference", "InvoicePeriod", "BillingReference"];
@@ -817,9 +857,12 @@
   // ---------- Sections ----------
   function card(id, title, body, opts) {
     opts = opts || {};
-    return '<section class="card' + (opts.full ? " full" : "") + '" id="sec-' + id + '"><h2><span class="dot ' + (SECTION_DOT[id] || "") + '"></span>' + esc(title) +
+    // Failed rules for this block, in red right under its name (Lines shows them per row, Checks lists them all).
+    const iss = id !== "lines" && id !== "checks" && state.issues.secs[id];
+    const errs = iss ? '<ul class="checks card-errs">' + iss.list.map((c) => checkLi(c, false)).join("") + "</ul>" : "";
+    return '<section class="card' + (opts.full ? " full" : "") + '" id="sec-' + id + '"><h2>' + dot(id) + esc(title) +
       (opts.count != null ? '<span class="n">' + opts.count + "</span>" : "") + (opts.act ? '<span class="act">' + opts.act + "</span>" : "") +
-      "</h2>" + (body || '<div class="none">Not present in this document.</div>') + "</section>";
+      "</h2>" + errs + (body || '<div class="none">Not present in this document.</div>') + "</section>";
   }
   function sub(title, body) { return '<div class="sub"><h3>' + esc(title) + "</h3>" + body + "</div>"; }
 
@@ -837,19 +880,54 @@
       const spec = DOC_SPEC.map((f) => (f[0] === "ID" ? ["ID", kind === "CreditNote" ? "Credit note number" : "Invoice number", "BT-1"] : f));
       out.push({ id: "doc", title: "Document", html: card("doc", "Document", renderFields(R, spec, null, used)) });
     }
-    // References + supporting documents
+    // References
     {
-      claim(...REF_CLAIMS, "AdditionalDocumentReference");
+      claim(...REF_CLAIMS);
       const used = new Set();
       let body = renderFields(R, REF_SPEC, null, used);
-      body += extras(REF_CLAIMS.flatMap((n) => byPath(R, n)), used, true);
-      byPath(R, "AdditionalDocumentReference").forEach((adr, i) => {
+      body += extras(REF_CLAIMS.filter((n) => n !== "BillingReference").flatMap((n) => byPath(R, n)), used, true);
+      out.push({ id: "refs", title: "References", html: card("refs", "References", body) });
+    }
+    // Preceding invoices (BG-3): repeatable, one table row per invoice so each number sits with its date
+    {
+      const brs = byPath(R, "BillingReference"), docs = byPath(R, "BillingReference/InvoiceDocumentReference");
+      if (brs.length || state.showEmpty) {
+        const used = new Set();
+        let body = "";
+        if (docs.length) {
+          body = '<div class="tablewrap"><table><thead><tr><th>#</th><th>Invoice reference <span class="bt">BT-25</span></th>' +
+            '<th>Issue date <span class="bt">BT-26</span></th></tr></thead><tbody>' +
+            docs.map((d, i) => {
+              const id = first(d, "ID"), date = first(d, "IssueDate");
+              [id, date].forEach((e) => e && used.add(e));
+              return '<tr class="frow"><td>' + (i + 1) + "</td><td>" + (id ? renderValue(id) : "—") + "</td><td>" + (date ? renderValue(date) : "—") + "</td></tr>";
+            }).join("") + "</tbody></table></div>";
+        }
+        body += extras(brs, used, true);
+        const count = docs.length > 1 ? docs.length : null;
+        out.push({ id: "preceding", title: "Preceding invoices", count, html: card("preceding", "Preceding invoices", body, { full: true, count }) });
+      }
+    }
+    // Invoice notes (BT-22) in their own block
+    {
+      const notes = byPath(R, "Note");
+      if (notes.length || state.showEmpty) out.push({ id: "notes", title: "Notes", count: notes.length > 1 ? notes.length : null,
+        html: card("notes", "Notes", renderFields(R, [["Note", "Invoice note", "BT-22"]], null, new Set()), { full: true, count: notes.length > 1 ? notes.length : null }) });
+    }
+    // Supporting documents (BG-24) and invoiced objects (BT-18), when supplied
+    {
+      claim("AdditionalDocumentReference");
+      const adrs = byPath(R, "AdditionalDocumentReference");
+      let body = "", nDoc = 0, nObj = 0;
+      adrs.forEach((adr) => {
         const u = new Set();
         const role = val(adr, "DocumentTypeCode") === "130" ? "O" : "N";
-        body += sub((role === "O" ? "Invoiced object " : "Supporting document ") + (i + 1), renderFields(adr, ADR_SPEC, role, u) + extras([adr], u));
+        const title = role === "O" ? "Invoiced object " + ++nObj : "Supporting document " + ++nDoc;
+        body += sub(title, renderFields(adr, ADR_SPEC, role, u) + extras([adr], u));
       });
-      if (!byPath(R, "AdditionalDocumentReference").length && state.showEmpty) body += sub("Supporting document", renderFields(null, ADR_SPEC, "N", new Set()));
-      out.push({ id: "refs", title: "References", html: card("refs", "References", body) });
+      if (!adrs.length && state.showEmpty) body = sub("Supporting document", renderFields(null, ADR_SPEC, "N", new Set()));
+      const count = adrs.length > 1 ? adrs.length : null;
+      if (body) out.push({ id: "docs", title: "Supporting documents", count, html: card("docs", "Supporting documents", body, { full: true, count }) });
     }
     // Parties
     const party = (id, title, tag, role) => {
@@ -970,11 +1048,11 @@
       }).join("");
       let body = trs ? '<table class="tot"><tbody>' + trs + "</tbody></table>" + extras([lmt], u) : "";
       out.push({ id: "totals", title: "Totals", html: card("totals", "Totals", body) });
-      const checks = computeChecks();
+      const checks = state.checks;
       if (checks.length) {
-        const bad = checks.filter((c) => !c.ok).length;
-        out.push({ id: "checks", title: "Checks", html: card("checks", "Checks", checksHtml(),
-          { count: bad ? bad + " failing" : "all pass" }) });
+        const bad = checks.filter((c) => !c.ok && !c.warn).length, warn = checks.filter((c) => !c.ok && c.warn).length;
+        out.push({ id: "checks", title: "Checks", html: card("checks", "Checks", checksHtml(checks),
+          { count: bad ? bad + " failing" : warn ? warn + " warning" + (warn > 1 ? "s" : "") : "all pass" }) });
       }
     }
 
@@ -1001,17 +1079,24 @@
             detail += sub((role === "C" ? "Line charge " : "Line allowance ") + (j + 1), renderFields(ac, LINE_AC_SPEC, role, uu) + extras([ac], uu));
           });
           detail += extras([ln], u);
-          body += '<tr class="line frow" data-line="' + i + '" tabindex="0" aria-expanded="false"><td>' + esc(val(ln, "ID") || i + 1) + "</td><td>" +
+          // Rules that fail on this line: flag the row and list them in a full-width row right under it.
+          const lineChecks = state.checks.filter((c) => !c.ok && c.lines && c.lines.includes(i));
+          const nBad = lineChecks.filter((c) => !c.warn).length;
+          const flag = lineChecks.length ? '<span class="lerr' + (nBad ? "" : " warn") + '" title="' + esc(lineChecks.map((c) => c.id).join(", ")) + '">' +
+            (nBad ? "✗ " + nBad + (nBad > 1 ? " errors" : " error") : "! " + lineChecks.length) + "</span>" : "";
+          body += '<tr class="line frow' + (nBad ? " has-err" : "") + '" data-line="' + i + '" tabindex="0" aria-expanded="false"><td>' + esc(val(ln, "ID") || i + 1) + flag + "</td><td>" +
             esc(val(ln, "Item/Name") || "—") + (sid ? '<div class="small">' + esc(sid) + "</div>" : "") + '</td><td class="r">' +
             (q ? esc(txt(q)) + (unit ? ' <span class="unit" title="' + esc(UNITS[unit] || unit) + '">' + esc(unit) + "</span>" : "") : "—") +
             '</td><td class="r">' + (price ? fmtAmount(txt(price), "") : "—") + "</td><td>" + esc(cat) + (pct ? " " + esc(pct) + " %" : "") +
-            '</td><td class="r">' + (net ? renderValue(net) : "—") + "</td></tr>" +
+            '</td><td class="r">' + (net ? renderValue(net) : "—") + "</td></tr>" + lineErrRow(i, 6) +
             '<tr class="detail" data-detail="' + i + '" hidden><td colspan="6"><div class="detail-grid">' + detail + "</div></td></tr>";
         });
         body += "</tbody></table></div>";
       }
-      out.push({ id: "lines", title: "Lines", count: lines.length, html: card("lines", "Lines", body, {
-        full: true, count: lines.length,
+      const badLines = Object.keys(state.issues.lines).filter((k) => state.issues.lines[k].bad.size).length;
+      const count = lines.length + (badLines ? " · " + badLines + " with errors" : "");
+      out.push({ id: "lines", title: "Lines", count, html: card("lines", "Lines", body, {
+        full: true, count,
         act: lines.length ? '<button class="mini" type="button" data-act="expand">Expand all</button><button class="mini" type="button" data-act="collapse">Collapse all</button>' : ""
       }) });
     }
@@ -1186,59 +1271,112 @@
   };
   const iban = (s) => '<span class="iban">' + esc(String(s).replace(/\s+/g, "").replace(/(.{4})(?=.)/g, "$1 ")) + "</span>";
 
-  // EN 16931 applies the rounding amount (BT-114) only to the amount due (BR-CO-16).
-  // Older UBL 2.1 samples fold it into the total incl. VAT instead; detect that so the checks follow the file.
-  function roundingInInclusive() {
-    const R = state.root, lmt = first(R, "LegalMonetaryTotal");
-    if (!lmt) return false;
-    const g = (p) => num(val(lmt, p));
-    const docCur = val(R, "DocumentCurrencyCode");
-    const vatEl = byPath(R, "TaxTotal/TaxAmount").find((e) => !docCur || e.getAttribute("currencyID") === docCur);
-    const vat = vatEl ? num(txt(vatEl)) : null, b109 = g("TaxExclusiveAmount"), b112 = g("TaxInclusiveAmount"), b114 = g("PayableRoundingAmount");
-    if (!b114 || vat === null || b109 === null || b112 === null) return false;
-    const same = (a, b) => Math.abs(Math.round(a * 100) - Math.round(b * 100)) < 1;
-    return !same(b109 + vat, b112) && same(b109 + vat + b114, b112);
-  }
+  // Business rules live in en16931-rules.js.
+  const roundingInInclusive = () => EN16931.roundingInInclusive(state.root);
+  const computeChecks = () => EN16931.check(state.root, state.kind, state.ruleSets);
 
-  function computeChecks() {
+  // Which Fields block (and which line) an element belongs to, so failed rules can be pinned on it.
+  const BLOCK_OF = {
+    AccountingSupplierParty: "seller", AccountingCustomerParty: "buyer", PayeeParty: "payee", TaxRepresentativeParty: "taxrep",
+    Delivery: "delivery", PaymentMeans: "payment", PaymentTerms: "payment", PrepaidPayment: "payment",
+    TaxTotal: "vat", WithholdingTaxTotal: "vat", LegalMonetaryTotal: "totals", AdditionalDocumentReference: "docs", Note: "notes"
+  };
+  REF_CLAIMS.forEach((n) => { BLOCK_OF[n] = "refs"; });
+  BLOCK_OF.BillingReference = "preceding";
+  function locate(el) {
     const R = state.root;
-    const lmt = first(R, "LegalMonetaryTotal");
-    if (!lmt) return [];
-    const g = (p) => num(val(lmt, p));
-    const docCur = val(R, "DocumentCurrencyCode");
-    const lines = byPath(R, state.kind === "CreditNote" ? "CreditNoteLine" : "InvoiceLine");
-    const round = (x) => Math.round(x * 100) / 100;
-    const same = (a, b) => Math.abs(round(a) - round(b)) < 0.005;
-    const f = (x) => round(x).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    const out = [];
-    const add = (exp, actual, text, bt) => out.push({ ok: same(exp, actual),
-      text: text + " " + f(exp) + (same(exp, actual) ? " = " : " ≠ ") + bt + " " + f(actual) });
-    const inIncl = roundingInInclusive();
-
-    const b106 = g("LineExtensionAmount"), b107 = g("AllowanceTotalAmount") || 0, b108 = g("ChargeTotalAmount") || 0;
-    const b109 = g("TaxExclusiveAmount"), b112 = g("TaxInclusiveAmount"), b113 = g("PrepaidAmount") || 0;
-    const b114 = g("PayableRoundingAmount") || 0, b115 = g("PayableAmount");
-    if (lines.length && b106 !== null) add(lines.reduce((s, l) => s + (num(val(l, "LineExtensionAmount")) || 0), 0), b106, "Sum of line amounts", "BT-106");
-    if (b106 !== null && b109 !== null) add(b106 - b107 + b108, b109, "Lines − allowances + charges", "BT-109");
-    const vatEl = byPath(R, "TaxTotal/TaxAmount").find((e) => !docCur || e.getAttribute("currencyID") === docCur);
-    const vat = vatEl ? num(txt(vatEl)) : null;
-    if (b109 !== null && b112 !== null && vat !== null) {
-      if (inIncl) add(b109 + vat + b114, b112, "Total excl. VAT + VAT + rounding", "BT-112");
-      else add(b109 + vat, b112, "Total excl. VAT + VAT", "BT-112");
-    }
-    if (vatEl) {
-      const subs = byPath(vatEl.parentElement, "TaxSubtotal/TaxAmount");
-      if (subs.length && vat !== null) add(subs.reduce((s, e) => s + (num(txt(e)) || 0), 0), vat, "Sum of VAT breakdown", "BT-110");
-    }
-    if (b112 !== null && b115 !== null) {
-      if (inIncl) add(b112 - b113, b115, "Total incl. VAT − paid (rounding already included)", "BT-115");
-      else add(b112 - b113 + b114, b115, b114 ? "Total incl. VAT − paid + rounding" : "Total incl. VAT − paid", "BT-115");
-    }
-    return out;
+    let top = el;
+    while (top && top.parentElement && top.parentElement !== R) top = top.parentElement;
+    if (!top || top === R || top.parentElement !== R) return { sec: "doc" };
+    const n = top.localName;
+    if (n === "InvoiceLine" || n === "CreditNoteLine") return { sec: "lines", line: byPath(R, n).indexOf(top) };
+    if (n === "AllowanceCharge") return { sec: val(top, "ChargeIndicator") === "true" ? "charges" : "allowances" };
+    return { sec: BLOCK_OF[n] || (DOC_CLAIMS.includes(n) ? "doc" : "other") };
   }
-  function checksHtml() {
-    const c = computeChecks();
-    return c.length ? '<ul class="checks">' + c.map((x) => '<li class="' + (x.ok ? "ok" : "bad") + '">' + (x.ok ? "✓ " : "✗ ") + esc(x.text) + "</li>").join("") + "</ul>" : "";
+  // Failed rule IDs per block and per line: { secs: { id: { bad, warn } }, lines: { index: { bad, warn } } }.
+  function mapIssues(checks) {
+    const secs = {}, lines = {};
+    // Each entry keeps the rule IDs (for dots and badges) and the failed checks themselves (for block headers).
+    const add = (map, key, lvl, c) => {
+      const e = map[key] = map[key] || { bad: new Set(), warn: new Set(), list: [] };
+      e[lvl].add(c.id);
+      if (!e.list.includes(c)) e.list.push(c);
+    };
+    checks.filter((c) => !c.ok).forEach((c) => {
+      const lvl = c.warn ? "warn" : "bad";
+      c.lines = [];
+      c.at.forEach((el) => {
+        const loc = locate(el);
+        if (!c.sec) c.sec = loc.sec;
+        add(secs, loc.sec, lvl, c);
+        if (loc.line >= 0) { add(lines, loc.line, lvl, c); if (!c.lines.includes(loc.line)) c.lines.push(loc.line); }
+      });
+    });
+    return { secs, lines };
+  }
+  // Status dot: green when no rule fails in the block, red on a failure, amber on a warning only.
+  function dot(id) {
+    let bad = [], warn = [];
+    if (id === "checks") {
+      bad = state.checks.filter((c) => !c.ok && !c.warn).map((c) => c.id);
+      warn = state.checks.filter((c) => !c.ok && c.warn).map((c) => c.id);
+    } else if (state.issues.secs[id]) {
+      bad = [...state.issues.secs[id].bad]; warn = [...state.issues.secs[id].warn];
+    }
+    const cls = bad.length ? "bad" : warn.length ? "warn" : "ok";
+    const title = bad.length ? "Fails " + bad.join(", ") : warn.length ? "Warning " + warn.join(", ") : "No rule fails here";
+    return '<span class="dot ' + cls + '" title="' + esc(title) + '"></span>';
+  }
+  // inList: an entry of the Checks list; a failed one is clickable (arrow under its ID) and jumps to where it fails.
+  // Elsewhere (a block header or a line's error row) the "Fails on …" detail is dropped: you are already there.
+  const checkLi = (x, inList) => {
+    const go = inList && !x.ok;
+    return '<li class="' + (x.ok ? "ok" : x.warn ? "warn" : "bad") + (go ? " go" : "") + '"' +
+      (go ? ' data-act="goerr" data-check="' + state.checks.indexOf(x) + '" role="button" tabindex="0" title="Show where it fails"' : "") + ">" +
+      '<span class="rid">' + esc(x.id) + (go ? '<span class="arrow" aria-hidden="true">↘</span>' : "") + "</span><span>" +
+      (x.ok ? "✓ " : x.warn ? "! " : "✗ ") + esc(x.text) +
+      (x.detail && (inList || !/^Fails on /.test(x.detail)) ? "<small>" + esc(x.detail) + "</small>" : "") + "</span></li>";
+  };
+  // Jump to a failed check: its line (the next one on each click when it fails on several) or else its block.
+  function goToCheck(c) {
+    showTab("fields");
+    if (c.lines.length) {
+      c.next = ((c.next == null ? -1 : c.next) + 1) % c.lines.length;
+      const row = $("content").querySelector('tr.line[data-line="' + c.lines[c.next] + '"]');
+      if (row) { row.hidden = false; setLine(row, true); flash(row); }
+      return;
+    }
+    flash($("sec-" + c.sec));
+  }
+  function flash(el) {
+    if (!el) return;
+    goTo(el);
+    el.classList.add("flash");
+    setTimeout(() => el.classList.remove("flash"), 1600);
+  }
+
+  // Full-width row under a line listing the rules that fail on it (empty when the line is fine).
+  function lineErrRow(i, cols) {
+    const list = state.checks.filter((c) => !c.ok && c.lines && c.lines.includes(i));
+    return list.length ? '<tr class="line-err" data-errline="' + i + '"><td colspan="' + cols + '"><ul class="checks line-checks">' +
+      list.map((c) => checkLi(c, false)).join("") + "</ul></td></tr>" : "";
+  }
+
+  function checksHtml(c) {
+    c = c || state.checks;
+    if (!c.length) return "";
+    const li = (x) => checkLi(x, true);
+    const bad = c.filter((x) => !x.ok && !x.warn), warn = c.filter((x) => !x.ok && x.warn), ok = c.filter((x) => x.ok);
+    const detected = EN16931.detect(state.root);
+    let h = '<div class="rulesets"><span>Rule sets</span><label class="on"><input type="checkbox" checked disabled> EN 16931</label>' +
+      Object.keys(EN16931.sets).map((id) => '<label' + (state.ruleSets.includes(id) ? ' class="on"' : "") + '><input type="checkbox" data-ruleset="' + id + '"' +
+        (state.ruleSets.includes(id) ? " checked" : "") + "> " + esc(EN16931.sets[id].name) + (detected.includes(id) ? ' <small>detected</small>' : "") + "</label>").join("") + "</div>" +
+      '<p class="small">Rules that apply to this document, including date and number formats (XSD-). French checks use this tool’s own IDs (FR-), ' +
+      "not the official BR-FR numbers. UBL structure rules and full XSD validation are not included.</p>";
+    if (bad.length || warn.length) h += '<ul class="checks">' + bad.concat(warn).map(li).join("") + "</ul>";
+    if (ok.length) h += '<details class="passed"' + (bad.length || warn.length ? "" : " open") + "><summary>" + ok.length + (ok.length > 1 ? " rules pass" : " rule passes") +
+      '</summary><ul class="checks">' + ok.map(li).join("") + "</ul></details>";
+    return h;
   }
 
   function renderHero() {
@@ -1249,7 +1387,7 @@
     const issue = val(R, "IssueDate"), due = val(R, "DueDate") || val(R, "PaymentMeans/PaymentDueDate");
     const di = parseDate(issue), dd = parseDate(due);
     const days = di && dd ? Math.round((dd - di) / 86400000) : null;
-    const checks = computeChecks(), bad = checks.filter((c) => !c.ok).length;
+    const checks = state.checks, bad = checks.filter((c) => !c.ok && !c.warn).length;
     $("hero").innerHTML =
       '<div class="hero-main"><div class="eyebrow"><span class="badge' + (kind === "CreditNote" ? " cn" : "") + '">' + (kind === "CreditNote" ? "Credit note" : "Invoice") + "</span>" +
       (code ? "<span>" + esc(code) + (DOC_TYPES[code] ? " · " + esc(DOC_TYPES[code]) : "") + "</span>" : "") +
@@ -1261,7 +1399,7 @@
       (pay ? '<div class="lbl">' + (kind === "CreditNote" ? "Amount credited" : "Amount due") + '</div><div class="big">' + fmtMoney(txt(pay)) + '<span class="cur">' + esc(pay.getAttribute("currencyID") || "") + "</span></div>" : "") +
       (due ? '<div class="due">Due <b>' + fmtDate(due) + "</b>" + (days !== null ? " · " + days + " days after issue" : "") + "</div>" : "") +
       (checks.length ? '<button type="button" class="pill ' + (bad ? "bad" : "ok") + '" data-act="checks">' +
-        (bad ? "✗ " + bad + " of " + checks.length + " total checks fail" : "✓ Totals add up") + "</button>" : "") + "</div>";
+        (bad ? "✗ " + bad + " of " + checks.length + " rules fail" : "✓ " + checks.length + " rules pass") + "</button>" : "") + "</div>";
 
     const pm = first(R, "PaymentMeans/PaymentMeansCode");
     const pmText = pm ? PAY_MEANS[txt(pm)] || pm.getAttribute("name") || txt(pm) : "";
@@ -1352,11 +1490,14 @@
           subs.push((charge ? "Charge + " : "Allowance − ") + (num(val(ac, "Amount")) !== null ? num(val(ac, "Amount")).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : val(ac, "Amount")) + (val(ac, "AllowanceChargeReason") || AC_REASON[val(ac, "AllowanceChargeReasonCode")] ? " (" + (val(ac, "AllowanceChargeReason") || AC_REASON[val(ac, "AllowanceChargeReasonCode")]) + ")" : ""));
         });
         const cat = val(ln, "Item/ClassifiedTaxCategory/ID"), pct = val(ln, "Item/ClassifiedTaxCategory/Percent");
-        h += '<tr><td class="pos">' + esc(val(ln, "ID") || i + 1) + '</td><td><div class="iname">' + esc(val(ln, "Item/Name") || "—") + "</div>" +
+        const iss = state.issues.lines[i], nBad = iss ? iss.bad.size : 0;
+        h += '<tr' + (nBad ? ' class="has-err"' : "") + '><td class="pos">' + esc(val(ln, "ID") || i + 1) +
+          (nBad ? '<button type="button" class="lerr" data-act="goline" data-line="' + i + '" title="' + esc([...iss.bad].join(", ") + " · show in Fields") + '">✗ ' + nBad + "</button>" : "") +
+          '</td><td><div class="iname">' + esc(val(ln, "Item/Name") || "—") + "</div>" +
           subs.map((s) => '<div class="isub">' + esc(s) + "</div>").join("") + '</td><td class="r">' + (q ? esc(txt(q)) + (unit ? ' <span class="unit" title="' + esc(unit) + '">' + esc(UNITS[unit] || unit) + "</span>" : "") : "—") +
           '</td><td class="r">' + fmtMoney(val(ln, "Price/PriceAmount")) + (base && txt(base) !== "1" ? '<div class="isub">per ' + esc(txt(base)) + "</div>" : "") +
           "</td><td>" + (cat || pct ? '<span class="vat-chip" title="' + esc(VAT_CAT[cat] || cat) + '">' + (pct ? esc(pct) + " %" : "") + (cat ? " " + esc(cat) : "") + "</span>" : "") +
-          '</td><td class="r">' + fmtMoney(val(ln, "LineExtensionAmount")) + "</td></tr>";
+          '</td><td class="r">' + fmtMoney(val(ln, "LineExtensionAmount")) + "</td></tr>" + lineErrRow(i, 6);
       });
       h += "</tbody></table></div>";
     } else h += '<div class="none">No lines in this document.</div>';
@@ -1452,9 +1593,8 @@
     $("pOverview").innerHTML = h;
   }
 
-  const SECTION_DOT = { seller: "from", payee: "from", taxrep: "from", buyer: "to", payment: "money", allowances: "money", charges: "money", vat: "money", totals: "money", checks: "money" };
   const NAV_GROUPS = [
-    ["Document", ["doc", "refs"]],
+    ["Document", ["doc", "refs", "preceding", "notes", "docs"]],
     ["Parties", ["seller", "buyer", "payee", "taxrep"]],
     ["Delivery & payment", ["delivery", "payment", "allowances", "charges"]],
     ["Amounts", ["vat", "totals", "checks"]],
@@ -1468,7 +1608,7 @@
     const menu = (cls) => '<nav class="fnav ' + cls + '" aria-label="Sections">' + NAV_GROUPS.map(([label, ids]) => {
       const items = ids.filter((id) => byId.has(id)).map((id) => {
         const s = byId.get(id);
-        return '<a href="#sec-' + id + '" data-sec="' + id + '"><span class="dot ' + (SECTION_DOT[id] || "") + '"></span>' + esc(s.title) +
+        return '<a href="#sec-' + id + '" data-sec="' + id + '">' + dot(id) + esc(s.title) +
           (s.count ? '<span class="n">' + s.count + "</span>" : "") + "</a>";
       }).join("");
       return items ? '<div class="glabel">' + esc(label) + "</div>" + items : "";
@@ -1523,6 +1663,8 @@
   }
 
   function render() {
+    state.checks = computeChecks();
+    state.issues = mapIssues(state.checks);
     collectAttachments();
     renderHero();
     renderOverview();
@@ -1596,6 +1738,8 @@
       const d = content.querySelector('tr[data-detail="' + tr.dataset.line + '"]');
       const hit = !q || tr.textContent.toLowerCase().includes(q) || (d && d.textContent.toLowerCase().includes(q));
       tr.hidden = !hit;
+      const err = content.querySelector('tr[data-errline="' + tr.dataset.line + '"]');
+      if (err) err.hidden = !hit;
       if (d) { if (q && hit) setLine(tr, true); if (!hit) d.hidden = true; }
     });
     content.querySelectorAll("tr.frow:not(.line)").forEach((tr) => { tr.hidden = q && !tr.textContent.toLowerCase().includes(q); });
@@ -1627,15 +1771,31 @@
       if (act === "preview") preview(+btn.dataset.att);
       else if (act === "download") download(+btn.dataset.att);
       else if (act === "checks") { showTab("fields"); goTo($("sec-checks")); }
+      else if (act === "goline") {
+        showTab("fields");
+        const row = $("content").querySelector('tr.line[data-line="' + btn.dataset.line + '"]');
+        if (row) { row.hidden = false; setLine(row, true); flash(row); }
+      }
+      else if (act === "goerr") goToCheck(state.checks[+btn.dataset.check]);
       else if (act === "expand" || act === "collapse") $("content").querySelectorAll("tr.line:not([hidden])").forEach((tr) => setLine(tr, act === "expand"));
       return;
     }
     const tr = e.target.closest("tr.line");
     if (tr && !e.target.closest("a")) setLine(tr, !tr.classList.contains("open"));
   });
+  $("out").addEventListener("change", (e) => {
+    const box = e.target.closest && e.target.closest("input[data-ruleset]");
+    if (!box) return;
+    const id = box.dataset.ruleset;
+    state.ruleSets = box.checked ? state.ruleSets.concat(id) : state.ruleSets.filter((x) => x !== id);
+    render();
+    goTo($("sec-checks"));
+  });
   $("out").addEventListener("keydown", (e) => {
     const tr = e.target.closest && e.target.closest("tr.line");
     if (tr && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); setLine(tr, !tr.classList.contains("open")); }
+    const err = e.target.closest && e.target.closest('[data-act="goerr"]');
+    if (err && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); goToCheck(state.checks[+err.dataset.check]); }
   });
 
   // ---------- Loading ----------
@@ -1670,7 +1830,8 @@
       }
       wrapped = root.localName; root = found;
     }
-    Object.assign(state, { root, kind: root.localName, name: name || "Pasted XML", size: text.length, wrapped, text });
+    // Extra rule sets (PEPPOL, France …) start from what the CustomizationID says; the Checks card can change them.
+    Object.assign(state, { root, kind: root.localName, name: name || "Pasted XML", size: text.length, wrapped, text, ruleSets: EN16931.detect(root) });
     $("filter").value = "";
     render();
     showTab("overview");
