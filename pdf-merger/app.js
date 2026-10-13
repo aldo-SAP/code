@@ -12,6 +12,7 @@
   var drop = document.getElementById("drop");
   var outName = document.getElementById("outname");
   var onePage = document.getElementById("onepage");
+  var pageSize = document.getElementById("pagesize");
   var shareBtn = document.getElementById("share");
   var lastFile = null;
 
@@ -390,11 +391,52 @@
     return n;
   }
 
+  var SIZES = { a4: { w: A4_W, h: A4_H }, letter: { w: 612, h: 792 } };
+
+  // Visible size of a page: its crop box, turned if the page is rotated 90 or 270 degrees.
+  function visibleBox(page) {
+    var box = page.getCropBox();
+    var rot = ((page.getRotation().angle % 360) + 360) % 360;
+    var side = rot === 90 || rot === 270;
+    return { box: box, side: side, w: side ? box.height : box.width, h: side ? box.width : box.height };
+  }
+
+  // The one size every page gets, in portrait (w <= h); each page keeps its own orientation. null keeps sizes as they are.
+  async function targetSize(choice, ready) {
+    if (choice === "original") return null;
+    if (SIZES[choice]) return SIZES[choice];
+    var first = ready[0];
+    if (first.kind === "photos") return SIZES.a4;
+    var doc = await PDFLib.PDFDocument.load(first.buf);
+    var v = visibleBox(doc.getPage(first.pick ? first.pick[0] : 0));
+    return { w: Math.min(v.w, v.h), h: Math.max(v.w, v.h) };
+  }
+
+  // Scale a page to fit the target size and center it. Instead of moving the content, the page frame
+  // is placed around it, so links and form fields stay where they belong.
+  function fitPage(page, t) {
+    var v = visibleBox(page);
+    var land = v.w > v.h;
+    var tw = land ? t.h : t.w, th = land ? t.w : t.h;
+    if (Math.abs(v.w - tw) < 1 && Math.abs(v.h - th) < 1) return;
+    var s = Math.min(tw / v.w, th / v.h);
+    var uw = v.side ? th : tw, uh = v.side ? tw : th;
+    var b = v.box;
+    page.scaleContent(s, s);
+    page.scaleAnnotations(s, s);
+    var x = s * b.x - (uw - s * b.width) / 2, y = s * b.y - (uh - s * b.height) / 2;
+    page.setMediaBox(x, y, uw, uh);
+    page.setCropBox(x, y, uw, uh);
+    page.setBleedBox(x, y, uw, uh);
+    page.setTrimBox(x, y, uw, uh);
+    page.setArtBox(x, y, uw, uh);
+  }
+
   // Place 1 photo full page (page turns landscape for a wide photo), 2 stacked, 3+ in a two-column grid.
-  async function addPhotoPage(out, it) {
+  async function addPhotoPage(out, it, size) {
     var n = it.images.length;
-    var pw = A4_W, ph = A4_H;
-    if (n === 1 && it.images[0].w > it.images[0].h) { pw = A4_H; ph = A4_W; }
+    var pw = (size || SIZES.a4).w, ph = (size || SIZES.a4).h;
+    if (n === 1 && it.images[0].w > it.images[0].h) { var t = pw; pw = ph; ph = t; }
     var page = out.addPage([pw, ph]);
     var cols = n <= 2 ? 1 : 2;
     var rows = Math.ceil(n / cols);
@@ -420,14 +462,18 @@
     setStatus("Merging " + ready.length + (ready.length === 1 ? " item..." : " items..."));
     try {
       var out = await PDFLib.PDFDocument.create();
+      var size = await targetSize(pageSize.value, ready);
       for (var i = 0; i < ready.length; i++) {
         var it = ready[i];
         if (it.kind === "photos") {
-          await addPhotoPage(out, it);
+          await addPhotoPage(out, it, size);
         } else {
           var src = await PDFLib.PDFDocument.load(it.buf);
           var pages = await out.copyPages(src, it.pick || src.getPageIndices());
-          pages.forEach(function (p) { out.addPage(p); });
+          pages.forEach(function (p) {
+            if (size) fitPage(p, size);
+            out.addPage(p);
+          });
         }
       }
       var bytes = await out.save();
@@ -463,6 +509,7 @@
     if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) addFiles(e.dataTransfer.files);
   });
   mergeBtn.addEventListener("click", merge);
+  pageSize.addEventListener("change", idleStatus);
   shareBtn.addEventListener("click", function () {
     if (!lastFile) return;
     navigator.share({ files: [lastFile], title: lastFile.name }).catch(function (err) {

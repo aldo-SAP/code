@@ -26,6 +26,16 @@
     <label for="onepage">Put photos from the same selection on one page (up to 4)</label>
   </div>
 
+  <div class="opt size">
+    <label for="pagesize">Page size</label>
+    <select id="pagesize">
+      <option value="first" selected>Same as the first page</option>
+      <option value="a4">A4</option>
+      <option value="letter">US Letter</option>
+      <option value="original">Keep each page as it is</option>
+    </select>
+  </div>
+
   <ol class="list" id="list" aria-label="Files to merge, in order"></ol>
   <p class="note hint" id="hint">Drag a row by its number to change the order. For a PDF, type the pages to keep, like 1,2,4,7-10.</p>
 

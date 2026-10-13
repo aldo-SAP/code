@@ -84,6 +84,14 @@ body {
 .opt { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); margin-top: -8px; }
 .opt input { width: 16px; height: 16px; accent-color: var(--accent); margin: 0; }
 .opt label { cursor: pointer; }
+.opt.size { flex-wrap: wrap; }
+.opt select {
+  font: inherit; font-size: 16px;
+  color: var(--fg); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 6px;
+  padding: 6px 8px; min-height: 40px; max-width: 100%;
+}
+.opt select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 
 .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .list:empty { display: none; }
