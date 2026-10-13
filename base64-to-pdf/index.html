@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Base64 to PDF</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="../shared/nav.css">
+</head>
+<body>
+<nav id="toolsNav" aria-label="Site"><h1>Base64 to PDF</h1><a href="../index.html">All tools</a></nav>
+
+<main>
+
+  <div class="layout">
+  <section aria-label="Input">
+  <div class="panel">
+    <div class="drop" id="drop">
+      <textarea id="input" spellcheck="false" aria-label="Base64 input"
+        placeholder="JVBERi0xLjcKJeLjz9MK…"></textarea>
+    </div>
+    <div class="sig" aria-live="polite">
+      <span class="sig-head idle" id="sigHead">—</span>
+      <span class="sig-msg" id="sigMsg">Waiting for input.</span>
+      <span class="facts" id="facts" hidden>
+        <span>Size <b id="size">0</b></span>
+        <span>Pages <b id="pages">0</b></span>
+      </span>
+    </div>
+  </div>
+
+  <div class="actions">
+    <div class="field">
+      <label for="filename">File name</label>
+      <input type="text" id="filename" value="document.pdf">
+    </div>
+    <button class="primary" id="download" disabled>Download PDF</button>
+    <button id="loadBtn">Load text file</button>
+    <button id="clear">Clear</button>
+    <input type="file" id="file" accept=".txt,.b64,.base64,text/plain">
+  </div>
+  <div class="toast" id="toast" role="status"></div>
+
+  <p class="hint">The preview updates automatically and uses your browser's built-in PDF viewer; if it stays blank (some phones), use Open in new tab or Download. Accepts plain Base64, Base64URL, and <code>data:application/pdf;base64,</code> prefixes. Decoding happens in your browser; nothing is uploaded.</p>
+  </section>
+
+  <section class="panel preview" id="previewPanel" aria-label="Preview">
+    <div class="preview-bar">
+      <span>Preview</span>
+      <a id="openTab" href="#" target="_blank" rel="noopener" hidden>Open in new tab</a>
+    </div>
+    <div class="preview-body">
+      <iframe id="frame" title="PDF preview" hidden></iframe>
+      <div class="empty" id="empty">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg>
+        <span id="emptyMsg">Paste Base64 or load a file — the PDF will appear here.</span>
+      </div>
+    </div>
+  </section>
+  </div>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>

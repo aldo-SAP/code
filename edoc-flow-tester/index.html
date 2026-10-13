@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>eDocument Flow Tester</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="../shared/nav.css">
+</head>
+<body>
+<nav id="toolsNav" aria-label="Site"><h1>eDocument Flow Tester</h1><a href="../index.html">All tools</a></nav>
+
+<main>
+  <p class="sub">Replay eDocument process steps and watch the status string change. A step may run only if one of its <code class="t">EDOPROCCHKFLAG</code> sequences matches the current status; that sequence's method variant picks the <code class="t">EDOPROCSETFLAG</code> row that sets and clears the flags.</p>
+
+  <!-- ===== Step table ===== -->
+  <div class="card">
+    <div class="toolbar">
+      <div class="grow">
+        <label class="lbl" for="procSel">Process / version <span class="src" id="cfgSrc"></span></label>
+        <select id="procSel"></select>
+      </div>
+      <button id="saveBtn" type="button" title="Writes the step table back into your JSON file (Chrome / Edge). Other browsers download a copy.">Save steps JSON</button>
+    </div>
+
+    <details id="upd">
+      <summary>SAP tables &amp; files <span class="sumhint">– paste EDOPROCSETFLAG / EDOPROCCHKFLAG or open your saved JSON files</span></summary>
+      <div class="tabs" role="tablist" aria-label="SAP tables and files">
+        <button type="button" role="tab" id="tab-set" aria-controls="panel-set" aria-selected="true">EDOPROCSETFLAG <span class="count" id="nSet"></span></button>
+        <button type="button" role="tab" id="tab-chk" aria-controls="panel-chk" aria-selected="false" tabindex="-1">EDOPROCCHKFLAG <span class="count" id="nChk"></span></button>
+        <button type="button" role="tab" id="tab-steps" aria-controls="panel-steps" aria-selected="false" tabindex="-1">Steps file</button>
+        <button type="button" role="tab" id="tab-flags" aria-controls="panel-flags" aria-selected="false" tabindex="-1">Flag config</button>
+      </div>
+
+      <section class="tabpanel" id="panel-set" role="tabpanel" aria-labelledby="tab-set">
+        <label class="lbl" for="pasteBox">Paste rows of EDOPROCSETFLAG
+          <span class="src">PROCESS &nbsp; VERSION &nbsp; PROCESS_STEP &nbsp; PROCMETH_VARIANT &nbsp; PATTERN &nbsp;(<b>+</b> set · <b>-</b> clear · <b>o</b> unchanged) – tab-separated, empty cells allowed. The method variant is the one an EDOPROCCHKFLAG sequence picks.</span></label>
+        <textarea id="pasteBox" spellcheck="false" placeholder="EUINV	1	CREATE		+ooooooooooooooooooooooooooooooooooooooo&#10;EUINV	1	PROC_BLR	ACCEPT	oo-ooooooooooooo+ooooooooooooooooooooooo"></textarea>
+        <div class="preview" id="prevSet"></div>
+      </section>
+
+      <section class="tabpanel" id="panel-chk" role="tabpanel" aria-labelledby="tab-chk" hidden>
+        <label class="lbl" for="pasteChk">Paste rows of EDOPROCCHKFLAG
+          <span class="src">PROCESS &nbsp; VERSION &nbsp; PROCESS_STEP &nbsp; STEP_VARIANT &nbsp; SEQNR &nbsp; STATUS &nbsp; PROCMETH_VARIANT &nbsp;(<b>+</b> must be set · <b>-</b> must be clear · <b>o</b> ignored) – pasted rows replace all sequences of their step</span></label>
+        <textarea id="pasteChk" spellcheck="false" placeholder="EUINV	1	RESTART		40	o++oo-o+-oooooooo-oooooooooooooooooooooo	RESET_SENT&#10;EUINV	1	SENDEDOC		10	o+-ooooooooooooooooooooooooooooooooooooo	"></textarea>
+        <div class="preview" id="prevChk"></div>
+      </section>
+
+      <section class="tabpanel" id="panel-steps" role="tabpanel" aria-labelledby="tab-steps" hidden>
+        <p class="hint">The steps file <code class="t">edoc_setflag_config.json</code> holds both tables. Open your saved copy to bring them back; <b>Save steps JSON</b> then writes into that same file (Chrome / Edge).</p>
+        <div class="toolbar">
+          <button id="openBtn" type="button" title="Open your saved step table. Save will then overwrite this same file.">Open steps JSON&hellip;</button>
+          <input type="file" id="openFile" accept=".json,application/json" hidden>
+        </div>
+      </section>
+
+      <section class="tabpanel" id="panel-flags" role="tabpanel" aria-labelledby="tab-flags" hidden>
+        <p class="hint">Flag names and rules come from <code class="t">edoc_flag_config.json</code> (the Status Checker's file). It is loaded from the site automatically; open it here when the page runs from disk.</p>
+        <div class="toolbar">
+          <button id="flagBtn" type="button" title="Load edoc_flag_config.json for flag names and rules">Open flag config&hellip;</button>
+          <input type="file" id="flagFile" accept=".json,application/json" hidden>
+          <span class="hint" id="flagSrc"></span>
+        </div>
+      </section>
+
+      <div class="toolbar end" id="pasteActions">
+        <button id="applyBtn" type="button" class="primary">Apply pasted rows</button>
+        <button id="clearBox" type="button">Clear boxes</button>
+        <button id="clearAll" type="button" title="Removes all steps and check rows of ALL processes from this page (not from the saved file until you save)">Remove all steps &amp; checks</button>
+      </div>
+      <div class="msgs" id="applyMsg"></div>
+    </details>
+  </div>
+
+  <!-- ===== Flow ===== -->
+  <div class="card">
+    <h2>1 · Choose the next step</h2>
+    <div class="filterbar">
+      <input type="text" id="stepFilter" spellcheck="false" autocomplete="off" placeholder="Filter steps, e.g. BLR or ACCEPT" aria-label="Filter steps">
+      <label><input type="checkbox" id="onlyOk"> only steps possible now</label>
+      <label><input type="checkbox" id="enforce" checked> enforce check table (EDOPROCCHKFLAG)</label>
+    </div>
+    <div class="steps" id="steps"></div>
+    <div class="toolbar end">
+      <button id="undoBtn" type="button">&larr; Undo last step</button>
+      <button id="resetBtn" type="button">Restart flow</button>
+      <button id="copyBtn" type="button">Copy route as text</button>
+      <span class="hint" id="copyNote">Each EDOPROCCHKFLAG row (step / variant / sequence) is its own choice: checked against the current status, then its method variant's EDOPROCSETFLAG row is applied.</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2 · Current status</h2>
+    <div class="state" id="state"></div>
+    <div class="strip" id="strip"></div>
+    <p class="hint" style="margin:8px 0 0">Green outline = set by the last step · orange outline = cleared by the last step · red border = rule violated.</p>
+  </div>
+
+  <div class="card">
+    <h2>3 · Steps taken &amp; expected result</h2>
+    <p class="hint" style="margin:0 0 8px">Type what you expect after each step: <b>X</b> (or <b>+</b>) = set, <b>o</b> = not set, <b>?</b> = don't care. Missing characters count as not set.</p>
+    <div class="wrap">
+      <table>
+        <thead><tr><th>#</th><th>Step</th><th>Status after step</th><th>Expected</th><th>Match</th></tr></thead>
+        <tbody id="hist"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>4 · Allowed routes</h2>
+    <p class="hint" style="margin:0 0 8px">One route per line: the steps a document may take, separated by commas, from an empty status. A step with a variant is written <code class="t">PROC_BLR&nbsp;&nbsp;ACCEPT</code> (tab or spaces). Every step of every route must pass EDOPROCCHKFLAG. A line <code class="t">always, DISPL_HTML, DOWNLOAD</code> names steps that may run in any status. Lines starting with <b>#</b> are comments. Uses the process selected above.</p>
+    <textarea id="testBox" spellcheck="false" style="min-height:120px" placeholder="# step, step, ...&#10;CREATE, REQ_SEND, SENDEDOC, PROC_BLR	ACCEPT&#10;CREATE, REQ_SEND, SENDEDOC, PROC_BLR	REJECT, RESTART&#10;always, DISPL_HTML, DOWNLOAD"></textarea>
+    <div class="toolbar end">
+      <button id="runTests" type="button" class="primary">Run all tests</button>
+      <button id="loadTests" type="button">Upload routes file&hellip;</button>
+      <input type="file" id="testFile" accept=".csv,.txt,text/csv,text/plain" hidden>
+      <button id="saveTests" type="button">Download routes (.csv)</button>
+      <button id="addRoute" type="button" title="Appends the steps taken above as a new route line">Add current route</button>
+    </div>
+    <div id="tcSum" class="tc-sum idle" hidden></div>
+    <div class="wrap"><table>
+      <thead><tr><th>#</th><th>Route</th><th>Result</th><th>Detail</th><th></th></tr></thead>
+      <tbody id="tcRows"></tbody>
+    </table></div>
+
+    <h3 class="sect">Route coverage – everything else the tables allow</h3>
+    <p class="hint" style="margin:0 0 8px">Your routes say which steps are wanted in which status. The tester tries every step in every status the tables can reach and reports each move they allow that no route uses (a <b>leak</b>), statuses where a document gets stuck, and rows that are never used. No negative tests to write: anything not in a route is reported.</p>
+    <label class="opt"><input type="checkbox" id="ignoreNoop" checked> ignore steps that do not change the status</label>
+    <div id="covSum" class="tc-sum idle" hidden></div>
+    <div id="covOut" class="cov"></div>
+  </div>
+
+  <div class="card">
+    <h2>5 · Rule check of the current status</h2>
+    <p class="hint" style="margin:0 0 8px">Uses the Mandatory / Optional / Empty rules from <code class="t">edoc_flag_config.json</code> (same as the Status Checker page). It is normal for this to fail while the flow is only half-way through.</p>
+    <div id="verdict" class="verdict idle"></div>
+    <div class="wrap">
+      <table>
+        <thead><tr><th>#</th><th>Flag</th><th>Description</th><th>Rule</th><th>Now</th><th>Result</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script src="state.js"></script>
+<script src="steps.js"></script>
+<script src="render.js"></script>
+<script src="tests.js"></script>
+<script src="coverage.js"></script>
+<script src="tables.js"></script>
+<script src="preview.js"></script>
+<script src="main.js"></script>
+</body>
+</html>

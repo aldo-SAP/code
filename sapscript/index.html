@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SAPSCRIPT Explorer</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header style="position:relative;">
+  <h1 title="Paste a two-column SAPSCRIPT export (command / text, tab-separated) or upload a file. IF/ELSEIF/ELSE, CASE/WHEN, PROTECT and ADDRESS blocks nest automatically.">SAPSCRIPT Explorer</h1>
+  <div class="header-actions">
+    <button class="help-btn" id="helpBtn" type="button" title="Step-by-step: how to export the SAPSCRIPT text from SAP and paste it here"><span aria-hidden="true">&#9432;</span> How do I export my SAPSCRIPT from SAP?</button>
+    <select class="view-select" id="viewSelect" title="How the parsed script is displayed">
+      <option value="tree">Tree view</option>
+      <option value="code">Code view</option>
+    </select>
+    <button class="theme-toggle" id="themeToggle" type="button">Dark mode</button>
+    <a class="tools-link" href="../index.html">All tools</a>
+  </div>
+</header>
+
+<main>
+  <section class="input-panel" id="inputPanel">
+    <button class="sidebar-toggle" id="sidebarToggle" type="button" title="Hide input panel">&laquo;</button>
+    <div class="input-panel-body" id="inputPanelBody">
+    <p class="field-label">Paste SAPSCRIPT</p>
+    <textarea id="pasteArea" spellcheck="false" placeholder="/:	PAGE FIRST TEXT 'Erste Seite';
+/W	IDTVA
+/:	IF &amp;T005-XEGLD&amp; = 'X'
+L	Identification TVA : &amp;KNA1-STCEG&amp;
+/:	ENDIF"></textarea>
+    <div class="row">
+      <button class="primary" id="parseBtn" type="button">Build tree</button>
+      <button class="ghost" id="exampleBtn" type="button">Load example</button>
+      <button class="ghost" id="clearBtn" type="button">Clear</button>
+    </div>
+
+    <div class="error" id="errorBox"></div>
+    <div class="stats" id="stats"></div>
+    <div class="validation" id="validation"></div>
+  </section>
+
+  <section class="tree-panel">
+    <div class="tree-controls">
+      <input type="text" id="searchBox" placeholder="Filter (non-matching branches collapse, matches stay expanded)">
+      <button class="ghost" id="expandAll" type="button">Expand all</button>
+      <button class="ghost" id="collapseAll" type="button">Collapse all</button>
+      <button class="ghost" id="toggleDesc" type="button">Show descriptions</button>
+    </div>
+    <p id="treeTip" style="margin: -8px 0 12px; font-size: 0.75rem; color: var(--ink-dim);">Tip: Alt-click (or Shift-click) a node to expand or collapse its whole branch at once.</p>
+    <div id="tree">
+      <p class="empty-state">Paste a script, then click "Build tree". Windows (/W), elements (/E), IF/CASE logic and text lines will appear here as a collapsible tree.</p>
+    </div>
+    <div id="codeView" style="display:none;">
+      <p class="empty-state">Paste a script, then click "Build tree". It will appear here re-indented like ABAP source, with the original SAP line numbers.</p>
+    </div>
+  </section>
+</main>
+
+<div class="modal-overlay" id="helpOverlay">
+  <div class="modal">
+    <button class="modal-close" id="helpClose" type="button">Close</button>
+    <h2>Getting your SAPSCRIPT text out of SAP</h2>
+    <p class="modal-sub">Read it out of the form's text table with function module <code>READ_TEXT</code> in the debugger, then copy the two columns you need straight into this tool.</p>
+
+    <div class="help-step">
+      <div class="help-step-num">1</div>
+      <h3>Open SE37 and test READ_TEXT</h3>
+      <p>Go to transaction <code>SE37</code>, enter function module <code>READ_TEXT</code>, and fill in the 4 import parameters:</p>
+      <table>
+        <tr><td>ID</td><td><code>TXT</code> (fixed value)</td></tr>
+        <tr><td>LANGUAGE</td><td>the SE71 SAPSCRIPT language, e.g. <code>FR</code></td></tr>
+        <tr><td>NAME</td><td>the SE71 SAPSCRIPT form name, e.g. <code>Z_BE_SM_FAKTURA</code></td></tr>
+        <tr><td>OBJECT</td><td><code>FORM</code> (fixed value)</td></tr>
+      </table>
+      <p>Then click <b>Debugging</b> instead of Execute.</p>
+      <img src="images/step-1.png" alt="Test Function Module screen with the Debugging button highlighted">
+    </div>
+
+    <div class="help-step">
+      <div class="help-step-num">2</div>
+      <h3>Set a watchpoint</h3>
+      <p>Once the debugger opens, click <b>Watchpoint</b> in the toolbar.</p>
+      <img src="images/step-2.png" alt="ABAP Debugger with the Watchpoint button highlighted">
+    </div>
+
+    <div class="help-step">
+      <div class="help-step-num">3</div>
+      <h3>Watch the LINES[] variable</h3>
+      <p>In the Create Watchpoint dialog, enter <code>LINES[]</code> as the variable (program name <code>SAPLSTXD</code>) and confirm.</p>
+      <img src="images/step-3.png" alt="Create Watchpoint dialog with LINES[] entered">
+    </div>
+
+    <div class="help-step">
+      <div class="help-step-num">4</div>
+      <h3>Run to the READ_TEXT stack</h3>
+      <p>Execute with <code>F8</code>. When the watchpoint stops execution, double-click the <code>READ_TEXT</code> entry in the call stack on the right.</p>
+      <img src="images/step-4.png" alt="ABAP and Screen Stack panel with the READ_TEXT stack entry highlighted">
+    </div>
+
+    <div class="help-step">
+      <div class="help-step-num">5</div>
+      <h3>Preview LINES[] as a table</h3>
+      <p><code>LINES[]</code> is now filled with the full SAPSCRIPT text. Double-click it (in the Tables tab) and click the grid icon to preview it as an ALV table.</p>
+      <img src="images/step-5.png" alt="Tables tab with the ALV grid preview icon highlighted">
+    </div>
+
+    <div class="help-step">
+      <div class="help-step-num">6</div>
+      <h3>Copy the two columns</h3>
+      <p>Scroll (Page Down) to the last row so the whole table has loaded, then select the <code>TDFORMAT</code> and <code>TDLINE</code> columns and copy them with <code>Ctrl+C</code>. Paste directly into the box on the left of this page and click <b>Build tree</b>.</p>
+      <img src="images/step-6.png" alt="Debugger table with the TDFORMAT and TDLINE columns selected">
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

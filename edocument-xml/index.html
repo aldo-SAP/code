@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>eDocument XML Viewer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="../shared/nav.css">
+</head>
+<body>
+<nav id="toolsNav" aria-label="Site"><h1>eDocument XML Viewer</h1><a href="../index.html">All tools</a></nav>
+
+<main>
+  <div class="loadbar" id="drop">
+    <span class="lb-msg" id="lbMsg" role="status">Drop a UBL invoice or credit note XML here, or paste it anywhere with Ctrl+V.</span>
+    <button class="primary" id="pickBtn" type="button">Choose file</button>
+    <button id="pasteBtn" type="button" aria-expanded="false" aria-controls="pasteArea">Paste text</button>
+    <button id="clearBtn" type="button" hidden>Clear</button>
+    <input type="file" id="file" accept=".xml,text/xml,application/xml">
+  </div>
+  <textarea id="pasteArea" hidden spellcheck="false" aria-label="XML input" placeholder="Paste the XML here; it is read as soon as it's complete."></textarea>
+
+  <div class="intro" id="intro">
+    <div><i style="background:var(--from)"></i><b>Overview</b><span>Reads like the invoice: who bills whom, the amount due, the lines and the totals, checked for you.</span></div>
+    <div><i style="background:var(--to)"></i><b>All fields</b><span>Every UBL field by section, with its EN&nbsp;16931 business term (BT-xx) and decoded codes.</span></div>
+    <div><i style="background:var(--money)"></i><b>Attachments</b><span>Preview or download the PDFs and files embedded in the XML. Nothing leaves your browser.</span></div>
+  </div>
+
+  <div id="out" hidden>
+    <div class="hero" id="hero"></div>
+    <div class="facts" id="facts"></div>
+    <div class="tabbar" id="tabbar">
+      <div class="tabs" role="tablist" aria-label="Views">
+        <button class="tab" role="tab" id="tab-overview" data-tab="overview" aria-selected="true" aria-controls="pOverview">Overview</button>
+        <button class="tab" role="tab" id="tab-fields" data-tab="fields" aria-selected="false" aria-controls="pFields">All fields</button>
+        <button class="tab" role="tab" id="tab-atts" data-tab="atts" aria-selected="false" aria-controls="pAtts">Attachments<span class="n" id="attCount">0</span></button>
+        <button class="tab" role="tab" id="tab-raw" data-tab="raw" aria-selected="false" aria-controls="pRaw">Raw XML</button>
+      </div>
+      <div class="tab-tools" id="fieldTools" hidden>
+        <input type="search" id="filter" placeholder="Filter fields…" aria-label="Filter fields">
+        <label><input type="checkbox" id="showEmpty"> Show empty fields</label>
+      </div>
+    </div>
+    <div class="tabpanel" id="pOverview" role="tabpanel" aria-labelledby="tab-overview"></div>
+    <div class="tabpanel" id="pFields" role="tabpanel" aria-labelledby="tab-fields" hidden>
+      <div id="content"></div>
+    </div>
+    <div class="tabpanel" id="pAtts" role="tabpanel" aria-labelledby="tab-atts" hidden></div>
+    <div class="tabpanel" id="pRaw" role="tabpanel" aria-labelledby="tab-raw" hidden>
+      <div class="xmlbar">
+        <span class="hint">Click ▾ to fold an element. Attachment data is shortened.</span>
+        <button type="button" data-xml="expand">Expand all</button>
+        <button type="button" data-xml="collapse">Collapse to sections</button>
+        <button type="button" data-xml="copy">Copy XML</button>
+      </div>
+      <div class="xml" id="rawXml"></div>
+    </div>
+  </div>
+</main>
+
+<dialog id="viewer" aria-labelledby="vTitle">
+  <div class="vbar">
+    <span class="t" id="vTitle"></span>
+    <a id="vOpen" href="#" target="_blank" rel="noopener">Open in new tab</a>
+    <button id="vDownload" type="button">Download</button>
+    <button id="vClose" type="button" class="primary">Close</button>
+  </div>
+  <div class="vbody" id="vBody"></div>
+</dialog>
+
+<script src="rules/en16931.js"></script>
+<script src="rules/peppol.js"></script>
+<script src="rules/fr.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

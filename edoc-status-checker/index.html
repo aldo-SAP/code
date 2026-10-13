@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>eDocument Status Checker</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="../shared/nav.css">
+</head>
+<body>
+<nav id="toolsNav" aria-label="Site"><h1>eDocument Status Checker</h1><a href="../index.html">All tools</a></nav>
+
+<main>
+  <p class="sub">Paste a status string and see whether it satisfies the configured flag rules. Change a flag's rule with the radio buttons to test other configurations.</p>
+
+  <!-- ===== Configuration ===== -->
+  <div class="card">
+    <div class="cfg-head">
+      <div class="grow">
+        <label class="lbl" for="procIn">Process / version
+          <span class="src" id="cfgSrc"></span>
+        </label>
+        <div class="combo">
+          <input type="text" id="procIn" role="combobox" aria-expanded="false" aria-controls="procList"
+                 autocomplete="off" spellcheck="false" placeholder="Type to search, e.g. EUINV or 0001">
+          <button type="button" id="procToggle" aria-label="Show all processes">&#9662;</button>
+          <ul id="procList" role="listbox" hidden></ul>
+        </div>
+      </div>
+      <button id="dl" type="button" title="Writes the configuration back into your JSON file (Chrome / Edge). Other browsers download a copy.">Save config JSON</button>
+      <button id="ldBtn" type="button" title="Open your saved configuration. Save will then overwrite this same file.">Open config JSON&hellip;</button>
+      <input type="file" id="ldFile" accept=".json,application/json" hidden>
+    </div>
+
+    <details id="upd">
+      <summary>Update the configuration from the SAP tables</summary>
+      <ol>
+        <li>Copy all rows of <code class="t">EDOPROCFLAGASG</code> (columns <code class="t">PROCESS</code> <code class="t">PROC_VERSION</code> <code class="t">STAT_POS</code> <code class="t">STAT_FLAG</code>) into the left box.</li>
+        <li>Copy all rows of <code class="t">EDOPROCSTAFLAGT</code> (columns <code class="t">PROCESS</code> <code class="t">FLAG</code> description) into the right box.</li>
+        <li>Press <b>Apply pasted tables</b> and read the messages below.</li>
+        <li>Press <b>Save config JSON</b> and choose your existing <code class="t">data/edoc_flag_config.json</code> to overwrite it (use <b>Open config JSON&hellip;</b> first and Save writes straight back into the same file).</li>
+      </ol>
+      <div class="grid2">
+        <div>
+          <label class="lbl" for="pasteAsg">EDOPROCFLAGASG
+            <span class="src">PROCESS &nbsp; PROC_VERSION &nbsp; STAT_POS &nbsp; STAT_FLAG</span></label>
+          <textarea id="pasteAsg" spellcheck="false" placeholder="EUINV	0001	01	CREATED&#10;EUINV	0001	02	SEND_REQUESTED&#10;..."></textarea>
+        </div>
+        <div>
+          <label class="lbl" for="pasteTxt">EDOPROCSTAFLAGT
+            <span class="src">PROCESS &nbsp; FLAG &nbsp; DESCRIPTION</span></label>
+          <textarea id="pasteTxt" spellcheck="false" placeholder="EUINV	ACCEPTED	Accepted by Rec Access Point&#10;EUINV	CREATED	eDocument Created&#10;..."></textarea>
+        </div>
+      </div>
+      <div class="toolbar" style="margin-top:12px">
+        <button id="apply" type="button" class="primary">Apply pasted tables</button>
+        <button id="clearPaste" type="button">Clear boxes</button>
+      </div>
+      <div class="msgs" id="applyMsg"></div>
+    </details>
+  </div>
+
+  <!-- ===== Status string ===== -->
+  <div class="card">
+    <label class="lbl" for="input">Status string
+      <span class="src">Taken from table <code>EDOCUMENT</code>, field <code>STATUS</code></span>
+    </label>
+    <input type="text" id="input" spellcheck="false" autocomplete="off"
+           value="XXooooooooooooooXooooooooooooooooooooooo" placeholder="XXoooooooooooooo...">
+    <div class="meta">
+      <span id="len"></span>
+      <span><b>X</b> = flag set &nbsp;·&nbsp; <b>o</b> (also <b>0 _ - .</b> or blank) = flag not set</span>
+    </div>
+    <div class="strip" id="strip"></div>
+  </div>
+
+  <div class="card"><div id="verdict" class="verdict idle"></div></div>
+
+  <!-- ===== Rules ===== -->
+  <div class="card">
+    <label class="lbl" for="rulesIn">Rules string
+      <span class="src">Taken from table <code>EDOPROCCHKFLAG</code>, field <code>STATUS</code></span>
+    </label>
+    <input type="text" id="rulesIn" spellcheck="false" autocomplete="off" placeholder="++ooo-+--o--ooooo---oooo...">
+    <div class="meta" style="margin-bottom:14px">
+      <span id="rulesNote"></span>
+      <span><b>+</b> = mandatory &nbsp;·&nbsp; <b>-</b> = empty &nbsp;·&nbsp; <b>o</b> = optional</span>
+    </div>
+    <div class="toolbar">
+      <button id="reset" type="button">Reset rules to loaded config</button>
+      <button id="allopt" type="button">Set all to Optional</button>
+      <span class="legend">Mandatory = must be <b>X</b> · Empty = must <b>not</b> be set · Optional = anything</span>
+    </div>
+    <div class="wrap">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Flag</th><th>Description</th>
+              <th style="text-align:center">Optional</th><th style="text-align:center">Mandatory</th><th style="text-align:center">Empty</th>
+              <th style="text-align:center">Char</th><th>Result</th></tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<!-- Starter configuration: same content as edoc_flag_config.json.
+     Replace everything between the script tags with a newer JSON file to change the built-in starter. -->
+<script type="application/json" id="starter">
+{
+  "schemaVersion": 1,
+  "processes": [
+    {
+      "process": "EUINV",
+      "procVersion": "0001",
+      "flags": [
+        {
+          "pos": 1,
+          "flag": "CREATED",
+          "description": "eDocument Created",
+          "rule": "M"
+        },
+        {
+          "pos": 2,
+          "flag": "SEND_REQUESTED",
+          "description": "Sending to Acc Point Requested",
+          "rule": "M"
+        },
+        {
+          "pos": 3,
+          "flag": "SENT_TO_ACC_POINT",
+          "description": "Sent to Access Point",
+          "rule": "M"
+        },
+        {
+          "pos": 4,
+          "flag": "DOWNLOADED",
+          "description": "XML Downloaded",
+          "rule": "E"
+        },
+        {
+          "pos": 5,
+          "flag": "RECEIVED_AP",
+          "description": "Received by Send Access Point",
+          "rule": "O"
+        },
+        {
+          "pos": 6,
+          "flag": "REJECTED",
+          "description": "Rejected by Rec Access Point",
+          "rule": "E"
+        },
+        {
+          "pos": 7,
+          "flag": "ACCEPTED",
+          "description": "Accepted by Rec Access Point",
+          "rule": "M"
+        },
+        {
+          "pos": 8,
+          "flag": "ERROR",
+          "description": "Error at Sending Access Point",
+          "rule": "E"
+        },
+        {
+          "pos": 9,
+          "flag": "CANCELLED",
+          "description": "eDocument Cancelled",
+          "rule": "E"
+        },
+        {
+          "pos": 10,
+          "flag": "VALIDATED",
+          "description": "Validated at Rec Access Point",
+          "rule": "O"
+        },
+        {
+          "pos": 11,
+          "flag": "VALERROR",
+          "description": "Validation Error at Rec AP",
+          "rule": "E"
+        },
+        {
+          "pos": 12,
+          "flag": "SOURCE_REVERSED",
+          "description": "Source Document Reversed",
+          "rule": "E"
+        },
+        {
+          "pos": 13,
+          "flag": "BLR_ACK",
+          "description": "Acknowledged by Receiver",
+          "rule": "O"
+        },
+        {
+          "pos": 14,
+          "flag": "BLR_INPROC",
+          "description": "In Process by Receiver",
+          "rule": "O"
+        },
+        {
+          "pos": 15,
+          "flag": "BLR_QUERY",
+          "description": "Under Query by Receiver",
+          "rule": "O"
+        },
+        {
+          "pos": 16,
+          "flag": "BLR_CONACC",
+          "description": "Condit. Accepted by Receiver",
+          "rule": "O"
+        },
+        {
+          "pos": 17,
+          "flag": "BLR_ACCEPT",
+          "description": "Accepted by Receiver",
+          "rule": "O"
+        },
+        {
+          "pos": 18,
+          "flag": "BLR_REJECT",
+          "description": "Rejected by Receiver",
+          "rule": "O"
+        },
+        {
+          "pos": 19,
+          "flag": "BLR_PYPAID",
+          "description": "Partially Paid by Receiver",
+          "rule": "O"
+        },
+        {
+          "pos": 20,
+          "flag": "BLR_PAID",
+          "description": "Paid by Receiver",
+          "rule": "O"
+        }
+      ]
+    }
+  ]
+}
+</script>
+
+<script src="app.js"></script>
+</body>
+</html>
