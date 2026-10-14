@@ -89,7 +89,8 @@
       const refIds = at([first(R, "ID")].filter(Boolean), (el) => "BT-1 " + raw(el))
         .concat(at(byPath(R, "BillingReference/InvoiceDocumentReference/ID"), (el) => "BT-25 " + raw(el)))
         .concat(lineEls("BillingReference/InvoiceDocumentReference/ID").map((o) => ({ el: o.el, name: o.line + " " + raw(o.el) })));
-      each("BR-FR-01", refIds, (el) => raw(el).length <= 35, "Invoice numbers (BT-1, BT-25) must have at most 35 characters");
+      // the source schematron also lists the format test under BR-FR-01, so a bad format fails both rules
+      each("BR-FR-01", refIds, (el) => raw(el).length <= 35 && idFormat(raw(el)), "Invoice numbers (BT-1, BT-25) must have at most 35 characters and may only use letters, digits and + - _ /");
       each("BR-FR-02", refIds, (el) => idFormat(raw(el)), "Invoice numbers (BT-1, BT-25) may only use letters, digits and + - _ / (no spaces)");
 
       const dates = [["IssueDate", "BT-2"], ["TaxPointDate", "BT-7"], ["DueDate", "BT-9"], ["BillingReference/InvoiceDocumentReference/IssueDate", "BT-26"],
