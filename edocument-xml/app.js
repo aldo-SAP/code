@@ -225,6 +225,10 @@
     ["Item/AdditionalItemProperty", "Item attribute", "BT-160 / BT-161", { fmt: itemProperty }]
   ];
 
+  // Fields EN 16931 requires (cardinality 1..1 in their group): shown even when empty fields are hidden.
+  const REQUIRED = new Set(("BT-1 BT-2 BT-3 BT-5 BT-24 BT-27 BT-40 BT-44 BT-55 BT-106 BT-109 BT-112 BT-115 " +
+    "BT-126 BT-129 BT-130 BT-131 BT-146 BT-151 BT-153").split(" "));
+
   // ---------- State ----------
   const state = { root: null, kind: null, name: "", size: 0, wrapped: "", showEmpty: false, showTags: false, atts: [], attIndex: new Map(), cache: new Map() };
   try { state.showEmpty = localStorage.getItem("edocxml.showEmpty") === "1"; state.showTags = localStorage.getItem("edocxml.showTags") === "1"; } catch (e) {}
@@ -334,9 +338,26 @@
   }
   // Shown under a label when "Show XML tags" is on.
   const xtag = (tag) => (tag ? '<code class="xtag">' + esc(tag) + "</code>" : "");
-  function row(label, bt, valueHtml, cls, tag) {
-    return '<div class="row' + (cls ? " " + cls : "") + '"><div class="k">' + esc(T(label)) + (bt ? '<span class="bt">' + esc(bt) + "</span>" : "") + xtag(tag) +
-      '</div><div class="v">' + valueHtml + "</div></div>";
+  const bts = (bt) => (bt ? bt.split("/").map((b) => b.trim()).filter(Boolean) : []);
+  // Failed checks that point at a field: at its element, or naming its BT number for this part of the document
+  // (ctx), so a failure on line 2 does not mark the same BT on the other lines. Returns { lvl, ids } or null.
+  function fieldFlag(ctx, bt, els) {
+    const own = bts(bt);
+    const hits = (state.failed || []).filter((f) => els.some((e) => f.at.includes(e)) ||
+      (own.some((b) => f.bts.has(b)) && (!ctx || f.at.some((a) => a === ctx || a.contains(ctx) || ctx.contains(a)))));
+    if (!hits.length) return null;
+    return { lvl: hits.some((f) => !f.c.warn) ? "bad" : "warn", ids: hits.map((f) => f.c.id).filter((id, i, a) => a.indexOf(id) === i) };
+  }
+  // A required field that is missing counts as an error even when no rule set names it.
+  const requiredFlag = (ctx, bt) => (ctx && bts(bt).some((b) => REQUIRED.has(b)) ? { lvl: "bad", ids: [] } : null);
+  // A group that is missing altogether still shows when a failed check names one of its fields.
+  const specFlagged = (spec, role) => spec.some((f) => fieldFlag(null, btFor(f[2], role), []));
+  const flagTitle = (flag) => (flag.ids.length ? T("Fails {ids}", { ids: flag.ids.join(", ") }) : T("Required field"));
+  const missing = () => '<span class="missing">' + T("Missing") + "</span>";
+  function row(label, bt, valueHtml, cls, tag, flag) {
+    if (flag) cls = (cls ? cls + " " : "") + "flag-" + flag.lvl;
+    return '<div class="row' + (cls ? " " + cls : "") + '"' + (flag ? ' title="' + esc(flagTitle(flag)) + '"' : "") + '><div class="k">' + esc(T(label)) +
+      (bt ? '<span class="bt">' + esc(bt) + "</span>" : "") + xtag(tag) + '</div><div class="v">' + valueHtml + "</div></div>";
   }
   function markDeep(el, used) { used.add(el); for (const k of el.querySelectorAll("*")) used.add(k); }
 
@@ -345,14 +366,17 @@
     let html = "";
     for (const [path, label, bt, opts] of spec) {
       if (opts && opts.only && opts.only !== state.kind) continue;
-      const els = byPath(ctx, path);
+      const els = byPath(ctx, path), b = btFor(bt, role);
       if (!els.length) {
-        if (state.showEmpty) html += row(label, btFor(bt, role), "—", "empty", guessTag(ctx, path));
+        // Hidden empty fields still show when a failed check points at them or EN 16931 requires them.
+        const flag = fieldFlag(ctx, b, []) || requiredFlag(ctx, b);
+        if (state.showEmpty || flag) html += row(label, b, flag ? missing() : "—", "empty", guessTag(ctx, path), flag);
         continue;
       }
       for (const el of els) {
-        if (opts && opts.fmt) { markDeep(el, used); html += row(label, btFor(bt, role), opts.fmt(el), "", tagPath(el)); }
-        else { used.add(el); html += row(label, btFor(bt, role), renderValue(el), "", tagPath(el)); }
+        const flag = fieldFlag(ctx, b, [el]);
+        if (opts && opts.fmt) { markDeep(el, used); html += row(label, b, opts.fmt(el), "", tagPath(el), flag); }
+        else { used.add(el); html += row(label, b, renderValue(el), "", tagPath(el), flag); }
       }
     }
     return html;
@@ -471,7 +495,8 @@
     // Preceding invoices (BG-3): repeatable, one table row per invoice so each number sits with its date
     {
       const brs = byPath(R, "BillingReference"), docs = byPath(R, "BillingReference/InvoiceDocumentReference");
-      if (brs.length || state.showEmpty) {
+      const refSpec = [["BillingReference/InvoiceDocumentReference/ID", "Invoice reference", "BT-25"], ["BillingReference/InvoiceDocumentReference/IssueDate", "Issue date", "BT-26"]];
+      if (brs.length || state.showEmpty || specFlagged(refSpec, null)) {
         const used = new Set();
         let body = "";
         if (docs.length) {
@@ -480,9 +505,12 @@
             docs.map((d, i) => {
               const id = first(d, "ID"), date = first(d, "IssueDate");
               [id, date].forEach((e) => e && used.add(e));
-              return '<tr class="frow"><td>' + (i + 1) + "</td><td>" + (id ? renderValue(id) : "—") + "</td><td>" + (date ? renderValue(date) : "—") + "</td></tr>";
+              const cell = (e, bt) => { const f = fieldFlag(d, bt, e ? [e] : []) || (e ? null : { lvl: "bad", ids: [] });
+                return "<td" + (f ? ' class="flag-' + f.lvl + '" title="' + esc(flagTitle(f)) + '"' : "") + ">" + (e ? renderValue(e) : f ? missing() : "—") + "</td>"; };
+              return '<tr class="frow"><td>' + (i + 1) + "</td>" + cell(id, "BT-25") + cell(date, "BT-26") + "</tr>";
             }).join("") + "</tbody></table></div>";
         }
+        if (!docs.length) body = renderFields(R, refSpec, null, used);
         body += extras(brs, used, true);
         const count = docs.length > 1 ? docs.length : null;
         out.push({ id: "preceding", title: "Preceding invoices", count, html: card("preceding", "Preceding invoices", body, { full: true, count }) });
@@ -513,8 +541,8 @@
     const party = (id, title, tag, role) => {
       claim(tag);
       const els = byPath(R, tag);
-      if (!els.length && !state.showEmpty) return;
       const spec = PARTY_ROLE_FIELDS(role).map((f) => [(tag === "TaxRepresentativeParty" || tag === "PayeeParty" ? "" : "Party/") + f[0], f[1], f[2], f[3]]);
+      if (!els.length && !state.showEmpty && !specFlagged(spec, role)) return;
       let body = "";
       if (!els.length) body = renderFields(null, spec, role, new Set());
       els.forEach((el) => { const u = new Set(); body += renderFields(el, spec, role, u) + extras([el], u); });
@@ -529,7 +557,7 @@
     const groups = (id, title, tag, spec, roleFn, subTitle, full) => {
       claim(tag);
       const els = byPath(R, tag);
-      if (!els.length && !state.showEmpty) return;
+      if (!els.length && !state.showEmpty && !specFlagged(spec, null)) return;
       let body = "";
       if (!els.length) body = renderFields(null, spec, null, new Set());
       els.forEach((el, i) => {
@@ -546,9 +574,9 @@
       const pm = byPath(R, "PaymentMeans"), pt = byPath(R, "PaymentTerms"), pp = byPath(R, "PrepaidPayment");
       let body = "";
       pm.forEach((el, i) => { const u = new Set(); body += sub(pm.length > 1 ? T("Payment means {n}", { n: i + 1 }) : "Payment means", renderFields(el, PAYMEANS_SPEC, null, u) + extras([el], u)); });
-      if (!pm.length && state.showEmpty) body += sub("Payment means", renderFields(null, PAYMEANS_SPEC, null, new Set()));
+      if (!pm.length && (state.showEmpty || specFlagged(PAYMEANS_SPEC, null))) body += sub("Payment means", renderFields(null, PAYMEANS_SPEC, null, new Set()));
       pt.forEach((el, i) => { const u = new Set(); body += sub(pt.length > 1 ? T("Payment terms {n}", { n: i + 1 }) : "Payment terms", renderFields(el, PAYTERMS_SPEC, null, u) + extras([el], u)); });
-      if (!pt.length && state.showEmpty) body += sub("Payment terms", renderFields(null, PAYTERMS_SPEC, null, new Set()));
+      if (!pt.length && (state.showEmpty || specFlagged(PAYTERMS_SPEC, null))) body += sub("Payment terms", renderFields(null, PAYTERMS_SPEC, null, new Set()));
       pp.forEach((el, i) => { body += sub(T("Prepaid payment {n}", { n: i + 1 }), extras([el], new Set()).replace('<div class="extras-h">' + T("More fields") + "</div>", "")); });
       if (body) out.push({ id: "payment", title: "Payment", html: card("payment", "Payment", body) });
     }
@@ -622,11 +650,13 @@
       const sign = { AllowanceTotalAmount: "− ", PrepaidAmount: "− ", ChargeTotalAmount: "+ " };
       const trs = TOTAL_SPEC.map(([path, label, bt]) => {
         const e = first(lmt, path);
-        if (!e && !state.showEmpty) return "";
+        const flag = fieldFlag(lmt || R, bt, e ? [e] : []) || (e ? null : requiredFlag(R, bt));
+        if (!e && !state.showEmpty && !flag) return "";
         if (e) u.add(e);
-        return '<tr class="frow' + (e ? "" : " empty") + (strong[path] ? " " + strong[path] : "") + '"><td class="k">' + esc(T(label)) + '<span class="bt">' + bt + "</span>" +
+        return '<tr class="frow' + (e ? "" : " empty") + (strong[path] ? " " + strong[path] : "") + (flag ? " flag-" + flag.lvl : "") + '"' +
+          (flag ? ' title="' + esc(flagTitle(flag)) + '"' : "") + '><td class="k">' + esc(T(label)) + '<span class="bt">' + bt + "</span>" +
           xtag(e ? tagPath(e) : "cac:LegalMonetaryTotal/cbc:" + path) + "</td>" +
-          '<td class="r">' + (e ? (sign[path] || "") + fmtAmount(txt(e), "") : "—") + '</td><td class="cur">' + (e ? esc(e.getAttribute("currencyID") || "") : "") + "</td></tr>";
+          '<td class="r">' + (e ? (sign[path] || "") + fmtAmount(txt(e), "") : flag ? missing() : "—") + '</td><td class="cur">' + (e ? esc(e.getAttribute("currencyID") || "") : "") + "</td></tr>";
       }).join("");
       let body = trs ? '<table class="tot"><tbody>' + trs + "</tbody></table>" + extras([lmt], u) : "";
       out.push({ id: "totals", title: "Totals", html: card("totals", "Totals", body) });
@@ -1248,6 +1278,7 @@
   function render() {
     state.checks = computeChecks();
     state.issues = mapIssues(state.checks);
+    state.failed = state.checks.filter((c) => !c.ok).map((c) => ({ c, at: c.at, bts: new Set(c.text.match(/\bB[TG]-\d+\b/g) || []) }));
     collectAttachments();
     renderHero();
     renderOverview();

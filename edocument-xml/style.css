@@ -306,6 +306,26 @@ tr.line.flash > td { background: var(--accent-soft); }
 .row.empty .v { color: var(--faint); }
 .row.empty .k { opacity: 0.7; }
 .row.extra .k { font-style: italic; }
+/* A field a failed check points at (or a missing required one): tinted with a coloured edge and a filled BT chip,
+   red for errors and amber for warnings, so the BT number is found at a glance. */
+.row.flag-bad, .row.flag-warn { margin: 0 -8px; padding-left: 8px; padding-right: 8px; border-radius: 6px; border-top-color: transparent; }
+.row.flag-bad { background: var(--err-bg); box-shadow: inset 3px 0 0 var(--err); }
+.row.flag-warn { background: var(--to-soft); box-shadow: inset 3px 0 0 var(--to); }
+.row.flag-bad + .row, .row.flag-warn + .row { border-top-color: transparent; }
+.row.flag-bad .k, .row.flag-warn .k { opacity: 1; }
+.row.flag-bad .k { color: var(--err); }
+.row.flag-warn .k { color: var(--to); }
+.flag-bad .bt { background: var(--err); color: var(--paper); }
+.flag-warn .bt { background: var(--to); color: var(--paper); }
+.missing { font-size: 0.84rem; font-weight: 600; }
+.flag-bad .missing { color: var(--err); }
+.flag-warn .missing { color: var(--to); }
+table.tot tr.flag-bad td, td.flag-bad { background: var(--err-bg); }
+table.tot tr.flag-warn td, td.flag-warn { background: var(--to-soft); }
+table.tot tr.flag-bad td:first-child, td.flag-bad { box-shadow: inset 3px 0 0 var(--err); }
+table.tot tr.flag-warn td:first-child, td.flag-warn { box-shadow: inset 3px 0 0 var(--to); }
+table.tot tr.flag-bad td.k { color: var(--err); }
+table.tot tr.flag-warn td.k { color: var(--to); }
 .chip {
   display: inline-block; font-size: 0.74rem; padding: 0 7px; border-radius: 999px; background: var(--chip);
   color: var(--muted); margin-left: 6px; white-space: nowrap; vertical-align: 1px;

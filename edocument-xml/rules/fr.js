@@ -176,10 +176,10 @@
       each("BR-FR-09", siret, (el, o) => /^\d{14}$/.test(raw(el)) && o.sirens.includes(raw(el).slice(0, 9)),
         "SIRET numbers (scheme 0009) must have 14 digits and start with the party's SIREN");
       each("BR-FR-10", at(byPath(seller, "PartyLegalEntity"), () => "seller"), (el) => { const s = sirenOf(el, "CompanyID")[0]; return !!s && /^\d{9}$/.test(norm(raw(s))); },
-        "Seller SIREN (BT-30, scheme 0002) must be given with 9 digits");
+        "Seller legal registration (BT-30) must be a 9-digit SIREN with scheme 0002");
       if (bar === "B2B") {
         const s = sirenOf(buyer)[0];
-        rule("BR-FR-11", buyer, !!s && /^\d{9}$/.test(norm(raw(s))), "With #BAR# B2B the buyer SIREN (BT-47, scheme 0002) must be given with 9 digits", s ? raw(s) : "missing");
+        rule("BR-FR-11", buyer, !!s && /^\d{9}$/.test(norm(raw(s))), "With #BAR# B2B the buyer legal registration (BT-47) must be a 9-digit SIREN with scheme 0002", s ? raw(s) : "missing");
       }
       rule("BR-FR-12", buyer, norm(raw(first(buyer, "EndpointID"))) !== "", "Buyer electronic address (BT-49) must be given");
       rule("BR-FR-13", seller, norm(raw(first(seller, "EndpointID"))) !== "", "Seller electronic address (BT-34) must be given");
@@ -188,8 +188,8 @@
         const selfBilled = SELF_BILLING.has(typeCode), party = selfBilled ? seller : buyer, ep = first(party, "EndpointID");
         const ok = raw(ep).startsWith(raw(sirenOf(party)[0])) && !!ep && ep.getAttribute("schemeID") === "0225";
         rule(selfBilled ? "BR-FR-22" : "BR-FR-21", ep || party, ok, selfBilled
-          ? "With #BAR# B2B on a self-billing document the seller electronic address (BT-34) must start with the seller SIREN and use scheme 0225"
-          : "With #BAR# B2B the buyer electronic address (BT-49) must start with the buyer SIREN and use scheme 0225",
+          ? "With #BAR# B2B on a self-billing document the seller electronic address (BT-34) must use address scheme 0225 and start with the seller SIREN"
+          : "With #BAR# B2B the buyer electronic address (BT-49) must use address scheme 0225 and start with the buyer SIREN",
           ep ? raw(ep) + " (" + (ep.getAttribute("schemeID") || "no scheme") + ")" : "missing");
       }
       const endpoints = parties.flatMap((p) => at(byPath(p.el, "EndpointID"), (el) => p.who + " " + raw(el)));
