@@ -2,7 +2,7 @@
  * EN 16931 business rules for UBL invoices and credit notes.
  *
  * Follows the CEN EN 16931 UBL validation artefacts: core rules (BR-), conditions (BR-CO-), decimals (BR-DEC-),
- * the rules per VAT category (BR-S-, BR-Z-, BR-E-, BR-AE-, BR-IC-, BR-G-, BR-O-, BR-IG-, BR-IP-, BR-B-) and the
+ * the rules per VAT category (BR-S-, BR-Z-, BR-E-, BR-AE-, BR-IC-, BR-G-, BR-O-, BR-AF- (IGIC), BR-AG- (IPSI), BR-B-) and the
  * code lists that can be checked without the full UN/ECE tables (BR-CL-).
  * From the UBL schema it also checks date and number formats (XSD-DATE, XSD-DEC), which EN 16931 leaves to the XSD.
  * Not covered: PEPPOL BIS / national CIUS rules, UBL-CR/UBL-SR structure rules, the rest of XSD validation,
@@ -46,13 +46,64 @@
     "382 383 384 385 386 387 388 389 390 393 394 395 396 420 456 457 458 527 532 553 575 623 633 751 780 817 870 875 876 877 935").split(" "));
   // UNTDID 5189 (allowance reasons).
   const ALLOWANCE_CODES = new Set("41 42 60 62 63 64 65 66 67 68 70 71 88 95 100 102 103 104 105".split(" "));
-  // CEF VATEX (VAT exemption reasons).
-  const VATEX = new Set(["79-C", "132", "143", "148", "151", "309", "AE", "D", "F", "G", "I", "IC", "O", "J"].map((c) => "VATEX-EU-" + c)
-    .concat("1A 1B 1C 1D 1E 1F 1FA 1G 1H 1I 1J 1K 1L 1M 1N 1O 1P 1Q".split(" ").map((c) => "VATEX-EU-132-" + c))
+  // UNTDID 2005 subset for the VAT point date code (BT-8).
+  const VAT_POINT_CODES = new Set("3 35 432".split(" "));
+  // UNTDID 1153 (object identifier schemes, BT-18 and BT-128).
+  const OBJECT_SCHEMES = new Set(("AAA AAB AAC AAD AAE AAF AAG AAH AAI AAJ AAK AAL AAM AAN AAO AAP AAQ AAR AAS AAT AAU AAV AAW AAX AAY AAZ ABA ABB ABC ABD ABE ABF " +
+    "ABG ABH ABI ABJ ABK ABL ABM ABN ABO ABP ABQ ABR ABS ABT ABU ABV ABW ABX ABY ABZ AC ACA ACB ACC ACD ACE ACF ACG ACH ACI ACJ ACK " +
+    "ACL ACN ACO ACP ACQ ACR ACT ACU ACV ACW ACX ACY ACZ ADA ADB ADC ADD ADE ADF ADG ADI ADJ ADK ADL ADM ADN ADO ADP ADQ ADT ADU ADV " +
+    "ADW ADX ADY ADZ AE AEA AEB AEC AED AEE AEF AEG AEH AEI AEJ AEK AEL AEM AEN AEO AEP AEQ AER AES AET AEU AEV AEW AEX AEY AEZ AF AFA " +
+    "AFB AFC AFD AFE AFF AFG AFH AFI AFJ AFK AFL AFM AFN AFO AFP AFQ AFR AFS AFT AFU AFV AFW AFX AFY AFZ AGA AGB AGC AGD AGE AGF AGG " +
+    "AGH AGI AGJ AGK AGL AGM AGN AGO AGP AGQ AGR AGS AGT AGU AGV AGW AGX AGY AGZ AHA AHB AHC AHD AHE AHF AHG AHH AHI AHJ AHK AHL AHM " +
+    "AHN AHO AHP AHQ AHR AHS AHT AHU AHV AHX AHY AHZ AIA AIB AIC AID AIE AIF AIG AIH AII AIJ AIK AIL AIM AIN AIO AIP AIQ AIR AIS AIT " +
+    "AIU AIV AIW AIX AIY AIZ AJA AJB AJC AJD AJE AJF AJG AJH AJI AJJ AJK AJL AJM AJN AJO AJP AJQ AJR AJS AJT AJU AJV AJW AJX AJY AJZ " +
+    "AKA AKB AKC AKD AKE AKF AKG AKH AKI AKJ AKK AKL AKM AKN AKO AKP AKQ AKR AKS AKT AKU AKV AKW AKX AKY AKZ ALA ALB ALC ALD ALE ALF " +
+    "ALG ALH ALI ALJ ALK ALL ALM ALN ALO ALP ALQ ALR ALS ALT ALU ALV ALW ALX ALY ALZ AMA AMB AMC AMD AME AMF AMG AMH AMI AMJ AMK AML " +
+    "AMM AMN AMO AMP AMQ AMR AMS AMT AMU AMV AMW AMX AMY AMZ ANA ANB ANC AND ANE ANF ANG ANH ANI ANJ ANK ANL ANM ANN ANO ANP ANQ ANR " +
+    "ANS ANT ANU ANV ANW ANX ANY AOA AOD AOE AOF AOG AOH AOI AOJ AOK AOL AOM AON AOO AOP AOQ AOR AOS AOT AOU AOV AOW AOX AOY AOZ AP " +
+    "APA APB APC APD APE APF APG APH API APJ APK APL APM APN APO APP APQ APR APS APT APU APV APW APX APY APZ AQA AQB AQC AQD AQE AQF " +
+    "AQG AQH AQI AQJ AQK AQL AQM AQN AQO AQP AQQ AQR AQS AQT AQU AQV AQW AQX AQY AQZ ARA ARB ARC ARD ARE ARF ARG ARH ARI ARJ ARK ARL " +
+    "ARM ARN ARO ARP ARQ ARR ARS ART ARU ARV ARW ARX ARY ARZ ASA ASB ASC ASD ASE ASF ASG ASH ASI ASJ ASK ASL ASM ASN ASO ASP ASQ ASR " +
+    "ASS AST ASU ASV ASW ASX ASY ASZ ATA ATB ATC ATD ATE ATF ATG ATH ATI ATJ ATK ATL ATM ATN ATO ATP ATQ ATR ATS ATT ATU ATV ATW ATX " +
+    "ATY ATZ AU AUA AUB AUC AUD AUE AUF AUG AUH AUI AUJ AUK AUL AUM AUN AUO AUP AUQ AUR AUS AUT AUU AUV AUW AUX AUY AUZ AV AVA AVB AVC " +
+    "AVD AVE AVF AVG AVH AVI AVJ AVK AVL AVM AVN AVO AVP AVQ AVR AVS AVT AVU AVV AVW AVX AVY AVZ AWA AWB AWC AWD AWE AWF AWG AWH AWI " +
+    "AWJ AWK AWL AWM AWN AWO AWP AWQ AWR AWS AWT AWU AWV AWW AWX AWY AWZ AXA AXB AXC AXD AXE AXF AXG AXH AXI AXJ AXK AXL AXM AXN AXO " +
+    "AXP AXQ AXR AXS AXU BA BC BD BE BH BM BN BO BR BT BTP BW CAS CAT CAU CAV CAW CAX CAY CAZ CBA CBB CD CEC CED CFE CFF CFO CG CH CK " +
+    "CKN CM CMR CN CNO COF CP CR CRN CS CST CT CU CV CW CZ DA DAN DB DI DL DM DQ DR EA EB ED EE EEP EI EN EQ ER ERN ET EX FC FF FI FLW " +
+    "FN FO FS FT FV FX GA GC GD GDN GN HS HWB IA IB ICA ICE ICO II IL INB INN INO IP IS IT IV JB JE LA LAN LAR LB LC LI LO LRC LS MA " +
+    "MB MF MG MH MR MRN MS MSS MWB NA NF OH OI ON OP OR PB PC PD PE PF PI PK PL POR PP PQ PR PS PW PY RA RC RCN RE REN RF RR RT SA SB " +
+    "SD SE SEA SF SH SI SM SN SP SQ SRN SS STA SW SZ TB TCR TE TF TI TIN TL TN TP UAR UC UCN UN UO URI VA VC VGR VM VN VON VOR VP VR " +
+    "VS VT VV WE WM WN WR WS WY XA XC XP ZZZ").split(" "));
+  // UNCL 4451 (note subject codes, written as #CODE# at the start of a note, BT-21).
+  const NOTE_SUBJECTS = new Set(("AAA AAB AAC AAD AAE AAF AAG AAI AAJ AAK AAL AAM AAN AAO AAP AAQ AAR AAS AAT AAU AAV AAW AAX AAY AAZ ABA ABB ABC ABD ABE ABF ABG " +
+    "ABH ABI ABJ ABK ABL ABM ABN ABO ABP ABQ ABR ABS ABT ABU ABV ABW ABX ABZ ACA ACB ACC ACD ACE ACF ACG ACH ACI ACJ ACK ACL ACM ACN " +
+    "ACO ACP ACQ ACR ACS ACT ACU ACV ACW ACX ACY ACZ ADA ADB ADC ADD ADE ADF ADG ADH ADI ADJ ADK ADL ADM ADN ADO ADP ADQ ADR ADS ADT " +
+    "ADU ADV ADW ADX ADY ADZ AEA AEB AEC AED AEE AEF AEG AEH AEI AEJ AEK AEL AEM AEN AEO AEP AEQ AER AES AET AEU AEV AEW AEX AEY AEZ " +
+    "AFA AFB AFC AFD AFE AFF AFG AFH AFI AFJ AFK AFL AFM AFN AFO AFP AFQ AFR AFS AFT AFU AFV AFW AFX AFY AFZ AGA AGB AGC AGD AGE AGF " +
+    "AGG AGH AGI AGJ AGK AGL AGM AGN AGO AGP AGQ AGR AGS AGT AGU AGV AGW AGX AGY AGZ AHA AHB AHC AHD AHE AHF AHG AHH AHI AHJ AHK AHL " +
+    "AHM AHN AHO AHP AHQ AHR AHS AHT AHU AHV AHW AHX AHY AHZ AIA AIB AIC AID AIE AIF AIG AIH AII AIJ AIK AIL AIM AIN AIO AIP AIQ AIR " +
+    "AIS AIT AIU AIV AIW AIX AIY AIZ AJA AJB ALC ALD ALE ALF ALG ALH ALI ALJ ALK ALL ALM ALN ALO ALP ALQ ARR ARS AUT AUU AUV AUW AUX " +
+    "AUY AUZ AVA AVB AVC AVD AVE AVF BAG BAH BAI BAJ BAK BAL BAM BAN BAO BAP BAQ BAR BAS BLC BLD BLE BLF BLG BLH BLI BLJ BLK BLL BLM " +
+    "BLN BLO BLP BLQ BLR BLS BLT BLU BLV BLW BLX BLY BLZ BMA BMB BMC BMD BME CCI CEX CHG CIP CLP CLR COI CUR CUS DAR DCL DEL DIN DOC " +
+    "DUT EUR FBC GBL GEN GS7 HAN HAZ ICN IIN IMI IND INS INV IRP ITR ITS LAN LIN LOI MCO MDH MKS ORI OSI PAC PAI PAY PKG PKT PMD PMT " +
+    "PRD PRF PRI PUR QIN QQD QUT RAH REG RET REV RQR SAF SIC SIN SLR SPA SPG SPH SPP SPT SRN SSR SUR TCA TDT TRA TRR TXD WHI ZZZ").split(" "));
+  // UNTDID 7143 (item classification schemes, BT-158).
+  const ITEM_CLASS_SCHEMES = new Set(("AA AB AC AD AE AF AG AH AI AJ AK AL AM AN AO AP AQ AR AS AT AU AV AW AX AY AZ BA BB BC BD BE BF BG BH BI BJ BK BL BM BN BO BP BQ " +
+    "BR BS BT BU BV BW BX BY BZ CC CG CL CR CV DR DW EC EF EMD EN FS GB GN GMN GS HS IB IN IS IT IZ MA MF MN MP NB ON PD PL PO PPI PV " +
+    "QS RC RN RU RY SA SG SK SN SRS SRT SRU SRV SRW SRX SRY SRZ SS SSA SSB SSC SSD SSE SSF SSG SSH SSI SSJ SSK SSL SSM SSN SSO SSP SSQ " +
+    "SSR SSS SST SSU SSV SSW SSX SSY SSZ ST STA STB STC STD STE STF STG STH STI STJ STK STL STM STN STO STP STQ STR STS STT STU STV " +
+    "STW STX STY STZ SUA SUB SUC SUD SUE SUF SUG SUH SUI SUJ SUK SUL SUM TG TSN TSO TSP TSQ TSR TSS TST TSU UA UP VN VP VS VX ZZZ").split(" "));
+  // CEF VATEX (VAT exemption reasons), as published by Peppol BIS Billing 3.0.
+  const VATEX = new Set("79-C 132 135-1 143 144 146-1E 148 151 153 159 309 AE D F G I IC J O".split(" ").map((c) => "VATEX-EU-" + c)
+    .concat("1A 1B 1C 1D 1E 1F 1G 1H 1I 1J 1K 1L 1M 1N 1O 1P 1Q".split(" ").map((c) => "VATEX-EU-132-" + c))
     .concat("1A 1B 1C 1D 1E 1F 1FA 1G 1H 1I 1J 1K 1L".split(" ").map((c) => "VATEX-EU-143-" + c))
-    .concat("A B C D E F G H I".split(" ").map((c) => "VATEX-EU-148-" + c))
+    .concat("A B C D E F G".split(" ").map((c) => "VATEX-EU-148-" + c))
     .concat("1A 1AA 1B 1C 1D 1E".split(" ").map((c) => "VATEX-EU-151-" + c))
-    .concat(["VATEX-FR-FRANCHISE", "VATEX-FR-CNWVAT"]));
+    .concat(("298SEXDECIESA AE CGI261-1 CGI261-2 CGI261-3 CGI261-4 CGI261-5 CGI261-7 CGI261-8 CGI261A CGI261B CGI261C-1 CGI261C-2 " +
+      "CGI261C-3 CGI261D-1 CGI261D-1BIS CGI261D-2 CGI261D-3 CGI261D-4 CGI261E-1 CGI261E-2 CGI275 CGI277A CGI295 CNWVAT FRANCHISE")
+      .split(" ").map((c) => "VATEX-FR-" + c)));
+  const VATEX_CAT = { "VATEX-EU-AE": "AE", "VATEX-EU-D": "E", "VATEX-EU-F": "E", "VATEX-EU-I": "E", "VATEX-EU-J": "E",
+    "VATEX-EU-G": "G", "VATEX-EU-IC": "K", "VATEX-EU-O": "O" };
   const MIME_CODES = new Set(["application/pdf", "image/png", "image/jpeg", "text/csv",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.oasis.opendocument.spreadsheet"]);
 
@@ -86,8 +137,8 @@
     { cat: "K", prefix: "IC", party: "intra", rate: "zero", reason: true, single: true, calc: false },
     { cat: "G", prefix: "G", party: "export", rate: "zero", reason: true, single: true, calc: false },
     { cat: "O", prefix: "O", party: "none", rate: "absent", reason: true, single: true, calc: false },
-    { cat: "L", prefix: "IG", party: "seller", rate: "nonneg", reason: false, single: false, calc: true },
-    { cat: "M", prefix: "IP", party: "seller", rate: "nonneg", reason: false, single: false, calc: true }
+    { cat: "L", prefix: "AF", party: "seller", rate: "nonneg", reason: false, single: false, calc: true },
+    { cat: "M", prefix: "AG", party: "seller", rate: "nonneg", reason: false, single: false, calc: true }
   ];
   const PARTY_TEXT = {
     seller: "the seller VAT ID (BT-31), tax registration (BT-32) or tax representative VAT ID (BT-63) must be present",
@@ -475,6 +526,21 @@
       (el) => validCurrency(el.getAttribute("currencyID")), "Amount currencies (currencyID) must be ISO 4217 codes");
     if (docCur) rule("BR-CL-04", first(R, "DocumentCurrencyCode"), validCurrency(docCur), "Invoice currency code (BT-5) must be an ISO 4217 code", docCur);
     if (taxCur) rule("BR-CL-05", first(R, "TaxCurrencyCode"), validCurrency(taxCur), "VAT accounting currency code (BT-6) must be an ISO 4217 code", taxCur);
+    each("BR-CL-06", items(byPath(R, "InvoicePeriod/DescriptionCode").concat(...lines.map((o) => byPath(o.el, "InvoicePeriod/DescriptionCode"))), txt),
+      (el) => VAT_POINT_CODES.has(txt(el)),
+      "VAT point date code (BT-8) must be 3, 35 or 432 (UNTDID 2005)");
+    // Object identifiers: the document reference typed 130 (BT-18) and its line-level counterpart (BT-128), when they give a scheme.
+    const objectIds = byPath(R, "AdditionalDocumentReference").concat(...lines.map((o) => byPath(o.el, "DocumentReference")))
+      .filter((d) => val(d, "DocumentTypeCode") === "130").map((d) => first(d, "ID")).filter((e) => e && e.hasAttribute("schemeID"));
+    each("BR-CL-07", items(objectIds, (el) => txt(el) + " (" + el.getAttribute("schemeID") + ")"),
+      (el) => OBJECT_SCHEMES.has(el.getAttribute("schemeID").trim()), "Object identifier schemes (BT-18, BT-128) must be UNTDID 1153 codes");
+    // A note's subject code is written as #CODE# in front of the text; only 3-character codes are checked.
+    const noteSubject = (el) => { const parts = txt(el).split("#"); return parts.length > 2 ? parts[1] : ""; };
+    each("BR-CL-08", items(byPath(R, "Note").filter((el) => noteSubject(el).length === 3), (el) => "#" + noteSubject(el) + "#"),
+      (el) => NOTE_SUBJECTS.has(noteSubject(el)), "Note subject codes (BT-21) must be UNCL 4451 codes");
+    each("BR-CL-13", items(lines.flatMap((o) => byPath(o.el, "Item/CommodityClassification/ItemClassificationCode")).filter((e) => e.hasAttribute("listID")),
+      (el) => txt(el) + " (" + el.getAttribute("listID") + ")"),
+      (el) => ITEM_CLASS_SCHEMES.has(el.getAttribute("listID").trim()), "Item classification schemes (BT-158) must be UNTDID 7143 codes");
     each("BR-CL-14", items(allEls.filter((e) => e.localName === "IdentificationCode" && e.parentElement && e.parentElement.localName === "Country"),
       (el) => txt(el) || "(empty)"), (el) => validCountry(txt(el)), "Country codes must be ISO 3166-1 alpha-2 codes");
     each("BR-CL-16", items(byPath(R, "PaymentMeans/PaymentMeansCode"), txt),
@@ -566,6 +632,14 @@
         missing.length ? "No breakdown for " + names(missing) : "Used: " + names(usedKeys));
     }
     each("CHK-14", taxedItems.concat(subs).filter((o) => o.rate !== null), (el, o) => o.rate >= 0 && o.rate <= 30, "VAT rates should be between 0 and 30 %", true);
+    // The VATEX list ties some codes to one VAT category ("Only use with VAT category code …").
+    const exCode = (el) => val(el, "TaxCategory/TaxExemptionReasonCode").toUpperCase();
+    each("CHK-23", items(subs.filter((o) => VATEX_CAT[exCode(o.el)]).map((o) => o.el), (el) => exCode(el) + " with category " + (val(el, "TaxCategory/ID") || "?")),
+      (el) => VATEX_CAT[exCode(el)] === val(el, "TaxCategory/ID"),
+      "VAT exemption reason codes (BT-121) should match their VAT category (AE→AE, D/F/I/J→E, G→G, IC→K, O→O)", true);
+    each("CHK-24", items(subs.filter((o) => /^\s*VATEX-/i.test(val(o.el, "TaxCategory/TaxExemptionReason"))).map((o) => o.el),
+      (el) => val(el, "TaxCategory/TaxExemptionReason")), () => false,
+      "VATEX codes belong in the exemption reason code (BT-121), not the reason text (BT-120)", true);
 
     // Currency
     if (docCur) {
