@@ -326,6 +326,16 @@ tr.detail > td { background: var(--bg); padding: 4px 14px 10px; }
 }
 .detail-grid > .sub > h3, .detail-grid > .sub > .extras-h, .detail-grid > .extras-h { grid-column: 1 / -1; }
 .detail-grid > .sub[hidden] { display: none; }
+/* Line allowances / charges tables and the net amount calculation under them */
+.detail-grid > .sub.ac-block { display: block; }
+table.ac { font-size: 0.86rem; background: var(--paper); }
+table.ac th, table.ac td { padding: 5px 8px; }
+table.ac td:first-child { color: var(--faint); width: 2.5em; }
+table.ac tfoot td { font-weight: 600; border-top: 2px solid var(--line); border-bottom: 0; color: var(--ink); }
+table.ac-calc { max-width: 560px; }
+table.ac-calc tr.bad td { color: var(--err); font-weight: 600; }
+.ac-ok { color: var(--ok); }
+.ac-bad { color: var(--err); font-size: 0.82rem; }
 .small { font-size: 0.8rem; color: var(--muted); }
 table.tot { font-size: 0.9rem; }
 table.tot td { padding: 7px 4px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
@@ -353,14 +363,16 @@ details.passed summary { cursor: pointer; font-size: 0.86rem; color: var(--muted
 .xmlbar .hint { color: var(--muted); font-size: 0.84rem; margin-right: auto; }
 .xml {
   --x-tag: #0F766E; --x-attr: #B45309; --x-val: #1D6FB8; --x-text: var(--ink); --x-punct: #9A9FA7; --x-ns: #A3A7AE; --x-cmt: #7C8A6E;
-  padding: 14px 16px 14px 8px; max-height: 78vh; overflow: auto; background: var(--paper); border-radius: 12px; box-shadow: var(--shadow);
-  font: 0.8rem/1.6 "JetBrains Mono", ui-monospace, Consolas, monospace; white-space: nowrap;
+  /* No box or inner scroll: the XML flows down the page and long lines wrap instead of scrolling sideways */
+  padding: 4px 0;
+  font: 0.8rem/1.6 "JetBrains Mono", ui-monospace, Consolas, monospace; overflow-wrap: anywhere;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .xml { --x-tag: #2DD4BF; --x-attr: #F5A623; --x-val: #8AB4F8; --x-punct: #737981; --x-ns: #6B7078; --x-cmt: #8FA07E; }
 }
 :root[data-theme="dark"] .xml { --x-tag: #2DD4BF; --x-attr: #F5A623; --x-val: #8AB4F8; --x-punct: #737981; --x-ns: #6B7078; --x-cmt: #8FA07E; }
-.xml .ln { padding-left: 16px; position: relative; }
+.xml .ln { padding-left: 32px; text-indent: -16px; position: relative; }
+.xml .ln * { text-indent: 0; }
 .xml .kids { margin-left: 7px; padding-left: 12px; border-left: 1px solid var(--line-soft); }
 .xml .fold {
   position: absolute; left: 0; top: 0; width: 16px; text-align: center; cursor: pointer; color: var(--faint);

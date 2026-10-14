@@ -241,6 +241,7 @@
   }
   const first = (ctx, path) => byPath(ctx, path)[0] || null;
   const val = (ctx, path) => txt(first(ctx, path));
+  const has = (ctx, path) => !!val(ctx, path);
   function humanize(name) {
     const words = name.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2").split(" ");
     return words.map((w, i) => (i && !/^[A-Z0-9]+$/.test(w) ? w.toLowerCase() : w)).join(" ");
@@ -373,6 +374,60 @@
       "</h2>" + errs + (body || '<div class="none">Not present in this document.</div>') + "</section>";
   }
   function sub(title, body) { return '<div class="sub"><h3>' + esc(title) + "</h3>" + body + "</div>"; }
+
+  // A line's allowances and charges: one table each, a row per entry and their total underneath,
+  // then quantity × price + charges − allowances worked out against the line net amount.
+  const money = (n) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  function lineAcTables(ln, used) {
+    const acs = byPath(ln, "AllowanceCharge");
+    acs.forEach((ac) => markDeep(ac, used));
+    const cur = (first(ln, "LineExtensionAmount") || { getAttribute: () => "" }).getAttribute("currencyID") || "";
+    const sums = {};
+    const table = (role) => {
+      const list = acs.filter((ac) => (val(ac, "ChargeIndicator") === "true") === (role === "C"));
+      sums[role] = list.reduce((s, ac) => s + (num(val(ac, "Amount")) || 0), 0);
+      if (!list.length) return "";
+      // Columns with nothing in them are left out (unless empty fields are shown).
+      const cols = LINE_AC_SPEC.filter(([path]) => path !== "ChargeIndicator" && (state.showEmpty || path === "Amount" || list.some((ac) => has(ac, path))));
+      const isNum = (path) => path === "Amount" || path === "BaseAmount" || path === "MultiplierFactorNumeric";
+      let more = "";
+      const rows = list.map((ac, j) => {
+        const uu = new Set(byPath(ac, "ChargeIndicator"));
+        const tds = cols.map(([path]) => {
+          const el = first(ac, path);
+          if (el) uu.add(el);
+          return '<td' + (isNum(path) ? ' class="r"' : "") + ">" + (!el ? "—" : path === "Amount" || path === "BaseAmount" ? fmtAmount(txt(el), "") : renderValue(el)) + "</td>";
+        }).join("");
+        const x = extras([ac], uu);
+        if (x) more += sub((role === "C" ? "Charge " : "Allowance ") + (j + 1), x);
+        return "<tr><td>" + (j + 1) + "</td>" + tds + "</tr>";
+      }).join("");
+      const amtCol = cols.findIndex(([path]) => path === "Amount");
+      const foot = "<tr><td" + (amtCol ? ' colspan="' + (amtCol + 1) + '"' : "") + ">Total " + (role === "C" ? "charges" : "allowances") + "</td>" +
+        '<td class="r">' + money(sums[role]) + ' <span class="unit">' + esc(cur) + "</span></td>" +
+        (cols.length - amtCol - 1 > 0 ? '<td colspan="' + (cols.length - amtCol - 1) + '"></td>' : "") + "</tr>";
+      const head = "<tr><th>#</th>" + cols.map(([path, label, bt]) => "<th" + (isNum(path) ? ' class="r"' : "") + ">" + esc(label) +
+        '<span class="bt">' + esc(btFor(bt, role)) + "</span></th>").join("") + "</tr>";
+      return '<div class="sub ac-block"><h3>' + (role === "C" ? "Line charges" : "Line allowances") + " · " + list.length + "</h3>" +
+        '<div class="tablewrap"><table class="ac"><thead>' + head + "</thead><tbody>" + rows + "</tbody><tfoot>" + foot + "</tfoot></table></div>" + more + "</div>";
+    };
+    const html = table("A") + table("C");
+    if (!acs.length) return html;
+    // Quantity × net price / base quantity + charges − allowances = line net amount (BT-131).
+    const qty = num(val(ln, "InvoicedQuantity") || val(ln, "CreditedQuantity")), price = num(val(ln, "Price/PriceAmount"));
+    const baseQty = has(ln, "Price/BaseQuantity") ? num(val(ln, "Price/BaseQuantity")) : 1, net = num(val(ln, "LineExtensionAmount"));
+    if (qty === null || price === null || !baseQty) return html;
+    const gross = Math.round(qty * price / baseQty * 100) / 100, calc = Math.round((gross + sums.C - sums.A) * 100) / 100;
+    const ok = net !== null && Math.abs(calc - net) < 0.02;
+    const r = (label, amount, cls) => '<tr' + (cls ? ' class="' + cls + '"' : "") + '><td class="k">' + label + '</td><td class="r">' + amount + '</td><td class="cur">' + esc(cur) + "</td></tr>";
+    return html + '<div class="sub ac-block"><h3>Line net amount</h3><table class="tot ac-calc"><tbody>' +
+      r("Quantity × net price" + (baseQty !== 1 ? " / base quantity" : "") + ' <span class="dec">(' + esc(String(qty)) + " × " + money(price) + (baseQty !== 1 ? " / " + baseQty : "") + ")</span>", money(gross)) +
+      r("+ Total charges", money(sums.C)) + r("− Total allowances", money(sums.A)) +
+      r("= Calculated", money(calc), "key") +
+      r('Line net amount in the file<span class="bt">BT-131</span>', net === null ? "—" : money(net) +
+        (ok ? ' <span class="ac-ok">✓</span>' : ' <span class="ac-bad">✗ off by ' + money(Math.abs(calc - net)) + "</span>"), ok ? "" : "bad") +
+      "</tbody></table></div>";
+  }
 
   function buildSections() {
     const R = state.root, kind = state.kind;
@@ -580,12 +635,7 @@
           const sid = val(ln, "Item/SellersItemIdentification/ID");
           const u = new Set();
           let detail = renderFields(ln, LINE_SPEC, null, u);
-          byPath(ln, "AllowanceCharge").forEach((ac, j) => {
-            markDeep(ac, u);
-            const role = val(ac, "ChargeIndicator") === "true" ? "C" : "A";
-            const uu = new Set();
-            detail += sub((role === "C" ? "Line charge " : "Line allowance ") + (j + 1), renderFields(ac, LINE_AC_SPEC, role, uu) + extras([ac], uu));
-          });
+          detail += lineAcTables(ln, u);
           detail += extras([ln], u);
           // Rules that fail on this line: flag the row and list them in a full-width row right under it.
           const lineChecks = state.checks.filter((c) => !c.ok && c.lines && c.lines.includes(i));
