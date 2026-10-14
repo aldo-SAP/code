@@ -833,6 +833,102 @@
   ].map(([from, to]) => [typeof from === "string" ? new RegExp("(^|[^\\p{L}])" + from.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "(?![\\p{L}])", "gu") : from,
     typeof from === "string" ? "$1" + to : to]);
 
+  // ---------- Italian: UBL syntax rules (UBL-CR, UBL-DT, UBL-SR) and code list messages ----------
+  IT_PATTERNS.push(...[
+    ["A UBL invoice should not include the {_a}", "Una fattura UBL non dovrebbe includere {_a}"],
+    ["A UBL invoice should not include {_a}", "Una fattura UBL non dovrebbe includere {_a}"],
+    ["A UBL invoice shall not include the {_a}", "Una fattura UBL non deve includere {_a}"],
+    ["A UBL credit note should not include the {_a}", "Una nota di credito UBL non dovrebbe includere {_a}"]
+  ].map(([en, it]) => {
+    const names = [];
+    const re = new RegExp("^" + en.split(/(\{\w+\})/).map((part) => {
+      const m = /^\{(\w+)\}$/.exec(part);
+      if (m) { names.push(m[1]); return "(.+?)"; }
+      return part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }).join("") + "$");
+    return { re, names, it };
+  }));
+  const SR_ONCE = {
+    "Contract identifier": "L'identificativo del contratto", "Receive advice identifier": "L'identificativo dell'avviso di ricevimento",
+    "Despatch advice identifier": "L'identificativo dell'avviso di spedizione", "Invoice object identifier": "L'identificativo dell'oggetto fatturato",
+    "Payment terms": "Le condizioni di pagamento", "Preceding invoice reference": "Il riferimento alla fattura precedente", "Invoice period": "Il periodo di fatturazione",
+    "Seller name": "Il nome del venditore", "Seller trader name": "La denominazione commerciale del venditore",
+    "Seller legal registration identifier": "L'identificativo di registrazione legale del venditore", "Seller VAT identifier": "La partita IVA del venditore",
+    "Seller tax registration": "L'identificativo fiscale del venditore", "Seller additional legal information": "Le informazioni legali aggiuntive del venditore",
+    "Buyer name": "Il nome dell'acquirente", "Buyer identifier": "L'identificativo dell'acquirente", "Buyer legal registration identifier": "L'identificativo di registrazione legale dell'acquirente",
+    "Buyer VAT identifier": "La partita IVA dell'acquirente", "Buyer trade name": "La denominazione commerciale dell'acquirente",
+    "Deliver to information": "Le informazioni di consegna", "Deliver to party name": "Il nome del destinatario della consegna", "Payment reference": "Il riferimento di pagamento",
+    "Payment means text": "Il testo del mezzo di pagamento", "Mandate reference identifier": "Il riferimento del mandato", "Bank creditor reference": "Il riferimento del creditore bancario",
+    "Project reference": "Il riferimento di progetto", "Due Date": "La data di scadenza", "Value tax point date": "La data di esigibilità IVA",
+    "Supporting document description": "La descrizione del documento allegato", "VAT exemption reason text": "Il testo del motivo di esenzione IVA",
+    "Item description": "La descrizione dell'articolo", "Document reference": "Il riferimento documentale"
+  };
+  Object.keys(SR_ONCE).forEach((en) => {
+    IT[en + " shall occur maximum once"] = SR_ONCE[en] + " può comparire al massimo una volta";
+    IT[en + " shall occur maximum once."] = SR_ONCE[en] + " può comparire al massimo una volta.";
+  });
+  [["Payee name", "Il nome del beneficiario"], ["Payee identifier", "L'identificativo del beneficiario"], ["Payee legal registration identifier", "L'identificativo di registrazione legale del beneficiario"]]
+    .forEach(([en, it]) => { IT[en + " shall occur maximum once, if the Payee is different from the Seller"] = it + " può comparire al massimo una volta, se il beneficiario è diverso dal venditore"; });
+  const DT_ATTR = { "Scheme name": "schemeName", "Scheme agency name": "schemeAgencyName", "Scheme data uri": "schemeDataURI", "Scheme uri": "schemeURI", "Format": "format",
+    "Unit code list identifier": "unitCodeListIdentifier", "Unit code list agency identifier": "unitCodeListAgencyIdentifier", "Unit code list agency name": "unitCodeListAgencyName",
+    "List agency name": "listAgencyName", "List name": "listName", "Name": "name", "Language identifier": "languageID", "List uri": "listURI", "List scheme uri": "listSchemeURI",
+    "Language local identifier": "languageLocaleID", "Uri": "uri", "CharacterSetCode": "characterSetCode", "EncodingCode": "encodingCode", "Scheme Agency ID": "schemeAgencyID", "List Agency ID": "listAgencyID" };
+  Object.keys(DT_ATTR).forEach((en) => { IT[en + " attribute should not be present"] = "L'attributo " + DT_ATTR[en] + " non dovrebbe essere presente"; });
+  Object.assign(IT, {
+    "Currency code list version id should not be present": "L'attributo currencyCodeListVersionID non dovrebbe essere presente",
+    "Amounts shall be decimal up to two fraction digits": "Gli importi devono avere al massimo due decimali",
+    "Binary object elements shall contain the mime code attribute": "Gli oggetti binari devono avere l'attributo mimeCode",
+    "Binary object elements shall contain the file name attribute": "Gli oggetti binari devono avere l'attributo filename",
+    "A UBL invoice shall not include an AdditionalDocumentReference simultaneously referring an Invoice Object Identifier and an Attachment": "Una fattura UBL non deve avere un AdditionalDocumentReference che indica insieme un identificativo dell'oggetto fatturato e un allegato",
+    "A UBL invoice shall not include an AdditionalDocumentReference simultaneously referring an Invoice Object Identifier and an Document Description": "Una fattura UBL non deve avere un AdditionalDocumentReference che indica insieme un identificativo dell'oggetto fatturato e una descrizione del documento",
+    "Scheme identifier shall only be used for invoiced object (document type code with value 130 or 50)": "L'identificativo dello schema può essere usato solo per l'oggetto fatturato (tipo documento 130 o 50)",
+    "Document reference shall occur maximum once": "Il riferimento documentale può comparire al massimo una volta",
+    "PartyLegalEntity shall occur maximum once within a Party.": "PartyLegalEntity può comparire al massimo una volta in una parte.",
+    "An Invoice may only have one unique PaymentID, but the PaymentID may be used for multiple PaymentMeans": "Una fattura può avere un solo PaymentID, che può però essere usato in più mezzi di pagamento",
+    "A Financial Institution Branch shall contain exactly one Payment account identifier (BT-84).": "Una filiale dell'istituto finanziario deve contenere esattamente un identificativo del conto di pagamento (BT-84).",
+    "A Financial Institution Branch shall contain exactly one Payment service provider identifier (BT-86).": "Una filiale dell'istituto finanziario deve contenere esattamente un identificativo del prestatore di servizi di pagamento (BT-86).",
+    " CompanyID (VAT Identifier) must be stated when providing the PartyTaxScheme/TaxScheme/ID.": "CompanyID (partita IVA) deve essere indicato quando si indica PartyTaxScheme/TaxScheme/ID.",
+    "An Invoice shall contain maximum one Payment Card account (BG-18).": "Una fattura può contenere al massimo un conto di carta di pagamento (BG-18).",
+    "An Invoice shall contain maximum one Payment Mandate (BG-19).": "Una fattura può contenere al massimo un mandato di pagamento (BG-19).",
+    "An Invoice shall contain maximum one Originator document reference identifier (BT-17).": "Una fattura può contenere al massimo un identificativo del documento di origine (BT-17).",
+    "Unit codes (BT-130, BT-150) must be UN/ECE Recommendation 20 or 21 codes": "I codici unità (BT-130, BT-150) devono essere codici UN/ECE Recommendation 20 o 21",
+    "A date must be written YYYY-MM-DD": "Una data deve essere scritta AAAA-MM-GG",
+    "Amount currencies must be ISO 4217 codes": "Le valute degli importi devono essere codici ISO 4217",
+    "Invoice numbers (BT-1, BT-25) must have at most 35 characters and may only use letters, digits and + - _ /": "I numeri di fattura (BT-1, BT-25) devono avere al massimo 35 caratteri e usare solo lettere, cifre e + - _ /",
+    "Item country of origin codes (BT-159) must be ISO 3166-1 alpha-2 codes": "I codici del paese di origine dell'articolo (BT-159) devono essere codici ISO 3166-1 alpha-2",
+    "Item standard identifier schemes (BT-157) must be ISO 6523 ICD codes": "Gli schemi degli identificativi standard dell'articolo (BT-157) devono essere codici ISO 6523 ICD",
+    "Electronic address schemes (BT-34, BT-49) must be CEF EAS codes": "Gli schemi degli indirizzi elettronici (BT-34, BT-49) devono essere codici CEF EAS",
+    "Attachment MIME codes must be on the PEPPOL subset of the IANA list": "I codici MIME degli allegati devono essere nel sottoinsieme PEPPOL dell'elenco IANA",
+    "Allowance reason codes must be on the UNCL 5189 subset": "I codici motivo dello sconto devono essere nel sottoinsieme UNCL 5189",
+    "Charge reason codes must be UNCL 7161 codes": "I codici motivo della maggiorazione devono essere codici UNCL 7161",
+    "GLN identifiers must be digits with a valid GS1 check digit": "Gli identificativi GLN devono essere cifre con una cifra di controllo GS1 valida",
+    "Legal registration schemes (BT-30, BT-47, BT-61) must be ISO 6523 ICD codes": "Gli schemi di registrazione legale (BT-30, BT-47, BT-61) devono essere codici ISO 6523 ICD",
+    "Delivery location identifier schemes (BT-71) must be ISO 6523 ICD codes": "Gli schemi degli identificativi del luogo di consegna (BT-71) devono essere codici ISO 6523 ICD",
+    "Danish CVR numbers must be 8 digits, optionally with the DK prefix": "I numeri CVR danesi devono avere 8 cifre, con prefisso DK facoltativo",
+    "Split payment (B) may only be used on a domestic Italian invoice (every country code must be IT)": "La scissione dei pagamenti (B) può essere usata solo in una fattura nazionale italiana (ogni codice paese deve essere IT)",
+    "IPA codes (Codice Univoco Unità Organizzativa) must have 6 letters or digits": "I codici IPA (Codice Univoco Unità Organizzativa) devono avere 6 lettere o cifre",
+    "Only one project reference is allowed on a credit note": "In una nota di credito è ammesso un solo riferimento di progetto",
+    "An address can only have one third line.": "Un indirizzo può avere una sola terza riga.",
+    "Party tax scheme shall occur maximum twice in accounting supplier party": "Lo schema fiscale della parte può comparire al massimo due volte nella parte venditore",
+    "Document level allowance reason shall occur maximum once": "Il motivo dello sconto a livello di documento può comparire al massimo una volta",
+    "Document level charge reason shall occur maximum once": "Il motivo della maggiorazione a livello di documento può comparire al massimo una volta",
+    "When there are more than one payment means code, they shall be equal": "Se ci sono più codici del mezzo di pagamento, devono essere uguali",
+    "Invoice line note shall occur maximum once": "La nota della riga di fattura può comparire al massimo una volta",
+    "Referenced purchase order line identifier shall occur maximum once": "L'identificativo della riga dell'ordine di acquisto può comparire al massimo una volta",
+    "Invoice line period shall occur maximum once": "Il periodo della riga di fattura può comparire al massimo una volta",
+    "Item price discount shall occur maximum once": "Lo sconto sul prezzo dell'articolo può comparire al massimo una volta",
+    "Invoice lines shall have one and only one classified tax category.": "Le righe di fattura devono avere una e una sola categoria IVA.",
+    "If there is a preceding invoice reference, the preceding invoice number shall be present": "Se c'è un riferimento a una fattura precedente, ne deve essere indicato il numero",
+    "Seller tax representative name shall occur maximum once, if the Seller has a tax representative": "Il nome del rappresentante fiscale può comparire al massimo una volta, se il venditore ha un rappresentante fiscale",
+    "Seller tax representative VAT identifier shall occur maximum once, if the Seller has a tax representative": "La partita IVA del rappresentante fiscale può comparire al massimo una volta, se il venditore ha un rappresentante fiscale",
+    "All amounts must use the invoice currency (BT-5), except the VAT total in the accounting currency": "Tutti gli importi devono usare la valuta della fattura (BT-5), tranne il totale IVA nella valuta di contabilizzazione",
+    "There must be exactly one VAT total (BT-110) in the invoice currency": "Deve esserci esattamente un totale IVA (BT-110) nella valuta della fattura",
+    "The invoice must have its document totals (BG-22)": "La fattura deve avere i totali del documento (BG-22)",
+    "VAT category codes of the breakdown, allowances and charges (BT-95, BT-102, BT-118) must be UNTDID 5305 codes": "I codici categoria IVA del riepilogo, degli sconti e delle maggiorazioni (BT-95, BT-102, BT-118) devono essere codici UNTDID 5305",
+    "Invoice type code 326 or 384 is only allowed when both buyer and seller are German organisations": "Il tipo documento 326 o 384 è ammesso solo quando acquirente e venditore sono organizzazioni tedesche",
+    "Identifier schemes (BT-29, BT-46, BT-60, BT-71) must be ISO 6523 ICD codes (SEPA for the seller or payee)": "Gli schemi degli identificativi (BT-29, BT-46, BT-60, BT-71) devono essere codici ISO 6523 ICD (SEPA per venditore o beneficiario)"
+  });
+
   const DICTS = { it: { exact: IT, patterns: IT_PATTERNS, words: IT_WORDS } };
 
   const fill = (s, vars) => (vars ? String(s).replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m)) : String(s));
@@ -853,7 +949,7 @@
         const m = p.re.exec(text);
         if (!m) continue;
         const vars = {};
-        p.names.forEach((n, i) => { vars[n] = tr(m[i + 1], (depth || 0) + 1); });
+        p.names.forEach((n, i) => { vars[n] = n[0] === "_" ? m[i + 1] : tr(m[i + 1], (depth || 0) + 1); });   // {_x}: a technical name, left as written
         return fill(p.it, vars);
       }
     }
