@@ -1313,6 +1313,12 @@
   function load(text, name) {
     text = String(text || "").replace(/^﻿/, "").trim();
     if (!text) return false;
+    // XML copied from a browser's tree view has a "-" before each expandable tag (-<cac:Party>); drop it.
+    let dashes = 0;
+    text = text.replace(/^([ \t]*)-[ \t]*(?=<)/gm, (m, indent) => { dashes++; return indent; });
+    // The same view shows &amp; as a bare "&", which isn't valid XML; escape any "&" that doesn't start an entity.
+    let amps = 0;
+    text = text.replace(/&(?!(?:[a-zA-Z_][\w.-]*|#\d+|#x[0-9a-fA-F]+);)/g, () => { amps++; return "&amp;"; });
     if (!text.startsWith("<")) {
       // Accept a Base64-encoded XML too.
       try {
@@ -1345,7 +1351,9 @@
     showTab("overview");
     drop.classList.add("loaded");
     setMsg("<b>" + esc(state.name) + "</b> · " + formatSize(new Blob([text]).size) + " · " +
-      (state.kind === "CreditNote" ? "credit note" : "invoice") + " " + esc(val(root, "ID")));
+      (state.kind === "CreditNote" ? "credit note" : "invoice") + " " + esc(val(root, "ID")) +
+      (dashes ? " · removed " + dashes + " leading “-” from tags" : "") +
+      (amps ? " · escaped " + amps + " bare “&amp;”" : ""));
     $("clearBtn").hidden = false;
     pasteArea.hidden = true; pasteBtn.setAttribute("aria-expanded", "false");
     return true;
@@ -1375,7 +1383,16 @@
   $("pickBtn").addEventListener("click", () => $("file").click());
   $("file").addEventListener("change", (e) => { loadFile(e.target.files[0]); e.target.value = ""; });
   $("clearBtn").addEventListener("click", clearAll);
-  pasteBtn.addEventListener("click", () => {
+  pasteBtn.addEventListener("click", async () => {
+    // Read straight from the clipboard; fall back to the paste box if the browser won't allow it.
+    if (pasteArea.hidden && navigator.clipboard && navigator.clipboard.readText) {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text && text.trim()) { load(text, "Pasted XML"); return; }
+        setMsg("The clipboard is empty. Copy the XML first, then click Paste text.", true);
+        return;
+      } catch (e) {}
+    }
     pasteArea.hidden = !pasteArea.hidden;
     pasteBtn.setAttribute("aria-expanded", pasteArea.hidden ? "false" : "true");
     if (!pasteArea.hidden) pasteArea.focus();
