@@ -51,7 +51,7 @@
     name: "PEPPOL BIS Billing 3.0",
     detect: (R) => /peppol\.eu:2017:poacc:billing/.test(val(R, "CustomizationID")),
     run(c) {
-      const { R, cn, rule, cmp, each, items, has, first, byPath, txt, num, round, seller, buyer } = c;
+      const { R, cn, rule, cmp, each, items, has, first, byPath, txt, num, round, fmt, seller, buyer } = c;
       const country = (p) => val(p, "PostalAddress/Country/IdentificationCode");
       const sellerCountry = country(seller), buyerCountry = country(buyer);
 
@@ -102,7 +102,8 @@
         "Allowances/charges with a base amount also give the percentage");
       acAll.filter((o) => has(o.el, "BaseAmount") && has(o.el, "MultiplierFactorNumeric")).forEach((o) => {
         const base = num(val(o.el, "BaseAmount")), pct = num(val(o.el, "MultiplierFactorNumeric"));
-        if (base !== null && pct !== null) cmp("PEPPOL-EN16931-R040", o.el, base * pct / 100, num(val(o.el, "Amount")), o.name + ": amount = base × percentage", "amount", 0.02);
+        if (base !== null && pct !== null) cmp("PEPPOL-EN16931-R040", o.el, base * pct / 100, num(val(o.el, "Amount")), o.name + ": amount = base × percentage", "amount", 0.02,
+          "base " + fmt(base) + " × " + val(o.el, "MultiplierFactorNumeric") + " %");
       });
 
       // ---------- Lines ----------
@@ -111,15 +112,18 @@
         "Price level allowances only (charge indicator 'false'); price charges are not allowed");
       c.lines.filter((o) => has(o.el, "Price/AllowanceCharge/BaseAmount")).forEach((o) => {
         const gross = num(val(o.el, "Price/AllowanceCharge/BaseAmount")), disc = num(val(o.el, "Price/AllowanceCharge/Amount")) || 0;
-        if (gross !== null) cmp("PEPPOL-EN16931-R046", o.el, gross - disc, num(val(o.el, "Price/PriceAmount")), o.name + ": net price = gross price − price discount", "BT-146");
+        if (gross !== null) cmp("PEPPOL-EN16931-R046", o.el, gross - disc, num(val(o.el, "Price/PriceAmount")), o.name + ": net price = gross price − price discount", "BT-146", 0,
+          "gross " + fmt(gross) + " − discount " + fmt(disc));
       });
       c.lines.forEach((o) => {
         const qty = num(val(o.el, c.qtyTag)), price = num(val(o.el, "Price/PriceAmount"));
         const baseQty = has(o.el, "Price/BaseQuantity") ? num(val(o.el, "Price/BaseQuantity")) : 1;
         if (qty === null || price === null || !baseQty) return;
         const own = (charge) => byPath(o.el, "AllowanceCharge").filter((ac) => c.isCharge(ac) === charge).reduce((s, ac) => s + (num(val(ac, "Amount")) || 0), 0);
-        cmp("PEPPOL-EN16931-R120", o.el, round(qty * (price / baseQty)) + own(true) - own(false), o.amt,
-          o.name + ": net amount = quantity × net price / base quantity + charges − allowances", "BT-131", 0.02);
+        const ch = own(true), al = own(false);
+        cmp("PEPPOL-EN16931-R120", o.el, round(qty * (price / baseQty)) + ch - al, o.amt,
+          o.name + ": net amount = quantity × net price / base quantity + charges − allowances", "BT-131", 0.02,
+          "qty " + val(o.el, c.qtyTag) + " × price " + fmt(price) + " / base qty " + baseQty + " + charges " + fmt(ch) + " − allowances " + fmt(al));
       });
       each("PEPPOL-EN16931-R121", c.lines.filter((o) => has(o.el, "Price/BaseQuantity")), (el) => num(val(el, "Price/BaseQuantity")) > 0,
         "Price base quantity (BT-149) is above zero");

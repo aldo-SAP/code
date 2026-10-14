@@ -135,9 +135,20 @@
     const rule = (id, at, ok, text, detail, warn) =>
       out.push({ id, set: setLabel, ok: !!ok, text, detail: detail || "", at: [].concat(at || R).filter(Boolean), warn: !!warn });
     // Amount comparison; tol is the allowed difference (the schematron allows ±1 on VAT calculations).
-    const cmp = (id, at, exp, actual, text, bt, tol) => {
+    // calc is the calculation written out with its numbers ("BT-106 100.00 − BT-107 5.00"), shown before the result.
+    const cmp = (id, at, exp, actual, text, bt, tol, calc) => {
       const ok = actual !== null && Math.abs(round(exp) - round(actual)) < (tol || 0.005);
-      rule(id, at, ok, text, fmt(exp) + (ok ? " = " : " ≠ ") + bt + " " + (actual === null ? "missing" : fmt(actual)));
+      const off = ok || actual === null ? "" : " (off by " + fmt(Math.abs(round(exp) - round(actual))) + ")";
+      rule(id, at, ok, text, (calc ? calc + " = " : "") + fmt(exp) + (ok ? " = " : " ≠ ") + bt + " " + (actual === null ? "missing" : fmt(actual)) + off);
+    };
+    // Number for a calculation; "?" when missing.
+    const n = (x) => (x === null || x === undefined ? "?" : fmt(x));
+    // "line 1 100.00 + line 2 50.00 …" for the items being added up; long lists end with the rest summed.
+    const terms = (list, key) => {
+      if (!list.length) return "0.00";
+      const shown = list.slice(0, 8).map((o) => o.name + " " + n(o[key]));
+      const rest = list.slice(8);
+      return shown.join(" + ") + (rest.length ? " + " + rest.length + " more " + n(rest.reduce((s, o) => s + (o[key] || 0), 0)) : "");
     };
     const names = (list) => list.slice(0, 6).join(", ") + (list.length > 6 ? " and " + (list.length - 6) + " more" : "");
     // Every item must pass the test; the failing ones are named in the detail.
@@ -270,7 +281,8 @@
     subs.forEach((s) => {
       if (s.amt === null || s.tax === null) return;
       if (s.rate === null || round(s.rate) === 0) cmp("BR-CO-17", s.el, 0, s.tax, s.name + ": VAT amount is 0 at a 0 % rate", "BT-117");
-      else cmp("BR-CO-17", s.el, round(s.amt * s.rate / 100), s.tax, s.name + ": VAT amount = taxable amount × rate", "BT-117", 1);
+      else cmp("BR-CO-17", s.el, round(s.amt * s.rate / 100), s.tax, s.name + ": VAT amount = taxable amount × rate", "BT-117", 1,
+        "BT-116 " + n(s.amt) + " × " + s.rateRaw + " %");
     });
     if (taxCur) rule("BR-53", vatTotal, taxTotals.some((t) => { const a = first(t, "TaxAmount"); return a && a.getAttribute("currencyID") === taxCur; }),
       "VAT total in accounting currency (BT-111) is present because an accounting currency (BT-6) is given");
@@ -282,23 +294,28 @@
       const b109 = g("TaxExclusiveAmount"), b112 = g("TaxInclusiveAmount"), b113 = g("PrepaidAmount") || 0;
       const b114 = g("PayableRoundingAmount") || 0, b115 = g("PayableAmount");
       const inIncl = roundingInInclusive(R);
-      if (lines.length) cmp("BR-CO-10", lmt, sum(lines, "amt"), b106, "Sum of line net amounts", "BT-106");
-      if (allows.length || has(lmt, "AllowanceTotalAmount")) cmp("BR-CO-11", lmt, sum(allows, "amt"), g("AllowanceTotalAmount"), "Sum of document level allowances", "BT-107");
-      if (charges.length || has(lmt, "ChargeTotalAmount")) cmp("BR-CO-12", lmt, sum(charges, "amt"), g("ChargeTotalAmount"), "Sum of document level charges", "BT-108");
-      if (b106 !== null && b109 !== null) cmp("BR-CO-13", lmt, b106 - b107 + b108, b109, "Lines − allowances + charges", "BT-109");
+      if (lines.length) cmp("BR-CO-10", lmt, sum(lines, "amt"), b106, "Sum of line net amounts", "BT-106", 0, terms(lines, "amt"));
+      if (allows.length || has(lmt, "AllowanceTotalAmount")) cmp("BR-CO-11", lmt, sum(allows, "amt"), g("AllowanceTotalAmount"), "Sum of document level allowances", "BT-107", 0, terms(allows, "amt"));
+      if (charges.length || has(lmt, "ChargeTotalAmount")) cmp("BR-CO-12", lmt, sum(charges, "amt"), g("ChargeTotalAmount"), "Sum of document level charges", "BT-108", 0, terms(charges, "amt"));
+      if (b106 !== null && b109 !== null) cmp("BR-CO-13", lmt, b106 - b107 + b108, b109, "Lines − allowances + charges", "BT-109", 0,
+        "BT-106 " + n(b106) + " − BT-107 " + n(b107) + " + BT-108 " + n(b108));
+      const vatCalc = "BT-109 " + n(b109) + " + BT-110 " + n(vat || 0);
       if (b109 !== null && b112 !== null) {
-        if (inIncl) cmp("BR-CO-15", lmt, b109 + (vat || 0) + b114, b112, "Total excl. VAT + VAT + rounding (rounding folded in, as older UBL samples do)", "BT-112");
-        else cmp("BR-CO-15", lmt, b109 + (vat || 0), b112, "Total excl. VAT + VAT", "BT-112");
+        if (inIncl) cmp("BR-CO-15", lmt, b109 + (vat || 0) + b114, b112, "Total excl. VAT + VAT + rounding (rounding folded in, as older UBL samples do)", "BT-112", 0,
+          vatCalc + " + BT-114 " + n(b114));
+        else cmp("BR-CO-15", lmt, b109 + (vat || 0), b112, "Total excl. VAT + VAT", "BT-112", 0, vatCalc);
       }
       if (b112 !== null && b115 !== null) {
-        if (inIncl) cmp("BR-CO-16", lmt, b112 - b113, b115, "Total incl. VAT − paid (rounding already included)", "BT-115");
-        else cmp("BR-CO-16", lmt, b112 - b113 + b114, b115, b114 ? "Total incl. VAT − paid + rounding" : "Total incl. VAT − paid", "BT-115");
+        const dueCalc = "BT-112 " + n(b112) + " − BT-113 " + n(b113);
+        if (inIncl) cmp("BR-CO-16", lmt, b112 - b113, b115, "Total incl. VAT − paid (rounding already included)", "BT-115", 0, dueCalc);
+        else cmp("BR-CO-16", lmt, b112 - b113 + b114, b115, b114 ? "Total incl. VAT − paid + rounding" : "Total incl. VAT − paid", "BT-115", 0,
+          dueCalc + (b114 ? " + BT-114 " + n(b114) : ""));
       }
       if (b115 !== null && b115 > 0)
         rule("BR-CO-25", R, has(R, "DueDate") || has(R, "PaymentMeans/PaymentDueDate") || has(R, "PaymentTerms/Note"),
           "A positive amount due has a payment due date (BT-9) or payment terms (BT-20)");
     }
-    if (vat !== null && subs.length) cmp("BR-CO-14", vatTotal, sum(subs, "tax"), vat, "Sum of VAT breakdown amounts", "BT-110");
+    if (vat !== null && subs.length) cmp("BR-CO-14", vatTotal, sum(subs, "tax"), vat, "Sum of VAT breakdown amounts", "BT-110", 0, terms(subs, "tax"));
 
     // ---------- Decimals: amounts carry at most two ----------
     const decimals = (id, els, label) => {
@@ -361,13 +378,20 @@
 
       // Taxable amount = lines + charges − allowances in the category (per rate where several rates are allowed).
       const basis = (match) => sum(L.filter(match), "amt") + sum(C.filter(match), "amt") - sum(A.filter(match), "amt");
+      // Written out: "lines (line 1 100.00 + line 2 50.00) + charges (…) − allowances (…)", leaving out empty groups.
+      const basisCalc = (match) => {
+        const group = (list, label) => { list = list.filter(match); return list.length ? label + " (" + terms(list, "amt") + ")" : ""; };
+        const plus = [group(L, "lines"), group(C, "charges")].filter(Boolean).join(" + ") || "0.00", minus = group(A, "allowances");
+        return plus + (minus ? " − " + minus : "");
+      };
       if (v.single) {
-        if (B.length) cmp(id("08"), B.map((b) => b.el), basis(() => true), sum(B, "amt"), "Taxable amount in " + nm + " = its lines + charges − allowances", "BT-116");
+        if (B.length) cmp(id("08"), B.map((b) => b.el), basis(() => true), sum(B, "amt"), "Taxable amount in " + nm + " = its lines + charges − allowances", "BT-116", 0,
+          basisCalc(() => true));
       } else {
         B.forEach((b) => {
           const match = (o) => o.rate !== null && b.rate !== null && round(o.rate) === round(b.rate);
           const text = "Taxable amount in " + nm + " at " + (b.rateRaw || "?") + " % = lines + charges − allowances at that rate";
-          if (L.concat(A, C).some(match)) cmp(id("08"), b.el, basis(match), b.amt, text, "BT-116", 1);
+          if (L.concat(A, C).some(match)) cmp(id("08"), b.el, basis(match), b.amt, text, "BT-116", 1, basisCalc(match));
           else rule(id("08"), b.el, false, text, "No line, allowance or charge is in " + v.cat + " at " + (b.rateRaw || "?") +
             " %, yet the breakdown taxes " + (b.amt === null ? "?" : fmt(b.amt)));
         });
@@ -377,7 +401,8 @@
         if (b.tax === null) return;
         if (!v.calc) cmp(id("09"), b.el, 0, b.tax, "VAT amount in " + nm + " is 0", "BT-117");
         else if (b.amt !== null && b.rate !== null)
-          cmp(id("09"), b.el, round(b.amt * b.rate / 100), b.tax, "VAT amount in " + nm + " at " + b.rateRaw + " % = taxable amount × rate", "BT-117", 1);
+          cmp(id("09"), b.el, round(b.amt * b.rate / 100), b.tax, "VAT amount in " + nm + " at " + b.rateRaw + " % = taxable amount × rate", "BT-117", 1,
+            "BT-116 " + n(b.amt) + " × " + b.rateRaw + " %");
       });
       each(id("10"), B, (el) => (v.reason ? hasExemption(el) : !hasExemption(el)),
         "VAT breakdown in " + nm + (v.reason ? " has an exemption reason (BT-120) or code (BT-121)" : " has no exemption reason (BT-120/BT-121)"));
@@ -470,7 +495,7 @@
     // ---------- Extra rule sets ----------
     // They get the same document model and reporting helpers as the rules above.
     const ctx = {
-      R, cn, rule, cmp, each, req, items, names, sum, has, val, first, byPath, txt, num, round, fmt, validDate, validCountry,
+      R, cn, rule, cmp, each, terms, req, items, names, sum, has, val, first, byPath, txt, num, round, fmt, validDate, validCountry,
       lines, allows, charges, lineAllows, lineCharges, seller, buyer, payee, rep, taxIds, docCur, taxCur, taxTotals, vatTotal, vat, subs, lmt,
       allEls, typeCode, qtyTag, isCharge
     };
