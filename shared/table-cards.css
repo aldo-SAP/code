@@ -1,0 +1,18 @@
+/* Tables on phones: every row becomes a small card, heading (and BT number) on the left, value beside it.
+   Needs table-cards.js, which adds the headings to the cells. Wide screens keep the normal table. */
+td > .dl { display: none; }
+td > .dv { display: contents; }
+@media (max-width: 720px) {
+  /* child selectors only: a table nested inside a cell keeps its normal layout */
+  table.tc, table.tc > :is(tbody, tfoot), table.tc > :is(tbody, tfoot) > tr, table.tc > :is(tbody, tfoot) > tr > td { display: block; width: auto; }
+  table.tc > thead { display: none; }
+  table.tc > :is(tbody, tfoot) > tr { border: 1px solid rgba(127, 127, 127, 0.3); border-radius: 10px; padding: 4px 10px; margin: 0 0 8px; }
+  table.tc > :is(tbody, tfoot) > tr > td { display: flex; gap: 10px; align-items: baseline; width: auto; max-width: none; padding: 4px 0; border: 0;
+    text-align: left; white-space: normal; min-width: 0; overflow-wrap: anywhere; }
+  table.tc > :is(tbody, tfoot) > tr > td:empty { display: none; }
+  table.tc > :is(tbody, tfoot) > tr > td > .dl { display: block; flex: 0 0 42%; max-width: 42%; min-width: 0; font-size: 0.7rem; text-transform: uppercase;
+    letter-spacing: 0.05em; opacity: 0.7; font-weight: 600; overflow-wrap: normal; }
+  table.tc > :is(tbody, tfoot) > tr > td > .dv { display: block; flex: 1 1 0; min-width: 0; }
+  table.tc td input, table.tc td select, table.tc td textarea { min-width: 0; max-width: 100%; }
+  .wrap:has(> table.tc), .tablewrap:has(> table.tc) { overflow-x: visible; }
+}

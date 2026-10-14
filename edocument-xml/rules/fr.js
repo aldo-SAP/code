@@ -141,7 +141,9 @@
         });
         const referenced = counted.filter((o) => byPath(o.el, "BillingReference").some((b) => refIdsOf(b).some((id) => id !== own) &&
           byPath(b, "InvoiceDocumentReference").some((d) => first(d, "ID") && first(d, "IssueDate"))));
-        rule("BR-FR-CO-05", R, headerRefs >= 1 || referenced.length === counted.length,
+        // point at the preceding invoice references when there are any, so their block and cells show the failure
+        const headerEls = byPath(R, "BillingReference/InvoiceDocumentReference");
+        rule("BR-FR-CO-05", headerEls.length ? headerEls : R, headerRefs >= 1 || referenced.length === counted.length,
           "A credit note must reference the credited invoice with its date (BT-25, BT-26), in the header or on every line",
           headerRefs ? "" : referenced.length + " / " + counted.length + " lines");
       }

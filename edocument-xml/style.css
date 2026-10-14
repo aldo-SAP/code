@@ -3,7 +3,7 @@
   --paper: #FFFFFF;
   --ink: #1D1F23;
   --muted: #6A6F78;
-  --faint: #9A9FA7;
+  --faint: #9A9FA7; --bt-text: #555A62;
   --line: #E2DED6;
   --line-soft: #EEEBE5;
   --chip: #F1EEE8;
@@ -25,14 +25,14 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #141619; --paper: #1D2024; --ink: #ECEDEF; --muted: #A2A7AF; --faint: #737981;
+    --bg: #141619; --paper: #1D2024; --ink: #ECEDEF; --muted: #B9BEC6; --faint: #959BA3; --bt-text: #E6E8EC;
     --line: #32363C; --line-soft: #292D32; --chip: #2A2E33; --accent: #2DD4BF; --accent-soft: #12332F;
     --from: #2DD4BF; --from-soft: #12332F; --to: #F5A623; --to-soft: #3A2B14; --money: #4ADE80;
     --ok: #4ADE80; --ok-bg: #15301F; --err: #F87171; --err-bg: #3A1C1A; --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
   }
 }
 :root[data-theme="dark"] {
-  --bg: #141619; --paper: #1D2024; --ink: #ECEDEF; --muted: #A2A7AF; --faint: #737981;
+  --bg: #141619; --paper: #1D2024; --ink: #ECEDEF; --muted: #B9BEC6; --faint: #959BA3; --bt-text: #E6E8EC;
   --line: #32363C; --line-soft: #292D32; --chip: #2A2E33; --accent: #2DD4BF; --accent-soft: #12332F;
   --from: #2DD4BF; --from-soft: #12332F; --to: #F5A623; --to-soft: #3A2B14; --money: #4ADE80;
   --ok: #4ADE80; --ok-bg: #15301F; --err: #F87171; --err-bg: #3A1C1A; --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
@@ -173,9 +173,7 @@ th { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; colo
 td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .tablewrap { overflow-x: auto; }
 #sec-vat th { white-space: normal; vertical-align: bottom; }
-#sec-vat th .bt { display: block; width: max-content; margin: 2px 0 0; }
-#sec-vat th.r .bt { margin-left: auto; }
-table.inv tbody tr:hover td { background: var(--bg); }
+@media (hover: hover) { table.inv tbody tr:hover td { background: var(--bg); } }
 table.inv td.pos { color: var(--faint); width: 2.5em; }
 table.inv .iname { font-weight: 500; }
 table.inv .isub { color: var(--muted); font-size: 0.8rem; }
@@ -299,8 +297,8 @@ tr.line.flash > td { background: var(--accent-soft); }
 .row[hidden], tr[hidden] { display: none; }
 .k { color: var(--muted); font-size: 0.84rem; overflow-wrap: anywhere; }
 .bt {
-  display: inline-block; font: 0.66rem/1.45 "JetBrains Mono", ui-monospace, Consolas, monospace; padding: 0 4px; margin-left: 5px;
-  background: var(--chip); border-radius: 4px; color: var(--faint); vertical-align: 1px; white-space: nowrap;
+  display: inline-block; font: 0.7rem/1.45 "JetBrains Mono", ui-monospace, Consolas, monospace; padding: 0 4px; margin-left: 5px;
+  background: var(--chip); border: 1px solid var(--accent); border-radius: 4px; color: var(--bt-text); vertical-align: 1px; white-space: nowrap;
 }
 .v { overflow-wrap: anywhere; min-width: 0; }
 .row.empty .v { color: var(--faint); }
@@ -315,8 +313,8 @@ tr.line.flash > td { background: var(--accent-soft); }
 .row.flag-bad .k, .row.flag-warn .k { opacity: 1; }
 .row.flag-bad .k { color: var(--err); }
 .row.flag-warn .k { color: var(--to); }
-.flag-bad .bt { background: var(--err); color: var(--paper); }
-.flag-warn .bt { background: var(--to); color: var(--paper); }
+.flag-bad .bt { background: var(--err); border-color: var(--err); color: var(--paper); }
+.flag-warn .bt { background: var(--to); border-color: var(--to); color: var(--paper); }
 .missing { font-size: 0.84rem; font-weight: 600; }
 .flag-bad .missing { color: var(--err); }
 .flag-warn .missing { color: var(--to); }
@@ -456,4 +454,77 @@ dialog#viewer::backdrop { background: rgba(20, 18, 14, 0.6); }
 .show-tags .xtag {
   display: block; margin-top: 2px; font: 0.68rem/1.35 "JetBrains Mono", ui-monospace, Consolas, monospace; font-style: normal;
   color: var(--accent); text-transform: none; letter-spacing: 0; font-weight: 400; overflow-wrap: anywhere; white-space: normal;
+}
+
+/* Phone: keep the page fixed like an app. Nothing may push it sideways; wide tables scroll inside their own box. */
+html, body { max-width: 100%; overflow-x: clip; overscroll-behavior-x: none; -webkit-text-size-adjust: 100%; }
+button, a, summary, label, .tab { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.tab-tools { flex-wrap: wrap; min-width: 0; max-width: 100%; }
+.tab-tools input[type="search"] { max-width: 100%; }
+@media (max-width: 640px) {
+  .tab-tools { margin-left: 0; width: 100%; gap: 4px 14px; }
+  .tab-tools input[type="search"] { width: 100%; flex: 1 1 100%; }
+}
+/* iPhone Safari zooms into any field below 16px and leaves the page shifted; keep fields at 16px on touch screens. */
+@media (pointer: coarse) { input, textarea, select { font-size: 16px !important; } }
+
+/* BT numbers sit at the right end of their label cell. */
+.row > .k { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 2px 8px; }
+.row > .k .kl { flex: 1 1 0; min-width: 0; }
+.row > .k .bt { flex: none; margin: 1px 0 0 auto; }
+.show-tags .row > .k .xtag { flex: 1 1 100%; }
+.thc { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.thc .bt { flex: none; margin: 0; }
+.thl { white-space: nowrap; }
+th.r .thc { justify-content: flex-end; }
+td.k .thl, #sec-vat th .thl { white-space: normal; flex: 1 1 0; min-width: 0; }
+
+/* XML viewer parts of the phone table cards (shared/table-cards.css does the rest). */
+/* label + BT number: side by side when they fit, the number drops under the label instead of covering it */
+td > .dl .thc { flex-wrap: wrap; row-gap: 2px; }
+td > .dl .thl { white-space: normal; flex: 1 1 auto; min-width: 0; }
+td > .dl .thc .bt { margin-left: auto; }
+td > .dl .xtag { display: none; }
+@media (max-width: 720px) {
+  table.tc td > .dl { color: var(--muted); opacity: 1; }
+  table.tc > :is(tbody, tfoot) > tr > td > .dl { flex-basis: 48%; max-width: 48%; }
+  table.tc td > .dl .bt { font-size: 0.6rem; padding: 0 3px; }
+  table.tc.inv td.pos, table.tc.ac td:first-child { width: auto; }
+  table.tc.ac > tfoot > tr { background: var(--chip); }
+}
+
+/* ---- Phone test: line items as summary cards with grouped, collapsible details. Wide screens are untouched. ---- */
+.vatc { white-space: nowrap; }
+@media (max-width: 720px) {
+  /* A. summary card: line number + name + identifier on top, then quantity, price, VAT and the net amount */
+  #sec-lines table.tc > tbody > tr.line { display: grid; grid-template-columns: repeat(4, minmax(min-content, 1fr)); gap: 8px 5px; align-items: start; overflow: hidden; padding: 10px 8px; margin: 0 0 8px; cursor: pointer; background: var(--paper); }
+  #sec-lines table.tc > tbody > tr.line.open { border-color: transparent; margin-bottom: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+  #sec-lines table.tc > tbody > tr.line > td { display: block; padding: 0; min-width: 0; }
+  #sec-lines table.tc > tbody > tr.line > td > .dl { display: none; }
+  #sec-lines table.tc > tbody > tr.line > td:nth-child(-n+2) { background: transparent; box-shadow: none; }
+  #sec-lines table.tc > tbody > tr.line > td:nth-child(1) { flex: 0 0 auto; display: flex; align-items: baseline; gap: 2px; min-width: 2.2rem; font-weight: 700; color: var(--accent); }
+  #sec-lines table.tc > tbody > tr.line > td:nth-child(1) > .dv { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px; }
+  #sec-lines table.tc > tbody > tr.line.has-err { border-color: var(--err); box-shadow: inset 3px 0 0 var(--err); }
+  #sec-lines table.tc > tbody > tr.line > td:nth-child(2) { flex: 1 1 calc(100% - 3rem); font-weight: 600; font-size: 1rem; line-height: 1.3; }
+  #sec-lines table.tc > tbody > tr.line > td:nth-child(2) .small { font: 500 0.75rem/1.3 "JetBrains Mono", ui-monospace, Consolas, monospace; margin-top: 2px; }
+  #sec-lines table.tc > tbody > tr.line > td:nth-child(n+3) { flex: 1 1 0; align-self: stretch; overflow: hidden; background: var(--bg); border-radius: 8px; padding: 6px; }
+  /* row 1: number + name (number gets its own row when the line carries an error tag); then the four value boxes */
+  #sec-lines table.tc > tbody > tr.line > td:nth-child(1) { grid-column: 1; grid-row: 1; }
+  #sec-lines table.tc > tbody > tr.line > td:nth-child(2) { grid-column: 1 / -1; grid-row: 1; padding-left: 2.4rem; }
+  #sec-lines table.tc > tbody > tr.line:has(.lerr) > td:nth-child(1) { grid-column: 1 / -1; }
+  #sec-lines table.tc > tbody > tr.line:has(.lerr) > td:nth-child(2) { grid-row: 2; padding-left: 0; }
+  #sec-lines table.tc > tbody > tr.line > td:nth-child(n+3) > .dl { display: block; max-width: none; margin-bottom: 1px; font-size: 0.58rem; letter-spacing: 0.02em; overflow-wrap: normal; }
+  #sec-lines table.tc > tbody > tr.line > td:nth-child(n+3), #sec-lines table.tc > tbody > tr.line > td:nth-child(n+3) > .dv { overflow-wrap: normal; }
+  #sec-lines table.tc > tbody > tr.line > td:nth-child(n+3) > .dv { font-variant-numeric: tabular-nums; font-weight: 500; font-size: 0.88rem; }
+  /* VAT category and rate: plain text like the other value boxes */
+  .vatc { font-weight: inherit; color: inherit; }
+
+  /* B. detail: every field, label and BT number on the left, value at the right end of the row */
+  table.tc > tbody > tr.detail { border: 0; padding: 0; margin: 0 0 8px; }
+  #sec-lines table.tc > tbody > tr.detail > td { display: block; padding: 2px 12px 8px; border: 0; border-radius: 0 0 10px 10px; background: var(--paper); }
+  #sec-lines .detail-grid { display: block; }
+  #sec-lines .detail-grid .row { grid-template-columns: minmax(88px, 40%) minmax(0, 1fr); gap: 2px 10px; padding: 5px 0; }
+  #sec-lines .detail-grid .row > .k { display: block; }
+  #sec-lines .detail-grid .row > .k .bt { display: block; width: max-content; margin: 3px 0 0; }
+  #sec-lines .detail-grid .row > .v { text-align: right; }
 }

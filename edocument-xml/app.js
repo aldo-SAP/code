@@ -337,6 +337,8 @@
     return [ctx ? tagPath(ctx) : ""].concat(segs.map((s, i) => (i < segs.length - 1 ? "cac:" : "cbc:") + s)).filter(Boolean).join("/");
   }
   // Shown under a label when "Show XML tags" is on.
+  // A label with its BT number kept on the same line; the number sits at the right end when there is room.
+  const btCell = (labelHtml, bt) => '<span class="thc"><span class="thl">' + labelHtml + "</span>" + (bt ? '<span class="bt">' + bt + "</span>" : "") + "</span>";
   const xtag = (tag) => (tag ? '<code class="xtag">' + esc(tag) + "</code>" : "");
   const bts = (bt) => (bt ? bt.split("/").map((b) => b.trim()).filter(Boolean) : []);
   // Failed checks that point at a field: at its element, or naming its BT number for this part of the document
@@ -356,7 +358,7 @@
   const missing = () => '<span class="missing">' + T("Missing") + "</span>";
   function row(label, bt, valueHtml, cls, tag, flag) {
     if (flag) cls = (cls ? cls + " " : "") + "flag-" + flag.lvl;
-    return '<div class="row' + (cls ? " " + cls : "") + '"' + (flag ? ' title="' + esc(flagTitle(flag)) + '"' : "") + '><div class="k">' + esc(T(label)) +
+    return '<div class="row' + (cls ? " " + cls : "") + '"' + (flag ? ' title="' + esc(flagTitle(flag)) + '"' : "") + '><div class="k"><span class="kl">' + esc(T(label)) + "</span>" +
       (bt ? '<span class="bt">' + esc(bt) + "</span>" : "") + xtag(tag) + '</div><div class="v">' + valueHtml + "</div></div>";
   }
   function markDeep(el, used) { used.add(el); for (const k of el.querySelectorAll("*")) used.add(k); }
@@ -447,8 +449,7 @@
       const foot = "<tr><td" + (amtCol ? ' colspan="' + (amtCol + 1) + '"' : "") + ">" + T(role === "C" ? "Total charges" : "Total allowances") + "</td>" +
         '<td class="r">' + money(sums[role]) + ' <span class="unit">' + esc(cur) + "</span></td>" +
         (cols.length - amtCol - 1 > 0 ? '<td colspan="' + (cols.length - amtCol - 1) + '"></td>' : "") + "</tr>";
-      const head = "<tr><th>#</th>" + cols.map(([path, label, bt]) => "<th" + (isNum(path) ? ' class="r"' : "") + ">" + esc(T(label)) +
-        '<span class="bt">' + esc(btFor(bt, role)) + "</span>" + xtag("cac:AllowanceCharge/" + guessTag(null, path)) + "</th>").join("") + "</tr>";
+      const head = "<tr><th>#</th>" + cols.map(([path, label, bt]) => "<th" + (isNum(path) ? ' class="r"' : "") + ">" + btCell(esc(T(label)), esc(btFor(bt, role))) + xtag("cac:AllowanceCharge/" + guessTag(null, path)) + "</th>").join("") + "</tr>";
       return '<div class="sub ac-block"><h3>' + T(role === "C" ? "Line charges" : "Line allowances") + " · " + list.length + "</h3>" +
         '<div class="tablewrap"><table class="ac"><thead>' + head + "</thead><tbody>" + rows + "</tbody><tfoot>" + foot + "</tfoot></table></div>" + more + "</div>";
     };
@@ -465,7 +466,7 @@
       r(T(baseQty !== 1 ? "Quantity × net price / base quantity" : "Quantity × net price") + ' <span class="dec">(' + esc(String(qty)) + " × " + money(price) + (baseQty !== 1 ? " / " + baseQty : "") + ")</span>", money(gross)) +
       r(T("+ Total charges"), money(sums.C)) + r(T("− Total allowances"), money(sums.A)) +
       r(T("= Calculated"), money(calc), "key") +
-      r(T("Line net amount in the file") + '<span class="bt">BT-131</span>', net === null ? "—" : money(net) +
+      r(btCell(T("Line net amount in the file"), "BT-131"), net === null ? "—" : money(net) +
         (ok ? ' <span class="ac-ok">✓</span>' : ' <span class="ac-bad">✗ ' + T("off by {amount}", { amount: money(Math.abs(calc - net)) }) + "</span>"), ok ? "" : "bad") +
       "</tbody></table></div>";
   }
@@ -500,12 +501,13 @@
         const used = new Set();
         let body = "";
         if (docs.length) {
-          body = '<div class="tablewrap"><table><thead><tr><th>#</th><th>' + T("Invoice reference") + ' <span class="bt">BT-25</span>' + xtag("cac:BillingReference/cac:InvoiceDocumentReference/cbc:ID") + "</th>" +
-            "<th>" + T("Issue date") + ' <span class="bt">BT-26</span>' + xtag("cac:BillingReference/cac:InvoiceDocumentReference/cbc:IssueDate") + "</th></tr></thead><tbody>" +
+          body = '<div class="tablewrap"><table><thead><tr><th>#</th><th>' + btCell(T("Invoice reference"), "BT-25") + xtag("cac:BillingReference/cac:InvoiceDocumentReference/cbc:ID") + "</th>" +
+            "<th>" + btCell(T("Issue date"), "BT-26") + xtag("cac:BillingReference/cac:InvoiceDocumentReference/cbc:IssueDate") + "</th></tr></thead><tbody>" +
             docs.map((d, i) => {
               const id = first(d, "ID"), date = first(d, "IssueDate");
               [id, date].forEach((e) => e && used.add(e));
-              const cell = (e, bt) => { const f = fieldFlag(d, bt, e ? [e] : []) || (e ? null : { lvl: "bad", ids: [] });
+              // an empty cell is only marked when a failed rule points at it (BT-26 is optional unless a rule says otherwise)
+              const cell = (e, bt) => { const f = fieldFlag(d, bt, e ? [e] : []);
                 return "<td" + (f ? ' class="flag-' + f.lvl + '" title="' + esc(flagTitle(f)) + '"' : "") + ">" + (e ? renderValue(e) : f ? missing() : "—") + "</td>"; };
               return '<tr class="frow"><td>' + (i + 1) + "</td>" + cell(id, "BT-25") + cell(date, "BT-26") + "</tr>";
             }).join("") + "</tbody></table></div>";
@@ -618,7 +620,7 @@
         }
         const subs = byPath(tt, "TaxSubtotal");
         if (subs.length) {
-          const th = (label, bt, tag, r) => "<th" + (r ? ' class="r"' : "") + ">" + T(label) + ' <span class="bt">' + bt + "</span>" + xtag("cac:TaxSubtotal/" + tag) + "</th>";
+          const th = (label, bt, tag, r) => "<th" + (r ? ' class="r"' : "") + ">" + btCell(T(label), bt) + xtag("cac:TaxSubtotal/" + tag) + "</th>";
           inner += '<div class="tablewrap"><table><thead><tr>' + th("Category", "BT-118", "cac:TaxCategory/cbc:ID") + th("Rate", "BT-119", "cac:TaxCategory/cbc:Percent", true) +
             th("Taxable", "BT-116", "cbc:TaxableAmount", true) + th("VAT", "BT-117", "cbc:TaxAmount", true) +
             th("Exemption reason", "BT-120/121", "cac:TaxCategory/cbc:TaxExemptionReason") + "</tr></thead><tbody>";
@@ -654,7 +656,7 @@
         if (!e && !state.showEmpty && !flag) return "";
         if (e) u.add(e);
         return '<tr class="frow' + (e ? "" : " empty") + (strong[path] ? " " + strong[path] : "") + (flag ? " flag-" + flag.lvl : "") + '"' +
-          (flag ? ' title="' + esc(flagTitle(flag)) + '"' : "") + '><td class="k">' + esc(T(label)) + '<span class="bt">' + bt + "</span>" +
+          (flag ? ' title="' + esc(flagTitle(flag)) + '"' : "") + '><td class="k">' + btCell(esc(T(label)), bt) +
           xtag(e ? tagPath(e) : "cac:LegalMonetaryTotal/cbc:" + path) + "</td>" +
           '<td class="r">' + (e ? (sign[path] || "") + fmtAmount(txt(e), "") : flag ? missing() : "—") + '</td><td class="cur">' + (e ? esc(e.getAttribute("currencyID") || "") : "") + "</td></tr>";
       }).join("");
@@ -698,7 +700,7 @@
           body += '<tr class="line frow' + (nBad ? " has-err" : "") + '" data-line="' + i + '" tabindex="0" aria-expanded="false"><td>' + esc(val(ln, "ID") || i + 1) + flag + "</td><td>" +
             esc(val(ln, "Item/Name") || "—") + (sid ? '<div class="small">' + esc(sid) + "</div>" : "") + '</td><td class="r">' +
             (q ? esc(txt(q)) + (unit ? ' <span class="unit" title="' + esc(UNITS[unit] || unit) + '">' + esc(unit) + "</span>" : "") : "—") +
-            '</td><td class="r">' + (price ? fmtAmount(txt(price), "") : "—") + "</td><td>" + esc(cat) + (pct ? " " + esc(pct) + " %" : "") +
+            '</td><td class="r">' + (price ? fmtAmount(txt(price), "") : "—") + "</td><td><span class=\"vatc\" data-cat=\"" + esc(cat) + "\">" + esc(cat) + (pct ? " " + esc(pct) + " %" : "") + "</span>" +
             '</td><td class="r">' + (net ? renderValue(net) : "—") + "</td></tr>" + lineErrRow(i, 6) +
             '<tr class="detail" data-detail="' + i + '" hidden><td colspan="6"><div class="detail-grid">' + detail + "</div></td></tr>";
         });
@@ -1485,7 +1487,7 @@
       (dashes ? " · " + T("removed {n} leading “-” from tags", { n: dashes }) : "") +
       (amps ? " · " + esc(T("escaped {n} bare “&”", { n: amps })) : ""));
     $("clearBtn").hidden = false;
-    pasteArea.hidden = true; pasteBtn.setAttribute("aria-expanded", "false");
+    pasteArea.hidden = true; pasteArea.value = ""; pasteBtn.setAttribute("aria-expanded", "false");
     return true;
   }
 
@@ -1514,19 +1516,22 @@
   $("file").addEventListener("change", (e) => { loadFile(e.target.files[0]); e.target.value = ""; });
   $("clearBtn").addEventListener("click", clearAll);
   pasteBtn.addEventListener("click", async () => {
-    // Read straight from the clipboard; fall back to the paste box if the browser won't allow it.
-    if (pasteArea.hidden && navigator.clipboard && navigator.clipboard.readText) {
+    // One tap: read straight from the clipboard and replace whatever is open (the browser may show its own
+    // "Paste" prompt first, e.g. on iPhone). Only if that is refused does the paste box open, always empty.
+    if (navigator.clipboard && navigator.clipboard.readText) {
       try {
         const text = await navigator.clipboard.readText();
-        if (text && text.trim()) { load(text, ""); return; }
+        if (text && text.trim()) { if (!load(text, "")) pasteArea.value = ""; return; }
         setMsg(() => T("The clipboard is empty. Copy the XML first, then click Paste text."), true);
         return;
       } catch (e) {}
     }
     pasteArea.hidden = !pasteArea.hidden;
     pasteBtn.setAttribute("aria-expanded", pasteArea.hidden ? "false" : "true");
-    if (!pasteArea.hidden) pasteArea.focus();
+    if (!pasteArea.hidden) { pasteArea.value = ""; pasteArea.focus(); }
   });
+  // old text in the box is selected when it gets focus, so pasting replaces it
+  pasteArea.addEventListener("focus", () => pasteArea.select());
   let t;
   pasteArea.addEventListener("input", () => { clearTimeout(t); t = setTimeout(() => load(pasteArea.value, ""), 250); });
 
