@@ -929,10 +929,10 @@
     let h = '<div class="rulesets"><span>Rule sets</span><label class="on"><input type="checkbox" checked disabled> EN 16931</label>' +
       Object.keys(EN16931.sets).map((id) => '<label' + (state.ruleSets.includes(id) ? ' class="on"' : "") + '><input type="checkbox" data-ruleset="' + id + '"' +
         (state.ruleSets.includes(id) ? " checked" : "") + "> " + esc(EN16931.sets[id].name) + (detected.includes(id) ? ' <small>detected</small>' : "") + "</label>").join("") + "</div>" +
-      '<p class="small">Rules that apply to this document, including date and number formats (XSD-). French checks use this tool’s own IDs (FR-), ' +
+      '<p class="small">Rules that apply to this document, including date and number formats (XSD-) and this tool’s own consistency checks (CHK-, such as a due date before the issue date). French checks use this tool’s own IDs (FR-), ' +
       "not the official BR-FR numbers. UBL structure rules and full XSD validation are not included.</p>";
     if (bad.length || warn.length) h += '<ul class="checks">' + bad.concat(warn).map(li).join("") + "</ul>";
-    if (ok.length) h += '<details class="passed"' + (bad.length || warn.length ? "" : " open") + "><summary>" + ok.length + (ok.length > 1 ? " rules pass" : " rule passes") +
+    if (ok.length) h += '<details class="passed"><summary>' + ok.length + (ok.length > 1 ? " rules pass" : " rule passes") +
       '</summary><ul class="checks">' + ok.map(li).join("") + "</ul></details>";
     return h;
   }

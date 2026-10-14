@@ -492,6 +492,118 @@
       (el) => el.getAttribute("filename") || el.getAttribute("mimeCode") || "attachment"),
       (el) => MIME_CODES.has(el.getAttribute("mimeCode")), "Attachments use an allowed MIME code (PDF, PNG, JPEG, CSV, XLSX or ODS)");
 
+    // ---------- Consistency (this tool's own CHK- checks) ----------
+    // Things EN 16931 does not test but that are wrong in practice. Errors where the data cannot be right,
+    // warnings where there are legitimate exceptions.
+    setLabel = "Consistency";
+    const peppol = (extraSets || []).includes("peppol");
+    const issue = val(R, "IssueDate"), dateOk = (s) => !!s && validDate(s);
+    const dateEl = (path) => first(R, path);
+
+    // Dates
+    if (dateOk(issue)) {
+      [["DueDate", "Due date (BT-9)"], ["PaymentMeans/PaymentDueDate", "Payment due date"]].forEach(([path, label]) => {
+        const d = val(R, path);
+        if (dateOk(d)) rule("CHK-01", dateEl(path), d >= issue, label + " is not before the issue date (BT-2)", "due " + d + (d >= issue ? " ≥ " : " < ") + "issued " + issue);
+      });
+      const today = new Date().toISOString().slice(0, 10);
+      rule("CHK-02", dateEl("IssueDate"), issue <= today, "Issue date (BT-2) is not in the future", "issued " + issue + (issue <= today ? " ≤ " : " > ") + "today " + today, true);
+      const prev = items(byPath(R, "BillingReference/InvoiceDocumentReference").filter((e) => dateOk(val(e, "IssueDate"))),
+        (el) => "preceding invoice " + (val(el, "ID") || "?") + " issued " + val(el, "IssueDate"));
+      each("CHK-03", prev, (el) => val(el, "IssueDate") <= issue, "Preceding invoices (BT-26) are not dated after this document (" + issue + ")");
+      const docStart = val(R, "InvoicePeriod/StartDate");
+      if (dateOk(docStart) && docStart > issue)
+        rule("CHK-04", first(R, "InvoicePeriod"), false, "Invoicing period (BG-14) starts after the issue date", "period starts " + docStart + " > issued " + issue + " (fine for an advance invoice)", true);
+    }
+    if (!peppol) {
+      // PEPPOL-EN16931-R110/R111 do this when PEPPOL is on.
+      const ps = val(R, "InvoicePeriod/StartDate"), pe = val(R, "InvoicePeriod/EndDate");
+      const inPeriod = lines.filter((o) => first(o.el, "InvoicePeriod"));
+      if ((dateOk(ps) || dateOk(pe)) && inPeriod.length)
+        each("CHK-05", inPeriod, (el) => {
+          const s = val(el, "InvoicePeriod/StartDate"), e = val(el, "InvoicePeriod/EndDate");
+          return (!dateOk(ps) || !s || s >= ps) && (!dateOk(pe) || !e || e <= pe);
+        }, "Line periods (BG-26) fall inside the invoicing period (" + (ps || "…") + " to " + (pe || "…") + ")", true);
+    }
+
+    // Document type
+    if (!cn && typeCode && ["381", "261", "262", "296", "308", "532"].includes(typeCode))
+      rule("CHK-06", first(R, "InvoiceTypeCode"), false, "A credit note type code (" + typeCode + ") is used in an Invoice document", "Credit notes normally use the CreditNote document", true);
+    if (cn) rule("CHK-07", first(R, "BillingReference") || R, byPath(R, "BillingReference/InvoiceDocumentReference/ID").some((e) => txt(e) && !/^(NA|N\/A|-)$/i.test(txt(e))),
+      "The credit note refers to the invoice it corrects (BT-25)", val(R, "BillingReference/InvoiceDocumentReference/ID") ? "Given as “" + val(R, "BillingReference/InvoiceDocumentReference/ID") + "”" : "No preceding invoice", true);
+
+    // Lines
+    const lineIds = lines.map((o) => val(o.el, "ID")).filter(Boolean);
+    const dupIds = lineIds.filter((v, i) => lineIds.indexOf(v) !== i);
+    if (lines.length > 1) rule("CHK-08", dupIds.length ? lines.filter((o) => dupIds.includes(val(o.el, "ID"))).map((o) => o.el) : lines.map((o) => o.el),
+      !dupIds.length, "Line identifiers (BT-126) are unique", dupIds.length ? "Repeated: " + names(dupIds.filter((v, i) => dupIds.indexOf(v) === i)) : "");
+    each("CHK-09", lines.filter((o) => num(val(o.el, qtyTag)) === 0), (el, o) => !o.amt, "Lines with quantity 0 have no net amount", true);
+    if (!peppol) lines.forEach((o) => {
+      // Same calculation as PEPPOL-EN16931-R120, for documents checked without PEPPOL.
+      const qty = num(val(o.el, qtyTag)), price = num(val(o.el, "Price/PriceAmount"));
+      const baseQty = has(o.el, "Price/BaseQuantity") ? num(val(o.el, "Price/BaseQuantity")) : 1;
+      if (qty === null || price === null || !baseQty || o.amt === null) return;
+      const own = (charge) => byPath(o.el, "AllowanceCharge").filter((ac) => isCharge(ac) === charge).reduce((s, ac) => s + (num(val(ac, "Amount")) || 0), 0);
+      const ch = own(true), al = own(false);
+      cmp("CHK-10", o.el, round(qty * price / baseQty) + ch - al, o.amt, o.name + ": net amount = quantity × net price / base quantity + charges − allowances", "BT-131", 0.02,
+        "qty " + val(o.el, qtyTag) + " × price " + fmt(price) + " / base qty " + baseQty + " + charges " + fmt(ch) + " − allowances " + fmt(al));
+    });
+    if (!peppol) allows.concat(charges, lineAllows, lineCharges).filter((o) => has(o.el, "BaseAmount") && has(o.el, "MultiplierFactorNumeric")).forEach((o) => {
+      const base = num(val(o.el, "BaseAmount")), pct = num(val(o.el, "MultiplierFactorNumeric"));
+      if (base !== null && pct !== null) cmp("CHK-11", o.el, base * pct / 100, num(val(o.el, "Amount")), o.name + ": amount = base amount × percentage", "amount", 0.02,
+        "base " + fmt(base) + " × " + val(o.el, "MultiplierFactorNumeric") + " %");
+    });
+
+    // VAT breakdown
+    const subKey = (o) => (o.cat || "?") + (o.rate === null ? "" : " " + round(o.rate) + " %");
+    const subKeys = subs.map(subKey), dupSubs = subKeys.filter((k, i) => subKeys.indexOf(k) !== i);
+    if (subs.length > 1) rule("CHK-12", subs.map((o) => o.el), !dupSubs.length, "Each VAT category and rate has only one VAT breakdown", dupSubs.length ? "Repeated: " + names(dupSubs) : "");
+    const usedKeys = taxedItems.filter((o) => o.cat).map(subKey).filter((k, i, a) => a.indexOf(k) === i);
+    if (subs.length) {
+      const missing = usedKeys.filter((k) => !subKeys.includes(k));
+      rule("CHK-13", vatTotal, !missing.length, "Every VAT category and rate used on lines, allowances and charges has a VAT breakdown",
+        missing.length ? "No breakdown for " + names(missing) : "Used: " + names(usedKeys));
+    }
+    each("CHK-14", taxedItems.concat(subs).filter((o) => o.rate !== null), (el, o) => o.rate >= 0 && o.rate <= 30, "VAT rates are between 0 and 30 %", true);
+
+    // Currency
+    if (docCur) {
+      const amounts = allEls.filter((e) => e.hasAttribute("currencyID"));
+      const taxCurEls = taxCur ? taxTotals.map((t) => first(t, "TaxAmount")).filter((a) => a && a.getAttribute("currencyID") === taxCur) : [];
+      each("CHK-15", items(amounts.filter((e) => !taxCurEls.includes(e)), (el) => el.localName + " " + el.getAttribute("currencyID")),
+        (el) => el.getAttribute("currencyID") === docCur, "All amounts are in the document currency (" + docCur + ")");
+    }
+
+    // Totals
+    if (lmt) {
+      const g = (p) => num(val(lmt, p)), paid = g("PrepaidAmount"), incl = g("TaxInclusiveAmount"), rnd = g("PayableRoundingAmount");
+      if (paid !== null && incl !== null && incl >= 0)
+        rule("CHK-16", first(lmt, "PrepaidAmount"), paid <= incl, "Paid amount (BT-113) is not more than the total with VAT (BT-112)", "paid " + fmt(paid) + (paid <= incl ? " ≤ " : " > ") + "total " + fmt(incl), true);
+      if (rnd !== null) rule("CHK-17", first(lmt, "PayableRoundingAmount"), Math.abs(rnd) < 1, "Rounding amount (BT-114) is less than 1", fmt(rnd), true);
+    }
+
+    // Parties
+    const sellerIds = taxIds(seller, true), buyerIds = taxIds(buyer, true);
+    if (sellerIds.length && buyerIds.length)
+      rule("CHK-18", [seller, buyer], !sellerIds.some((v) => buyerIds.includes(v)), "Seller and buyer have different VAT identifiers", "seller " + sellerIds.join(", ") + " · buyer " + buyerIds.join(", "), true);
+    const vatCountry = [[seller, "seller"], [buyer, "buyer"]].flatMap(([p, who]) => taxIds(p, true).map((v) => ({ el: p, name: who + " " + v, v,
+      c: val(p, "PostalAddress/Country/IdentificationCode") })).filter((o) => o.c));
+    each("CHK-19", vatCountry, (el, o) => o.v.slice(0, 2) === (o.c === "GR" ? "EL" : o.c), "VAT identifiers start with the country of the party’s address", true);
+    each("CHK-20", items(allEls.filter((e) => e.localName === "ElectronicMail"), txt), (el) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(txt(el)), "E-mail addresses are well formed");
+
+    // Payment account
+    const iban = (s) => {
+      if (!/^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/.test(s)) return false;
+      const d = (s.slice(4) + s.slice(0, 4)).replace(/[A-Z]/g, (ch) => ch.charCodeAt(0) - 55);
+      let r = 0;
+      for (const ch of d) r = (r * 10 + +ch) % 97;
+      return r === 1;
+    };
+    const accounts = byPath(R, "PaymentMeans/PayeeFinancialAccount/ID").map((e) => ({ el: e, name: txt(e), v: txt(e).replace(/\s+/g, "").toUpperCase() }));
+    each("CHK-21", accounts.filter((o) => /^[A-Z]{2}\d{2}/.test(o.v)), (el, o) => iban(o.v), "IBANs (BT-84) have a valid length and check digits");
+    each("CHK-22", items(byPath(R, "PaymentMeans/PayeeFinancialAccount/FinancialInstitutionBranch/ID"), txt),
+      (el) => /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(txt(el).toUpperCase()), "BIC codes (BT-86) are 8 or 11 characters (bank, country, location, branch)");
+
     // ---------- Extra rule sets ----------
     // They get the same document model and reporting helpers as the rules above.
     const ctx = {
