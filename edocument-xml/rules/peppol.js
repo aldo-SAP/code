@@ -39,11 +39,11 @@
   }
   const beEnterprise = (s) => /^[01]\d{9}$/.test(s) && 97 - (Number(s.slice(0, 8)) % 97) === Number(s.slice(8));
   const ID_FORMAT = {
-    "0088": ["PEPPOL-COMMON-R040", "GLN identifiers have 13 digits and a valid GS1 check digit", gln],
-    "0192": ["PEPPOL-COMMON-R041", "Norwegian organisation numbers have 9 digits and a valid check digit", noOrg],
-    "0184": ["PEPPOL-COMMON-R042", "Danish CVR numbers have 8 digits (or 10 for a P-number)", (s) => /^(\d{8}|\d{10})$/.test(s)],
-    "0208": ["PEPPOL-COMMON-R043", "Belgian enterprise numbers have 10 digits and a valid mod-97 check", beEnterprise],
-    "0007": ["PEPPOL-COMMON-R049", "Swedish organisation numbers have 10 digits and a valid Luhn check", (s) => /^\d{10}$/.test(s) && luhn(s)]
+    "0088": ["PEPPOL-COMMON-R040", "GLN identifiers must have 13 digits and a valid GS1 check digit", gln],
+    "0192": ["PEPPOL-COMMON-R041", "Norwegian organisation numbers must have 9 digits and a valid check digit", noOrg],
+    "0184": ["PEPPOL-COMMON-R042", "Danish CVR numbers must have 8 digits (or 10 for a P-number)", (s) => /^(\d{8}|\d{10})$/.test(s)],
+    "0208": ["PEPPOL-COMMON-R043", "Belgian enterprise numbers must have 10 digits and a valid mod-97 check", beEnterprise],
+    "0007": ["PEPPOL-COMMON-R049", "Swedish organisation numbers must have 10 digits and a valid Luhn check", (s) => /^\d{10}$/.test(s) && luhn(s)]
   };
 
   EN16931.register("peppol", {
@@ -56,37 +56,37 @@
       const sellerCountry = country(seller), buyerCountry = country(buyer);
 
       // ---------- Document ----------
-      rule("PEPPOL-EN16931-R001", R, c.has(R, "ProfileID"), "Business process (BT-23) is provided");
+      rule("PEPPOL-EN16931-R001", R, c.has(R, "ProfileID"), "Business process (BT-23) must be present");
       if (has(R, "ProfileID")) rule("PEPPOL-EN16931-R007", first(R, "ProfileID"), /^urn:fdc:peppol\.eu:2017:poacc:billing:\d{2}:1\.0$/.test(val(R, "ProfileID")),
-        "Business process (BT-23) has the form urn:fdc:peppol.eu:2017:poacc:billing:NN:1.0", val(R, "ProfileID"));
+        "Business process (BT-23) must have the form urn:fdc:peppol.eu:2017:poacc:billing:NN:1.0", val(R, "ProfileID"));
       rule("PEPPOL-EN16931-R004", first(R, "CustomizationID"), val(R, "CustomizationID").startsWith(SPEC_ID),
-        "Specification identifier (BT-24) is the PEPPOL BIS Billing 3.0 one", val(R, "CustomizationID"));
+        "Specification identifier (BT-24) must be the PEPPOL BIS Billing 3.0 one", val(R, "CustomizationID"));
       const notes = byPath(R, "Note");
       if (notes.length > 1) rule("PEPPOL-EN16931-R002", notes, sellerCountry === "DE" && buyerCountry === "DE",
-        "At most one document note (BT-22), unless seller and buyer are both German", notes.length + " notes");
-      rule("PEPPOL-EN16931-R003", R, has(R, "BuyerReference") || has(R, "OrderReference/ID"), "A buyer reference (BT-10) or purchase order reference (BT-13) is provided");
-      if (c.taxCur) rule("PEPPOL-EN16931-R005", first(R, "TaxCurrencyCode"), c.taxCur !== c.docCur, "VAT accounting currency (BT-6) differs from the invoice currency (BT-5)");
+        "Only one document note (BT-22) is allowed, unless seller and buyer are both German", notes.length + " notes");
+      rule("PEPPOL-EN16931-R003", R, has(R, "BuyerReference") || has(R, "OrderReference/ID"), "A buyer reference (BT-10) or purchase order reference (BT-13) must be present");
+      if (c.taxCur) rule("PEPPOL-EN16931-R005", first(R, "TaxCurrencyCode"), c.taxCur !== c.docCur, "VAT accounting currency (BT-6) must differ from the invoice currency (BT-5)");
       const objects = byPath(R, "AdditionalDocumentReference").filter((d) => val(d, "DocumentTypeCode") === "130");
-      if (objects.length) rule("PEPPOL-EN16931-R006", objects, objects.length === 1, "At most one invoiced object identifier (BT-18) on document level");
+      if (objects.length) rule("PEPPOL-EN16931-R006", objects, objects.length === 1, "Only one invoiced object identifier (BT-18) is allowed on document level");
       const projects = byPath(R, "ProjectReference");
-      if (projects.length) rule("PEPPOL-EN16931-R080", projects, projects.length === 1, "At most one project reference (BT-11)");
+      if (projects.length) rule("PEPPOL-EN16931-R080", projects, projects.length === 1, "Only one project reference (BT-11) is allowed");
       const empty = c.allEls.filter((e) => !e.children.length && !txt(e));
-      rule("PEPPOL-EN16931-R008", empty.length ? empty : R, !empty.length, "The document has no empty elements",
+      rule("PEPPOL-EN16931-R008", empty.length ? empty : R, !empty.length, "The document must not have empty elements",
         empty.length ? "Empty: " + c.names(empty.map((e) => e.localName)) : "");
       const typeTag = cn ? "CreditNoteTypeCode" : "InvoiceTypeCode";
       if (c.typeCode) {
-        if (cn) rule("PEPPOL-EN16931-P0101", first(R, typeTag), CREDIT_TYPES.has(c.typeCode), "Credit note type code (BT-3) is one PEPPOL allows for credit notes (81, 83, 381, 396, 532)", c.typeCode);
+        if (cn) rule("PEPPOL-EN16931-P0101", first(R, typeTag), CREDIT_TYPES.has(c.typeCode), "Credit note type code (BT-3) must be one PEPPOL allows for credit notes (81, 83, 381, 396, 532)", c.typeCode);
         else rule("PEPPOL-EN16931-P0100", first(R, typeTag), INVOICE_TYPES.has(c.typeCode),
-          "Invoice type code (BT-3) is one PEPPOL allows for invoices" + (CREDIT_TYPES.has(c.typeCode) ? " (a credit note must use the CreditNote document)" : ""), c.typeCode);
+          "Invoice type code (BT-3) must be one PEPPOL allows for invoices" + (CREDIT_TYPES.has(c.typeCode) ? " (a credit note must use the CreditNote document)" : ""), c.typeCode);
       }
       if (has(R, "InvoicePeriod/DescriptionCode")) rule("PEPPOL-EN16931-CL006", first(R, "InvoicePeriod/DescriptionCode"),
-        ["3", "35", "432"].includes(val(R, "InvoicePeriod/DescriptionCode")), "VAT point date code (BT-8) is 3, 35 or 432");
+        ["3", "35", "432"].includes(val(R, "InvoicePeriod/DescriptionCode")), "VAT point date code (BT-8) must be 3, 35 or 432");
 
       // ---------- Parties ----------
-      rule("PEPPOL-EN16931-R020", seller, !!first(seller, "EndpointID"), "Seller electronic address (BT-34) is provided");
-      rule("PEPPOL-EN16931-R010", buyer, !!first(buyer, "EndpointID"), "Buyer electronic address (BT-49) is provided");
+      rule("PEPPOL-EN16931-R020", seller, !!first(seller, "EndpointID"), "Seller electronic address (BT-34) must be present");
+      rule("PEPPOL-EN16931-R010", buyer, !!first(buyer, "EndpointID"), "Buyer electronic address (BT-49) must be present");
       each("PEPPOL-EN16931-CL008", items([first(seller, "EndpointID"), first(buyer, "EndpointID")].filter(Boolean), (el) => "scheme " + (el.getAttribute("schemeID") || "(none)")),
-        (el) => EAS.has(el.getAttribute("schemeID")), "Electronic address schemes are on the EAS code list");
+        (el) => EAS.has(el.getAttribute("schemeID")), "Electronic address schemes must be on the EAS code list");
       const schemed = c.allEls.filter((e) => ID_FORMAT[e.getAttribute("schemeID")]);
       Object.keys(ID_FORMAT).forEach((scheme) => {
         const [id, text, test] = ID_FORMAT[scheme];
@@ -95,24 +95,24 @@
 
       // ---------- Allowances and charges ----------
       const acAll = c.allows.concat(c.charges, c.lineAllows, c.lineCharges);
-      each("PEPPOL-EN16931-R043", acAll, (el) => /^(true|false)$/.test(val(el, "ChargeIndicator")), "Allowance/charge indicator is 'true' or 'false'");
+      each("PEPPOL-EN16931-R043", acAll, (el) => /^(true|false)$/.test(val(el, "ChargeIndicator")), "Allowance/charge indicator must be 'true' or 'false'");
       each("PEPPOL-EN16931-R041", acAll.filter((o) => has(o.el, "MultiplierFactorNumeric")), (el) => has(el, "BaseAmount"),
-        "Allowances/charges with a percentage also give the base amount");
+        "Allowances/charges with a percentage must also give the base amount");
       each("PEPPOL-EN16931-R042", acAll.filter((o) => has(o.el, "BaseAmount")), (el) => has(el, "MultiplierFactorNumeric"),
-        "Allowances/charges with a base amount also give the percentage");
+        "Allowances/charges with a base amount must also give the percentage");
       acAll.filter((o) => has(o.el, "BaseAmount") && has(o.el, "MultiplierFactorNumeric")).forEach((o) => {
         const base = num(val(o.el, "BaseAmount")), pct = num(val(o.el, "MultiplierFactorNumeric"));
-        if (base !== null && pct !== null) cmp("PEPPOL-EN16931-R040", o.el, base * pct / 100, num(val(o.el, "Amount")), o.name + ": amount = base × percentage", "amount", 0.02,
+        if (base !== null && pct !== null) cmp("PEPPOL-EN16931-R040", o.el, base * pct / 100, num(val(o.el, "Amount")), o.name + ": amount must equal base × percentage", "amount", 0.02,
           "base " + fmt(base) + " × " + val(o.el, "MultiplierFactorNumeric") + " %");
       });
 
       // ---------- Lines ----------
       const docStart = val(R, "InvoicePeriod/StartDate"), docEnd = val(R, "InvoicePeriod/EndDate");
       each("PEPPOL-EN16931-R044", c.lines.filter((o) => first(o.el, "Price/AllowanceCharge")), (el) => val(el, "Price/AllowanceCharge/ChargeIndicator") === "false",
-        "Price level allowances only (charge indicator 'false'); price charges are not allowed");
+        "Price adjustments must be allowances (indicator 'false'); price charges are not allowed");
       c.lines.filter((o) => has(o.el, "Price/AllowanceCharge/BaseAmount")).forEach((o) => {
         const gross = num(val(o.el, "Price/AllowanceCharge/BaseAmount")), disc = num(val(o.el, "Price/AllowanceCharge/Amount")) || 0;
-        if (gross !== null) cmp("PEPPOL-EN16931-R046", o.el, gross - disc, num(val(o.el, "Price/PriceAmount")), o.name + ": net price = gross price − price discount", "BT-146", 0,
+        if (gross !== null) cmp("PEPPOL-EN16931-R046", o.el, gross - disc, num(val(o.el, "Price/PriceAmount")), o.name + ": net price must equal gross price − price discount", "BT-146", 0,
           "gross " + fmt(gross) + " − discount " + fmt(disc));
       });
       c.lines.forEach((o) => {
@@ -122,69 +122,69 @@
         const own = (charge) => byPath(o.el, "AllowanceCharge").filter((ac) => c.isCharge(ac) === charge).reduce((s, ac) => s + (num(val(ac, "Amount")) || 0), 0);
         const ch = own(true), al = own(false);
         cmp("PEPPOL-EN16931-R120", o.el, round(qty * (price / baseQty)) + ch - al, o.amt,
-          o.name + ": net amount = quantity × net price / base quantity + charges − allowances", "BT-131", 0.02,
+          o.name + ": net amount must equal quantity × net price / base quantity + charges − allowances", "BT-131", 0.02,
           "qty " + val(o.el, c.qtyTag) + " × price " + fmt(price) + " / base qty " + baseQty + " + charges " + fmt(ch) + " − allowances " + fmt(al));
       });
       each("PEPPOL-EN16931-R121", c.lines.filter((o) => has(o.el, "Price/BaseQuantity")), (el) => num(val(el, "Price/BaseQuantity")) > 0,
-        "Price base quantity (BT-149) is above zero");
+        "Price base quantity (BT-149) must be above zero");
       each("PEPPOL-EN16931-R130", c.lines.filter((o) => { const b = first(o.el, "Price/BaseQuantity"); return b && b.getAttribute("unitCode"); }),
         (el) => first(el, "Price/BaseQuantity").getAttribute("unitCode") === (first(el, c.qtyTag) || { getAttribute: () => "" }).getAttribute("unitCode"),
-        "Price base quantity unit (BT-150) is the same as the invoiced quantity unit (BT-130)");
+        "Price base quantity unit (BT-150) must match the invoiced quantity unit (BT-130)");
       each("PEPPOL-EN16931-R100", c.lines.filter((o) => first(o.el, "DocumentReference")), (el) => byPath(el, "DocumentReference").length === 1,
-        "At most one invoiced object identifier per line (BT-128)");
+        "Only one invoiced object identifier (BT-128) is allowed per line");
       each("PEPPOL-EN16931-R101", c.lines.filter((o) => first(o.el, "DocumentReference")), (el) => val(el, "DocumentReference/DocumentTypeCode") === "130",
-        "Line document references are only used for the invoiced object (type code 130)");
+        "Line document references may only be used for the invoiced object (type code 130)");
       if (docStart) each("PEPPOL-EN16931-R110", c.lines.filter((o) => has(o.el, "InvoicePeriod/StartDate")), (el) => val(el, "InvoicePeriod/StartDate") >= docStart,
-        "Line period start dates (BT-134) are within the invoicing period");
+        "Line period start dates (BT-134) must be within the invoicing period");
       if (docEnd) each("PEPPOL-EN16931-R111", c.lines.filter((o) => has(o.el, "InvoicePeriod/EndDate")), (el) => val(el, "InvoicePeriod/EndDate") <= docEnd,
-        "Line period end dates (BT-135) are within the invoicing period");
+        "Line period end dates (BT-135) must be within the invoicing period");
 
       // ---------- VAT ----------
       const withSubs = c.taxTotals.filter((t) => first(t, "TaxSubtotal")), withoutSubs = c.taxTotals.filter((t) => !first(t, "TaxSubtotal"));
-      rule("PEPPOL-EN16931-R053", c.taxTotals, withSubs.length === 1, "Exactly one tax total with a VAT breakdown", withSubs.length + " found");
+      rule("PEPPOL-EN16931-R053", c.taxTotals, withSubs.length === 1, "There must be exactly one tax total with a VAT breakdown", withSubs.length + " found");
       if (c.taxCur) {
-        rule("PEPPOL-EN16931-R054", c.taxTotals, withoutSubs.length === 1, "Exactly one tax total without breakdown (the accounting currency one)", withoutSubs.length + " found");
+        rule("PEPPOL-EN16931-R054", c.taxTotals, withoutSubs.length === 1, "There must be exactly one tax total without breakdown (the accounting currency one)", withoutSubs.length + " found");
         const inTax = withoutSubs.map((t) => num(val(t, "TaxAmount")))[0];
         if (c.vat !== null && inTax != null) rule("PEPPOL-EN16931-R055", c.taxTotals, Math.sign(c.vat) === Math.sign(inTax) || !c.vat || !inTax,
-          "VAT total (BT-110) and VAT total in accounting currency (BT-111) have the same sign");
+          "VAT total (BT-110) and VAT total in accounting currency (BT-111) must have the same sign");
       }
 
       // ---------- Payment ----------
       each("PEPPOL-EN16931-R061", items(byPath(R, "PaymentMeans").filter((p) => ["49", "59"].includes(val(p, "PaymentMeansCode"))), () => "direct debit"),
-        (el) => has(el, "PaymentMandate/ID"), "Direct debits (code 49 or 59) give the mandate reference (BT-89)");
+        (el) => has(el, "PaymentMandate/ID"), "Direct debits (code 49 or 59) must give the mandate reference (BT-89)");
 
       // ---------- National rules (by seller country) ----------
       const addressOk = (p) => has(p, "PostalAddress/StreetName") && has(p, "PostalAddress/CityName") && has(p, "PostalAddress/PostalZone");
       const kvkOrOin = (p) => ["0106", "0190"].includes((first(p, "PartyLegalEntity/CompanyID") || { getAttribute: () => "" }).getAttribute("schemeID"));
       const precedingRef = has(R, "BillingReference/InvoiceDocumentReference/ID");
       if (sellerCountry === "NL") {
-        if (cn || c.typeCode === "381") rule("NL-R-001", R, precedingRef, "Dutch seller: a credit note references the invoice it corrects (BT-25)");
-        rule("NL-R-002", seller, addressOk(seller), "Dutch seller: street (BT-35), city (BT-37) and post code (BT-38) are given");
-        rule("NL-R-003", seller, kvkOrOin(seller), "Dutch seller: legal registration (BT-30) is a KvK (0106) or OIN (0190) number");
+        if (cn || c.typeCode === "381") rule("NL-R-001", R, precedingRef, "Dutch seller: a credit note must reference the invoice it corrects (BT-25)");
+        rule("NL-R-002", seller, addressOk(seller), "Dutch seller: street (BT-35), city (BT-37) and post code (BT-38) must be given");
+        rule("NL-R-003", seller, kvkOrOin(seller), "Dutch seller: legal registration (BT-30) must be a KvK (0106) or OIN (0190) number");
         if (buyerCountry === "NL") {
-          rule("NL-R-004", buyer, addressOk(buyer), "Dutch buyer: street (BT-50), city (BT-52) and post code (BT-53) are given");
-          rule("NL-R-005", buyer, kvkOrOin(buyer), "Dutch buyer: legal registration (BT-47) is a KvK (0106) or OIN (0190) number");
+          rule("NL-R-004", buyer, addressOk(buyer), "Dutch buyer: street (BT-50), city (BT-52) and post code (BT-53) must be given");
+          rule("NL-R-005", buyer, kvkOrOin(buyer), "Dutch buyer: legal registration (BT-47) must be a KvK (0106) or OIN (0190) number");
         }
-        if (c.typeCode === "384") rule("NL-R-006", R, precedingRef, "Dutch seller: a corrective invoice (384) references the invoice it corrects (BT-25)");
-        if (num(val(c.lmt, "PayableAmount")) > 0) rule("NL-R-007", R, !!first(R, "PaymentMeans"), "Dutch seller: payment instructions (BG-16) are given when an amount is due");
+        if (c.typeCode === "384") rule("NL-R-006", R, precedingRef, "Dutch seller: a corrective invoice (384) must reference the invoice it corrects (BT-25)");
+        if (num(val(c.lmt, "PayableAmount")) > 0) rule("NL-R-007", R, !!first(R, "PaymentMeans"), "Dutch seller: payment instructions (BG-16) must be given when an amount is due");
         each("NL-R-008", items(byPath(R, "PaymentMeans/PaymentMeansCode"), txt), (el) => ["30", "48", "49", "57", "58", "59"].includes(txt(el)),
-          "Dutch seller: payment means code is 30, 48, 49, 57, 58 or 59");
+          "Dutch seller: payment means code must be 30, 48, 49, 57, 58 or 59");
         if (c.lines.some((o) => has(o.el, "OrderLineReference/LineID"))) rule("NL-R-009", R, has(R, "OrderReference/ID"),
           "Dutch seller: line order references need a purchase order reference (BT-13)");
       }
       if (sellerCountry === "NO") {
         const no = c.taxIds(seller, true);
         if (no.length) rule("NO-R-001", seller, no.every((v) => /^NO\d{9}MVA$/.test(v) && noOrg(v.slice(2, 11))),
-          "Norwegian seller: VAT identifier is NO + a valid 9-digit organisation number + MVA", no.join(", "));
+          "Norwegian seller: VAT ID must be NO + a valid 9-digit organisation number + MVA", no.join(", "));
         rule("NO-R-002", seller, byPath(seller, "PartyTaxScheme").some((s) => val(s, "TaxScheme/ID") === "TAX" && /^Foretaksregisteret$/i.test(val(s, "CompanyID"))),
-          "Norwegian seller: “Foretaksregisteret” is stated (tax scheme TAX)", "", true);
+          "Norwegian seller: “Foretaksregisteret” should be stated (tax scheme TAX)", "", true);
       }
-      if (sellerCountry === "DK") rule("DK-R-002", seller, has(seller, "PartyLegalEntity/CompanyID"), "Danish seller: legal registration (CVR, BT-30) is given");
+      if (sellerCountry === "DK") rule("DK-R-002", seller, has(seller, "PartyLegalEntity/CompanyID"), "Danish seller: legal registration (CVR, BT-30) must be given");
       if (sellerCountry === "SE") {
         const se = c.taxIds(seller, true).filter((v) => v.startsWith("SE"));
         if (se.length) {
-          rule("SE-R-001", seller, se.every((v) => v.length === 14), "Swedish seller: VAT identifier has 14 characters", se.join(", "));
-          rule("SE-R-002", seller, se.every((v) => /^\d{12}$/.test(v.slice(2))), "Swedish seller: VAT identifier ends with 12 digits", se.join(", "));
+          rule("SE-R-001", seller, se.every((v) => v.length === 14), "Swedish seller: VAT ID must have 14 characters", se.join(", "));
+          rule("SE-R-002", seller, se.every((v) => /^\d{12}$/.test(v.slice(2))), "Swedish seller: VAT ID must end with 12 digits", se.join(", "));
         }
       }
     }

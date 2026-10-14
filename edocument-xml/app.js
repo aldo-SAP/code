@@ -57,9 +57,13 @@
     ANN: "year", MIN: "minute", KGM: "kilogram", GRM: "gram", TNE: "tonne", MTR: "metre", KMT: "kilometre", MTK: "square metre",
     MTQ: "cubic metre", LTR: "litre", KWH: "kilowatt hour", SET: "set", PR: "pair", LS: "lump sum", E48: "service unit", ZZ: "mutually defined"
   };
+  // Country and currency names in the chosen language.
   let regionNames = null, currencyNames = null;
-  try { regionNames = new Intl.DisplayNames(["en"], { type: "region" }); } catch (e) {}
-  try { currencyNames = new Intl.DisplayNames(["en"], { type: "currency" }); } catch (e) {}
+  function setDisplayNames() {
+    try { regionNames = new Intl.DisplayNames([I18N.lang], { type: "region" }); } catch (e) {}
+    try { currencyNames = new Intl.DisplayNames([I18N.lang], { type: "currency" }); } catch (e) {}
+  }
+  setDisplayNames();
 
   // ---------- Field specs: [path, label, bt (string or {role: bt}), options] ----------
   const DOC_SPEC = [
@@ -222,8 +226,8 @@
   ];
 
   // ---------- State ----------
-  const state = { root: null, kind: null, name: "", size: 0, wrapped: "", showEmpty: false, atts: [], attIndex: new Map(), cache: new Map() };
-  try { state.showEmpty = localStorage.getItem("edocxml.showEmpty") === "1"; } catch (e) {}
+  const state = { root: null, kind: null, name: "", size: 0, wrapped: "", showEmpty: false, showTags: false, atts: [], attIndex: new Map(), cache: new Map() };
+  try { state.showEmpty = localStorage.getItem("edocxml.showEmpty") === "1"; state.showTags = localStorage.getItem("edocxml.showTags") === "1"; } catch (e) {}
 
   // ---------- Helpers ----------
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -256,10 +260,10 @@
     const n = num(raw);
     if (n === null) return esc(raw) + (cur ? ' <span class="unit">' + esc(cur) + "</span>" : "");
     const dec = (String(raw).split(".")[1] || "").length;
-    const s = n.toLocaleString(undefined, { minimumFractionDigits: Math.max(2, Math.min(dec, 6)), maximumFractionDigits: Math.max(2, Math.min(dec, 6)) });
+    const s = n.toLocaleString(I18N.locale(), { minimumFractionDigits: Math.max(2, Math.min(dec, 6)), maximumFractionDigits: Math.max(2, Math.min(dec, 6)) });
     return '<span class="amt" title="' + esc(raw) + '">' + s + "</span>" + (cur ? ' <span class="unit">' + esc(cur) + "</span>" : "");
   }
-  const dec = (code, table) => (table[code] ? ' <span class="dec">· ' + esc(table[code]) + "</span>" : "");
+  const dec = (code, table) => (table[code] ? ' <span class="dec">· ' + esc(T(table[code])) + "</span>" : "");
 
   function decodeValue(el, raw) {
     const n = el.localName, p = el.parentElement ? el.parentElement.localName : "";
@@ -284,29 +288,29 @@
       const i = state.attIndex.get(el);
       const a = state.atts[i];
       return '<a href="#att-' + i + '">' + esc(a.filename) + "</a>" +
-        '<span class="chip">' + esc(a.mime || "unknown type") + " · " + formatSize(a.size) + "</span> " +
-        '<button class="mini" type="button" data-act="preview" data-att="' + i + '">Preview</button>';
+        '<span class="chip">' + esc(a.mime || T("unknown type")) + " · " + formatSize(a.size) + "</span> " +
+        '<button class="mini" type="button" data-act="preview" data-att="' + i + '">' + T("Preview") + "</button>";
     }
-    if (el.children.length) return '<span class="dec">(group)</span>';
+    if (el.children.length) return '<span class="dec">' + T("(group)") + "</span>";
     const raw = txt(el);
     const attrs = Array.from(el.attributes).filter((a) => !/^xmlns/.test(a.name));
     const cur = el.getAttribute("currencyID");
     let html;
     if (cur) html = fmtAmount(raw, cur);
-    else if (n === "ChargeIndicator") html = raw === "true" ? "Charge" : raw === "false" ? "Allowance" : esc(raw);
+    else if (n === "ChargeIndicator") html = raw === "true" ? T("Charge") : raw === "false" ? T("Allowance") : esc(raw);
     else if ((n === "Percent" || n === "MultiplierFactorNumeric") && num(raw) !== null) html = '<span class="amt">' + esc(raw) + "</span> %";
     else if (n === "Note" && /^#([A-Z0-9]{2,4})#/.test(raw)) {
       const m = raw.match(/^#([A-Z0-9]{2,4})#/);
-      html = '<span class="chip" style="margin-left:0" title="Subject code (BT-21)">' + esc(m[1]) + (NOTE_SUBJECT[m[1]] ? " · " + esc(NOTE_SUBJECT[m[1]]) : "") + "</span> " + esc(raw.slice(m[0].length));
+      html = '<span class="chip" style="margin-left:0" title="' + esc(T("Subject code (BT-21)")) + '">' + esc(m[1]) + (NOTE_SUBJECT[m[1]] ? " · " + esc(T(NOTE_SUBJECT[m[1]])) : "") + "</span> " + esc(raw.slice(m[0].length));
     } else if (n === "URI" && /^https?:\/\//i.test(raw)) html = '<a href="' + esc(raw) + '" target="_blank" rel="noopener noreferrer">' + esc(raw) + "</a>";
-    else html = raw === "" ? '<span class="dec">(empty)</span>' : esc(raw) + decodeValue(el, raw);
+    else html = raw === "" ? '<span class="dec">' + T("(empty)") + "</span>" : esc(raw) + decodeValue(el, raw);
 
     for (const a of attrs) {
       if (a.name === "currencyID") continue;
-      if (a.name === "unitCode") { html += ' <span class="unit" title="Unit of measure">' + esc(a.value) + (UNITS[a.value] ? " · " + esc(UNITS[a.value]) : "") + "</span>"; continue; }
-      if (a.name === "name" && n === "PaymentMeansCode") { html += '<span class="chip" title="Payment means text (BT-82)">' + esc(a.value) + "</span>"; continue; }
+      if (a.name === "unitCode") { html += ' <span class="unit" title="' + esc(T("Unit of measure")) + '">' + esc(a.value) + (UNITS[a.value] ? " · " + esc(T(UNITS[a.value])) : "") + "</span>"; continue; }
+      if (a.name === "name" && n === "PaymentMeansCode") { html += '<span class="chip" title="' + esc(T("Payment means text (BT-82)")) + '">' + esc(a.value) + "</span>"; continue; }
       let label = a.value;
-      if (a.name === "schemeID" && SCHEMES[a.value]) label += " · " + SCHEMES[a.value];
+      if (a.name === "schemeID" && SCHEMES[a.value]) label += " · " + T(SCHEMES[a.value]);
       html += '<span class="chip" title="' + esc(a.name) + '">' + esc(a.name) + ": " + esc(label) + "</span>";
     }
     return html;
@@ -317,8 +321,21 @@
     if (typeof bt === "string") return bt;
     return (role && bt[role]) || Object.values(bt).filter((v, i, arr) => arr.indexOf(v) === i).join(" / ");
   }
-  function row(label, bt, valueHtml, cls) {
-    return '<div class="row' + (cls ? " " + cls : "") + '"><div class="k">' + esc(label) + (bt ? '<span class="bt">' + esc(bt) + "</span>" : "") +
+  // The element's XML path below the document root, with its prefixes (cac:AccountingSupplierParty/cac:Party/cbc:EndpointID).
+  function tagPath(el) {
+    const parts = [];
+    for (let e = el; e && e.nodeType === 1 && e !== state.root; e = e.parentElement) parts.unshift(e.nodeName);
+    return parts.join("/");
+  }
+  // Path of a field that is missing: UBL puts groups in cac: and values in cbc:.
+  function guessTag(ctx, path) {
+    const segs = path.split("/");
+    return [ctx ? tagPath(ctx) : ""].concat(segs.map((s, i) => (i < segs.length - 1 ? "cac:" : "cbc:") + s)).filter(Boolean).join("/");
+  }
+  // Shown under a label when "Show XML tags" is on.
+  const xtag = (tag) => (tag ? '<code class="xtag">' + esc(tag) + "</code>" : "");
+  function row(label, bt, valueHtml, cls, tag) {
+    return '<div class="row' + (cls ? " " + cls : "") + '"><div class="k">' + esc(T(label)) + (bt ? '<span class="bt">' + esc(bt) + "</span>" : "") + xtag(tag) +
       '</div><div class="v">' + valueHtml + "</div></div>";
   }
   function markDeep(el, used) { used.add(el); for (const k of el.querySelectorAll("*")) used.add(k); }
@@ -330,12 +347,12 @@
       if (opts && opts.only && opts.only !== state.kind) continue;
       const els = byPath(ctx, path);
       if (!els.length) {
-        if (state.showEmpty) html += row(label, btFor(bt, role), "—", "empty");
+        if (state.showEmpty) html += row(label, btFor(bt, role), "—", "empty", guessTag(ctx, path));
         continue;
       }
       for (const el of els) {
-        if (opts && opts.fmt) { markDeep(el, used); html += row(label, btFor(bt, role), opts.fmt(el)); }
-        else { used.add(el); html += row(label, btFor(bt, role), renderValue(el)); }
+        if (opts && opts.fmt) { markDeep(el, used); html += row(label, btFor(bt, role), opts.fmt(el), "", tagPath(el)); }
+        else { used.add(el); html += row(label, btFor(bt, role), renderValue(el), "", tagPath(el)); }
       }
     }
     return html;
@@ -348,15 +365,15 @@
         if (used.has(k)) continue;
         const t = trail.concat(humanize(k.localName));
         if (k.children.length) walk(k, t);
-        else html += row(t.join(" › "), "", renderValue(k), "extra");
+        else html += row(t.join(" › "), "", renderValue(k), "extra", tagPath(k));
       }
     };
     for (const el of elements) {
       if (!el || used.has(el)) continue;
-      if (!el.children.length) { if (withSelf) html += row(humanize(el.localName), "", renderValue(el), "extra"); }
+      if (!el.children.length) { if (withSelf) html += row(humanize(el.localName), "", renderValue(el), "extra", tagPath(el)); }
       else walk(el, withSelf ? [humanize(el.localName)] : []);
     }
-    return html ? '<div class="extras-h">More fields</div>' + html : "";
+    return html ? '<div class="extras-h">' + T("More fields") + "</div>" + html : "";
   }
   function itemProperty(el) {
     return "<b>" + esc(val(el, "Name")) + "</b>: " + esc(val(el, "Value")) +
@@ -369,15 +386,15 @@
     // Failed rules for this block, in red right under its name (Lines shows them per row, Checks lists them all).
     const iss = id !== "lines" && id !== "checks" && state.issues.secs[id];
     const errs = iss ? '<ul class="checks card-errs">' + iss.list.map((c) => checkLi(c, false)).join("") + "</ul>" : "";
-    return '<section class="card' + (opts.full ? " full" : "") + '" id="sec-' + id + '"><h2>' + dot(id) + esc(title) +
+    return '<section class="card' + (opts.full ? " full" : "") + '" id="sec-' + id + '"><h2>' + dot(id) + esc(T(title)) +
       (opts.count != null ? '<span class="n">' + opts.count + "</span>" : "") + (opts.act ? '<span class="act">' + opts.act + "</span>" : "") +
-      "</h2>" + errs + (body || '<div class="none">Not present in this document.</div>') + "</section>";
+      "</h2>" + errs + (body || '<div class="none">' + T("Not present in this document.") + "</div>") + "</section>";
   }
-  function sub(title, body) { return '<div class="sub"><h3>' + esc(title) + "</h3>" + body + "</div>"; }
+  function sub(title, body) { return '<div class="sub"><h3>' + esc(T(title)) + "</h3>" + body + "</div>"; }
 
   // A line's allowances and charges: one table each, a row per entry and their total underneath,
   // then quantity × price + charges − allowances worked out against the line net amount.
-  const money = (n) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const money = (n) => n.toLocaleString(I18N.locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   function lineAcTables(ln, used) {
     const acs = byPath(ln, "AllowanceCharge");
     acs.forEach((ac) => markDeep(ac, used));
@@ -399,16 +416,16 @@
           return '<td' + (isNum(path) ? ' class="r"' : "") + ">" + (!el ? "—" : path === "Amount" || path === "BaseAmount" ? fmtAmount(txt(el), "") : renderValue(el)) + "</td>";
         }).join("");
         const x = extras([ac], uu);
-        if (x) more += sub((role === "C" ? "Charge " : "Allowance ") + (j + 1), x);
+        if (x) more += sub(T(role === "C" ? "Charge {n}" : "Allowance {n}", { n: j + 1 }), x);
         return "<tr><td>" + (j + 1) + "</td>" + tds + "</tr>";
       }).join("");
       const amtCol = cols.findIndex(([path]) => path === "Amount");
-      const foot = "<tr><td" + (amtCol ? ' colspan="' + (amtCol + 1) + '"' : "") + ">Total " + (role === "C" ? "charges" : "allowances") + "</td>" +
+      const foot = "<tr><td" + (amtCol ? ' colspan="' + (amtCol + 1) + '"' : "") + ">" + T(role === "C" ? "Total charges" : "Total allowances") + "</td>" +
         '<td class="r">' + money(sums[role]) + ' <span class="unit">' + esc(cur) + "</span></td>" +
         (cols.length - amtCol - 1 > 0 ? '<td colspan="' + (cols.length - amtCol - 1) + '"></td>' : "") + "</tr>";
-      const head = "<tr><th>#</th>" + cols.map(([path, label, bt]) => "<th" + (isNum(path) ? ' class="r"' : "") + ">" + esc(label) +
-        '<span class="bt">' + esc(btFor(bt, role)) + "</span></th>").join("") + "</tr>";
-      return '<div class="sub ac-block"><h3>' + (role === "C" ? "Line charges" : "Line allowances") + " · " + list.length + "</h3>" +
+      const head = "<tr><th>#</th>" + cols.map(([path, label, bt]) => "<th" + (isNum(path) ? ' class="r"' : "") + ">" + esc(T(label)) +
+        '<span class="bt">' + esc(btFor(bt, role)) + "</span>" + xtag("cac:AllowanceCharge/" + guessTag(null, path)) + "</th>").join("") + "</tr>";
+      return '<div class="sub ac-block"><h3>' + T(role === "C" ? "Line charges" : "Line allowances") + " · " + list.length + "</h3>" +
         '<div class="tablewrap"><table class="ac"><thead>' + head + "</thead><tbody>" + rows + "</tbody><tfoot>" + foot + "</tfoot></table></div>" + more + "</div>";
     };
     const html = table("A") + table("C");
@@ -420,12 +437,12 @@
     const gross = Math.round(qty * price / baseQty * 100) / 100, calc = Math.round((gross + sums.C - sums.A) * 100) / 100;
     const ok = net !== null && Math.abs(calc - net) < 0.02;
     const r = (label, amount, cls) => '<tr' + (cls ? ' class="' + cls + '"' : "") + '><td class="k">' + label + '</td><td class="r">' + amount + '</td><td class="cur">' + esc(cur) + "</td></tr>";
-    return html + '<div class="sub ac-block"><h3>Line net amount</h3><table class="tot ac-calc"><tbody>' +
-      r("Quantity × net price" + (baseQty !== 1 ? " / base quantity" : "") + ' <span class="dec">(' + esc(String(qty)) + " × " + money(price) + (baseQty !== 1 ? " / " + baseQty : "") + ")</span>", money(gross)) +
-      r("+ Total charges", money(sums.C)) + r("− Total allowances", money(sums.A)) +
-      r("= Calculated", money(calc), "key") +
-      r('Line net amount in the file<span class="bt">BT-131</span>', net === null ? "—" : money(net) +
-        (ok ? ' <span class="ac-ok">✓</span>' : ' <span class="ac-bad">✗ off by ' + money(Math.abs(calc - net)) + "</span>"), ok ? "" : "bad") +
+    return html + '<div class="sub ac-block"><h3>' + T("Line net amount") + '</h3><table class="tot ac-calc"><tbody>' +
+      r(T(baseQty !== 1 ? "Quantity × net price / base quantity" : "Quantity × net price") + ' <span class="dec">(' + esc(String(qty)) + " × " + money(price) + (baseQty !== 1 ? " / " + baseQty : "") + ")</span>", money(gross)) +
+      r(T("+ Total charges"), money(sums.C)) + r(T("− Total allowances"), money(sums.A)) +
+      r(T("= Calculated"), money(calc), "key") +
+      r(T("Line net amount in the file") + '<span class="bt">BT-131</span>', net === null ? "—" : money(net) +
+        (ok ? ' <span class="ac-ok">✓</span>' : ' <span class="ac-bad">✗ ' + T("off by {amount}", { amount: money(Math.abs(calc - net)) }) + "</span>"), ok ? "" : "bad") +
       "</tbody></table></div>";
   }
 
@@ -458,8 +475,8 @@
         const used = new Set();
         let body = "";
         if (docs.length) {
-          body = '<div class="tablewrap"><table><thead><tr><th>#</th><th>Invoice reference <span class="bt">BT-25</span></th>' +
-            '<th>Issue date <span class="bt">BT-26</span></th></tr></thead><tbody>' +
+          body = '<div class="tablewrap"><table><thead><tr><th>#</th><th>' + T("Invoice reference") + ' <span class="bt">BT-25</span>' + xtag("cac:BillingReference/cac:InvoiceDocumentReference/cbc:ID") + "</th>" +
+            "<th>" + T("Issue date") + ' <span class="bt">BT-26</span>' + xtag("cac:BillingReference/cac:InvoiceDocumentReference/cbc:IssueDate") + "</th></tr></thead><tbody>" +
             docs.map((d, i) => {
               const id = first(d, "ID"), date = first(d, "IssueDate");
               [id, date].forEach((e) => e && used.add(e));
@@ -485,7 +502,7 @@
       adrs.forEach((adr) => {
         const u = new Set();
         const role = val(adr, "DocumentTypeCode") === "130" ? "O" : "N";
-        const title = role === "O" ? "Invoiced object " + ++nObj : "Supporting document " + ++nDoc;
+        const title = role === "O" ? T("Invoiced object {n}", { n: ++nObj }) : T("Supporting document {n}", { n: ++nDoc });
         body += sub(title, renderFields(adr, ADR_SPEC, role, u) + extras([adr], u));
       });
       if (!adrs.length && state.showEmpty) body = sub("Supporting document", renderFields(null, ADR_SPEC, "N", new Set()));
@@ -518,7 +535,7 @@
       els.forEach((el, i) => {
         const u = new Set();
         const inner = renderFields(el, spec, roleFn ? roleFn(el) : null, u) + extras([el], u);
-        body += els.length > 1 || subTitle ? sub(subTitle ? subTitle(el, i) : title + " " + (i + 1), inner) : inner;
+        body += els.length > 1 || subTitle ? sub(subTitle ? subTitle(el, i) : T(title) + " " + (i + 1), inner) : inner;
       });
       out.push({ id, title, count: els.length > 1 ? els.length : null, html: card(id, title, body, { count: els.length > 1 ? els.length : null, full }) });
     };
@@ -528,11 +545,11 @@
       claim("PaymentMeans", "PaymentTerms", "PrepaidPayment");
       const pm = byPath(R, "PaymentMeans"), pt = byPath(R, "PaymentTerms"), pp = byPath(R, "PrepaidPayment");
       let body = "";
-      pm.forEach((el, i) => { const u = new Set(); body += sub("Payment means" + (pm.length > 1 ? " " + (i + 1) : ""), renderFields(el, PAYMEANS_SPEC, null, u) + extras([el], u)); });
+      pm.forEach((el, i) => { const u = new Set(); body += sub(pm.length > 1 ? T("Payment means {n}", { n: i + 1 }) : "Payment means", renderFields(el, PAYMEANS_SPEC, null, u) + extras([el], u)); });
       if (!pm.length && state.showEmpty) body += sub("Payment means", renderFields(null, PAYMEANS_SPEC, null, new Set()));
-      pt.forEach((el, i) => { const u = new Set(); body += sub("Payment terms" + (pt.length > 1 ? " " + (i + 1) : ""), renderFields(el, PAYTERMS_SPEC, null, u) + extras([el], u)); });
+      pt.forEach((el, i) => { const u = new Set(); body += sub(pt.length > 1 ? T("Payment terms {n}", { n: i + 1 }) : "Payment terms", renderFields(el, PAYTERMS_SPEC, null, u) + extras([el], u)); });
       if (!pt.length && state.showEmpty) body += sub("Payment terms", renderFields(null, PAYTERMS_SPEC, null, new Set()));
-      pp.forEach((el, i) => { body += sub("Prepaid payment " + (i + 1), extras([el], new Set()).replace('<div class="extras-h">More fields</div>', "")); });
+      pp.forEach((el, i) => { body += sub(T("Prepaid payment {n}", { n: i + 1 }), extras([el], new Set()).replace('<div class="extras-h">' + T("More fields") + "</div>", "")); });
       if (body) out.push({ id: "payment", title: "Payment", html: card("payment", "Payment", body) });
     }
     // Document-level allowances and charges, as two separate blocks
@@ -550,7 +567,7 @@
         els.forEach((el, i) => {
           const u = new Set([first(el, "ChargeIndicator")]);
           const inner = renderFields(el, spec, role, u) + extras([el], u);
-          body += els.length > 1 ? sub(single + " " + (i + 1), inner) : inner;
+          body += els.length > 1 ? sub(T(single + " {n}", { n: i + 1 }), inner) : inner;
         });
         out.push({ id, title, html: card(id, title, body) });
       }
@@ -569,13 +586,14 @@
         if (amt) {
           u.add(amt);
           const inTaxCur = taxCur && taxCur !== docCur && amt.getAttribute("currencyID") === taxCur;
-          inner += row(inTaxCur ? "VAT total in accounting currency" : "Invoice total VAT amount", inTaxCur ? "BT-111" : "BT-110", renderValue(amt));
+          inner += row(inTaxCur ? "VAT total in accounting currency" : "Invoice total VAT amount", inTaxCur ? "BT-111" : "BT-110", renderValue(amt), "", tagPath(amt));
         }
         const subs = byPath(tt, "TaxSubtotal");
         if (subs.length) {
-          inner += '<div class="tablewrap"><table><thead><tr><th>Category <span class="bt">BT-118</span></th><th class="r">Rate <span class="bt">BT-119</span></th>' +
-            '<th class="r">Taxable <span class="bt">BT-116</span></th><th class="r">VAT <span class="bt">BT-117</span></th>' +
-            "<th>Exemption reason <span class=\"bt\">BT-120/121</span></th></tr></thead><tbody>";
+          const th = (label, bt, tag, r) => "<th" + (r ? ' class="r"' : "") + ">" + T(label) + ' <span class="bt">' + bt + "</span>" + xtag("cac:TaxSubtotal/" + tag) + "</th>";
+          inner += '<div class="tablewrap"><table><thead><tr>' + th("Category", "BT-118", "cac:TaxCategory/cbc:ID") + th("Rate", "BT-119", "cac:TaxCategory/cbc:Percent", true) +
+            th("Taxable", "BT-116", "cbc:TaxableAmount", true) + th("VAT", "BT-117", "cbc:TaxAmount", true) +
+            th("Exemption reason", "BT-120/121", "cac:TaxCategory/cbc:TaxExemptionReason") + "</tr></thead><tbody>";
           for (const st of subs) {
             const g = (p) => { const e = first(st, p); if (e) u.add(e); return e; };
             const cat = g("TaxCategory/ID"), pct = g("TaxCategory/Percent"), tb = g("TaxableAmount"), ta = g("TaxAmount");
@@ -588,7 +606,7 @@
           inner += "</tbody></table></div>";
         }
         inner += extras([tt], u);
-        body += tts.length > 1 ? sub("Tax total " + (tts.indexOf(tt) + 1), inner) : inner;
+        body += tts.length > 1 ? sub(T("Tax total {n}", { n: tts.indexOf(tt) + 1 }), inner) : inner;
       });
       body += extras(byPath(R, "WithholdingTaxTotal"), new Set(), true);
       out.push({ id: "vat", title: "VAT", html: card("vat", "VAT", body, { full: true }) });
@@ -606,7 +624,8 @@
         const e = first(lmt, path);
         if (!e && !state.showEmpty) return "";
         if (e) u.add(e);
-        return '<tr class="frow' + (e ? "" : " empty") + (strong[path] ? " " + strong[path] : "") + '"><td class="k">' + esc(label) + '<span class="bt">' + bt + "</span></td>" +
+        return '<tr class="frow' + (e ? "" : " empty") + (strong[path] ? " " + strong[path] : "") + '"><td class="k">' + esc(T(label)) + '<span class="bt">' + bt + "</span>" +
+          xtag(e ? tagPath(e) : "cac:LegalMonetaryTotal/cbc:" + path) + "</td>" +
           '<td class="r">' + (e ? (sign[path] || "") + fmtAmount(txt(e), "") : "—") + '</td><td class="cur">' + (e ? esc(e.getAttribute("currencyID") || "") : "") + "</td></tr>";
       }).join("");
       let body = trs ? '<table class="tot"><tbody>' + trs + "</tbody></table>" + extras([lmt], u) : "";
@@ -615,7 +634,7 @@
       if (checks.length) {
         const bad = checks.filter((c) => !c.ok && !c.warn).length, warn = checks.filter((c) => !c.ok && c.warn).length;
         out.push({ id: "checks", title: "Checks", html: card("checks", "Checks", checksHtml(checks),
-          { count: bad ? bad + " failing" : warn ? warn + " warning" + (warn > 1 ? "s" : "") : "all pass" }) });
+          { count: bad ? T("{n} failing", { n: bad }) : warn ? T(warn > 1 ? "{n} warnings" : "{n} warning", { n: warn }) : T("all pass") }) });
       }
     }
 
@@ -626,7 +645,11 @@
       const lines = byPath(R, lineTag);
       let body = "";
       if (lines.length) {
-        body = '<div class="tablewrap"><table><thead><tr><th>Line</th><th>Item</th><th class="r">Quantity</th><th class="r">Net price</th><th>VAT</th><th class="r">Net amount</th></tr></thead><tbody>';
+        const lt = "cac:" + lineTag + "/";
+        const th = (label, tag, r) => "<th" + (r ? ' class="r"' : "") + ">" + T(label) + xtag(lt + tag) + "</th>";
+        body = '<div class="tablewrap"><table><thead><tr>' + th("Line", "cbc:ID") + th("Item", "cac:Item/cbc:Name") +
+          th("Quantity", kind === "CreditNote" ? "cbc:CreditedQuantity" : "cbc:InvoicedQuantity", true) + th("Net price", "cac:Price/cbc:PriceAmount", true) +
+          th("VAT", "cac:Item/cac:ClassifiedTaxCategory") + th("Net amount", "cbc:LineExtensionAmount", true) + "</tr></thead><tbody>";
         lines.forEach((ln, i) => {
           const q = first(ln, "InvoicedQuantity") || first(ln, "CreditedQuantity");
           const unit = q ? q.getAttribute("unitCode") || "" : "";
@@ -641,7 +664,7 @@
           const lineChecks = state.checks.filter((c) => !c.ok && c.lines && c.lines.includes(i));
           const nBad = lineChecks.filter((c) => !c.warn).length;
           const flag = lineChecks.length ? '<span class="lerr' + (nBad ? "" : " warn") + '" title="' + esc(lineChecks.map((c) => c.id).join(", ")) + '">' +
-            (nBad ? "✗ " + nBad + (nBad > 1 ? " errors" : " error") : "! " + lineChecks.length) + "</span>" : "";
+            (nBad ? T(nBad > 1 ? "✗ {n} errors" : "✗ {n} error", { n: nBad }) : "! " + lineChecks.length) + "</span>" : "";
           body += '<tr class="line frow' + (nBad ? " has-err" : "") + '" data-line="' + i + '" tabindex="0" aria-expanded="false"><td>' + esc(val(ln, "ID") || i + 1) + flag + "</td><td>" +
             esc(val(ln, "Item/Name") || "—") + (sid ? '<div class="small">' + esc(sid) + "</div>" : "") + '</td><td class="r">' +
             (q ? esc(txt(q)) + (unit ? ' <span class="unit" title="' + esc(UNITS[unit] || unit) + '">' + esc(unit) + "</span>" : "") : "—") +
@@ -652,10 +675,10 @@
         body += "</tbody></table></div>";
       }
       const badLines = Object.keys(state.issues.lines).filter((k) => state.issues.lines[k].bad.size).length;
-      const count = lines.length + (badLines ? " · " + badLines + " with errors" : "");
+      const count = lines.length + (badLines ? " · " + T("{n} with errors", { n: badLines }) : "");
       out.push({ id: "lines", title: "Lines", count, html: card("lines", "Lines", body, {
         full: true, count,
-        act: lines.length ? '<button class="mini" type="button" data-act="expand">Expand all</button><button class="mini" type="button" data-act="collapse">Collapse all</button>' : ""
+        act: lines.length ? '<button class="mini" type="button" data-act="expand">' + T("Expand all") + '</button><button class="mini" type="button" data-act="collapse">' + T("Collapse all") + "</button>" : ""
       }) });
     }
 
@@ -665,8 +688,8 @@
       if (rest.length) {
         let body = "";
         for (const el of rest) {
-          if (!el.children.length) body += row(humanize(el.localName), "", renderValue(el), "extra");
-          else body += sub(humanize(el.localName), extras([el], new Set()).replace('<div class="extras-h">More fields</div>', ""));
+          if (!el.children.length) body += row(humanize(el.localName), "", renderValue(el), "extra", tagPath(el));
+          else body += sub(humanize(el.localName), extras([el], new Set()).replace('<div class="extras-h">' + T("More fields") + "</div>", ""));
         }
         out.push({ id: "other", title: "Other elements", count: rest.length, html: card("other", "Other elements", body, { full: true, count: rest.length }) });
       }
@@ -692,13 +715,13 @@
         let body;
         if (el.localName === "EmbeddedDocumentBinaryObject" && t.length > 120) {
           body = '<span class="x">' + esc(t.slice(0, 40)) + '</span><span class="p">…</span> <a class="b64" href="#att-' + state.attIndex.get(el) + '">' +
-            t.length.toLocaleString() + " characters of Base64 · open attachment</a>";
+            T("{n} characters of Base64 · open attachment", { n: t.length.toLocaleString(I18N.locale()) }) + "</a>";
         } else body = '<span class="x">' + esc(t) + "</span>";
         return '<div class="ln">' + open(el) + P(">") + body + close(el) + "</div>";
       }
       const childCount = kids.filter((n) => n.nodeType === 1).length;
-      return '<div class="node"><div class="ln"><button type="button" class="fold" aria-label="Fold ' + esc(el.nodeName) + '">▾</button>' + open(el) + P(">") +
-        '<span class="more" title="Expand">… ' + childCount + "</span></div>" +
+      return '<div class="node"><div class="ln"><button type="button" class="fold" aria-label="' + esc(T("Fold {name}", { name: el.nodeName })) + '">▾</button>' + open(el) + P(">") +
+        '<span class="more" title="' + esc(T("Expand")) + '">… ' + childCount + "</span></div>" +
         '<div class="kids">' + kids.map((n) => (n.nodeType === 1 ? node(n)
           : n.nodeType === 8 ? '<div class="ln c">' + esc("<!--" + n.nodeValue + "-->") + "</div>"
           : '<div class="ln"><span class="x">' + esc(n.nodeValue.trim()) + "</span></div>")).join("") +
@@ -768,7 +791,7 @@
   function preview(i) {
     const a = state.atts[i];
     let c;
-    try { c = attBytes(i); } catch (e) { alert("This attachment isn't valid Base64, so it can't be opened."); return; }
+    try { c = attBytes(i); } catch (e) { alert(T("This attachment isn't valid Base64, so it can't be opened.")); return; }
     viewing = i;
     $("vTitle").textContent = a.filename + " · " + formatSize(c.u8.length);
     $("vOpen").href = c.url;
@@ -776,7 +799,7 @@
     const t = c.type;
     if (t === "application/pdf") {
       const f = document.createElement("iframe");
-      f.title = "Preview of " + a.filename; f.src = c.url;
+      f.title = T("Preview of {name}", { name: a.filename }); f.src = c.url;
       vBody.appendChild(f);
     } else if (/^image\//.test(t)) {
       const img = document.createElement("img"); img.alt = a.filename; img.src = c.url; vBody.appendChild(img);
@@ -786,7 +809,7 @@
       vBody.appendChild(pre);
     } else {
       const d = document.createElement("div"); d.className = "msg";
-      d.textContent = "No in-page preview for " + (t || "this file type") + ". Use Download to open it.";
+      d.textContent = T("No in-page preview for {type}. Use Download to open it.", { type: t || T("this file type") });
       vBody.appendChild(d);
     }
     if (typeof viewer.showModal === "function") viewer.showModal(); else viewer.setAttribute("open", "");
@@ -795,7 +818,7 @@
   function download(i) {
     const a = state.atts[i];
     let c;
-    try { c = attBytes(i); } catch (e) { alert("This attachment isn't valid Base64, so it can't be saved."); return; }
+    try { c = attBytes(i); } catch (e) { alert(T("This attachment isn't valid Base64, so it can't be saved.")); return; }
     const blob = new Blob([c.u8], { type: c.type });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob); link.download = a.filename;
@@ -812,7 +835,7 @@
   function parseDate(raw) { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw || ""); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; }
   function fmtDate(raw) {
     const d = parseDate(raw);
-    return d ? '<span title="' + esc(raw) + '">' + esc(d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })) + "</span>" : esc(raw || "");
+    return d ? '<span title="' + esc(raw) + '">' + esc(d.toLocaleDateString(I18N.locale(), { day: "numeric", month: "short", year: "numeric" })) + "</span>" : esc(raw || "");
   }
   function countryName(code) {
     if (!code) return "";
@@ -821,11 +844,11 @@
   }
   const schemeLabel = (el) => {
     const s = el && el.getAttribute("schemeID");
-    return s ? '<span class="scheme" title="schemeID ' + esc(s) + '">' + esc(SCHEMES[s] || s) + "</span>" : "";
+    return s ? '<span class="scheme" title="schemeID ' + esc(s) + '">' + esc(SCHEMES[s] ? T(SCHEMES[s]) : s) + "</span>" : "";
   };
   const kv = (items) => {
     const list = items.filter((i) => i && i[1]);
-    return list.length ? '<dl class="kv">' + list.map((i) => "<dt>" + esc(i[0]) + "</dt><dd>" + i[1] + "</dd>").join("") + "</dl>" : "";
+    return list.length ? '<dl class="kv">' + list.map((i) => "<dt>" + esc(T(i[0])) + "</dt><dd>" + i[1] + "</dd>").join("") + "</dl>" : "";
   };
   const iban = (s) => '<span class="iban">' + esc(String(s).replace(/\s+/g, "").replace(/(.{4})(?=.)/g, "$1 ")) + "</span>";
 
@@ -882,7 +905,7 @@
       bad = [...state.issues.secs[id].bad]; warn = [...state.issues.secs[id].warn];
     }
     const cls = bad.length ? "bad" : warn.length ? "warn" : "ok";
-    const title = bad.length ? "Fails " + bad.join(", ") : warn.length ? "Warning " + warn.join(", ") : "No rule fails here";
+    const title = bad.length ? T("Fails {ids}", { ids: bad.join(", ") }) : warn.length ? T("Warning {ids}", { ids: warn.join(", ") }) : T("No rule fails here");
     return '<span class="dot ' + cls + '" title="' + esc(title) + '"></span>';
   }
   // inList: an entry of the Checks list; a failed one is clickable (arrow under its ID) and jumps to where it fails.
@@ -890,10 +913,10 @@
   const checkLi = (x, inList) => {
     const go = inList && !x.ok;
     return '<li class="' + (x.ok ? "ok" : x.warn ? "warn" : "bad") + (go ? " go" : "") + '"' +
-      (go ? ' data-act="goerr" data-check="' + state.checks.indexOf(x) + '" role="button" tabindex="0" title="Show where it fails"' : "") + ">" +
+      (go ? ' data-act="goerr" data-check="' + state.checks.indexOf(x) + '" role="button" tabindex="0" title="' + esc(T("Show where it fails")) + '"' : "") + ">" +
       '<span class="rid">' + esc(x.id) + (go ? '<span class="arrow" aria-hidden="true">↘</span>' : "") + "</span><span>" +
-      (x.ok ? "✓ " : x.warn ? "! " : "✗ ") + esc(x.text) +
-      (x.detail && (inList || !/^Fails on /.test(x.detail)) ? "<small>" + esc(x.detail) + "</small>" : "") + "</span></li>";
+      (x.ok ? "✓ " : x.warn ? "! " : "✗ ") + esc(I18N.tr(x.text)) +
+      (x.detail && (inList || !/^Fails on /.test(x.detail)) ? "<small>" + esc(I18N.tr(x.detail)) + "</small>" : "") + "</span></li>";
   };
   // Jump to a failed check: its line (the next one on each click when it fails on several) or else its block.
   function goToCheck(c) {
@@ -926,13 +949,11 @@
     const li = (x) => checkLi(x, true);
     const bad = c.filter((x) => !x.ok && !x.warn), warn = c.filter((x) => !x.ok && x.warn), ok = c.filter((x) => x.ok);
     const detected = EN16931.detect(state.root);
-    let h = '<div class="rulesets"><span>Rule sets</span><label class="on"><input type="checkbox" checked disabled> EN 16931</label>' +
+    let h = '<div class="rulesets"><span>' + T("Rule sets") + '</span><label class="on"><input type="checkbox" checked disabled> EN 16931</label>' +
       Object.keys(EN16931.sets).map((id) => '<label' + (state.ruleSets.includes(id) ? ' class="on"' : "") + '><input type="checkbox" data-ruleset="' + id + '"' +
-        (state.ruleSets.includes(id) ? " checked" : "") + "> " + esc(EN16931.sets[id].name) + (detected.includes(id) ? ' <small>detected</small>' : "") + "</label>").join("") + "</div>" +
-      '<p class="small">Rules that apply to this document, including date and number formats (XSD-) and this tool’s own consistency checks (CHK-, such as a due date before the issue date). French checks use this tool’s own IDs (FR-), ' +
-      "not the official BR-FR numbers. UBL structure rules and full XSD validation are not included.</p>";
+        (state.ruleSets.includes(id) ? " checked" : "") + "> " + esc(T(EN16931.sets[id].name)) + (detected.includes(id) ? " <small>" + T("detected") + "</small>" : "") + "</label>").join("") + "</div>";
     if (bad.length || warn.length) h += '<ul class="checks">' + bad.concat(warn).map(li).join("") + "</ul>";
-    if (ok.length) h += '<details class="passed"><summary>' + ok.length + (ok.length > 1 ? " rules pass" : " rule passes") +
+    if (ok.length) h += '<details class="passed"><summary>' + (ok.length > 1 ? T("{n} rules pass", { n: ok.length }) : T("1 rule passes")) +
       '</summary><ul class="checks">' + ok.map(li).join("") + "</ul></details>";
     return h;
   }
@@ -947,36 +968,36 @@
     const days = di && dd ? Math.round((dd - di) / 86400000) : null;
     const checks = state.checks, bad = checks.filter((c) => !c.ok && !c.warn).length;
     $("hero").innerHTML =
-      '<div class="hero-main"><div class="eyebrow"><span class="badge' + (kind === "CreditNote" ? " cn" : "") + '">' + (kind === "CreditNote" ? "Credit note" : "Invoice") + "</span>" +
-      (code ? "<span>" + esc(code) + (DOC_TYPES[code] ? " · " + esc(DOC_TYPES[code]) : "") + "</span>" : "") +
-      (state.wrapped ? "<span>inside &lt;" + esc(state.wrapped) + "&gt;</span>" : "") + "</div>" +
-      '<div class="docno">' + esc(val(R, "ID") || "(no number)") + "</div>" +
-      '<div class="flow"><div class="who from"><small>From</small><span>' + esc(partyName("AccountingSupplierParty") || "Unknown seller") + "</span></div>" +
-      '<span class="arrow" aria-hidden="true">→</span><div class="who to"><small>To</small><span>' + esc(partyName("AccountingCustomerParty") || "Unknown buyer") + "</span></div></div></div>" +
+      '<div class="hero-main"><div class="eyebrow"><span class="badge' + (kind === "CreditNote" ? " cn" : "") + '">' + T(kind === "CreditNote" ? "Credit note" : "Invoice") + "</span>" +
+      (code ? "<span>" + esc(code) + (DOC_TYPES[code] ? " · " + esc(T(DOC_TYPES[code])) : "") + "</span>" : "") +
+      (state.wrapped ? "<span>" + esc(T("inside <{name}>", { name: state.wrapped })) + "</span>" : "") + "</div>" +
+      '<div class="docno">' + esc(val(R, "ID") || T("(no number)")) + "</div>" +
+      '<div class="flow"><div class="who from"><small>' + T("From") + "</small><span>" + esc(partyName("AccountingSupplierParty") || T("Unknown seller")) + "</span></div>" +
+      '<span class="arrow" aria-hidden="true">→</span><div class="who to"><small>' + T("To") + "</small><span>" + esc(partyName("AccountingCustomerParty") || T("Unknown buyer")) + "</span></div></div></div>" +
       '<div class="hero-amount">' +
-      (pay ? '<div class="lbl">' + (kind === "CreditNote" ? "Amount credited" : "Amount due") + '</div><div class="big">' + fmtMoney(txt(pay)) + '<span class="cur">' + esc(pay.getAttribute("currencyID") || "") + "</span></div>" : "") +
-      (due ? '<div class="due">Due <b>' + fmtDate(due) + "</b>" + (days !== null ? " · " + days + " days after issue" : "") + "</div>" : "") +
+      (pay ? '<div class="lbl">' + T(kind === "CreditNote" ? "Amount credited" : "Amount due") + '</div><div class="big">' + fmtMoney(txt(pay)) + '<span class="cur">' + esc(pay.getAttribute("currencyID") || "") + "</span></div>" : "") +
+      (due ? '<div class="due">' + T("Due") + " <b>" + fmtDate(due) + "</b>" + (days !== null ? " · " + T("{n} days after issue", { n: days }) : "") + "</div>" : "") +
       (checks.length ? '<button type="button" class="pill ' + (bad ? "bad" : "ok") + '" data-act="checks">' +
-        (bad ? "✗ " + bad + " of " + checks.length + " rules fail" : "✓ " + checks.length + " rules pass") + "</button>" : "") + "</div>";
+        (bad ? T("✗ {bad} of {n} rules fail", { bad, n: checks.length }) : T("✓ {n} rules pass", { n: checks.length })) + "</button>" : "") + "</div>";
 
     const pm = first(R, "PaymentMeans/PaymentMeansCode");
-    const pmText = pm ? PAY_MEANS[txt(pm)] || pm.getAttribute("name") || txt(pm) : "";
+    const pmText = pm ? (PAY_MEANS[txt(pm)] ? T(PAY_MEANS[txt(pm)]) : pm.getAttribute("name") || txt(pm)) : "";
     const ps = val(R, "InvoicePeriod/StartDate"), pe = val(R, "InvoicePeriod/EndDate");
     const lines = byPath(R, kind === "CreditNote" ? "CreditNoteLine" : "InvoiceLine");
     const facts = [
       ["Issued", issue ? fmtDate(issue) : "", val(R, "IssueTime")],
       ["Invoicing period", ps || pe ? fmtDate(ps) + " – " + fmtDate(pe) : "", ""],
-      ["Purchase order", esc(val(R, "OrderReference/ID")), val(R, "BuyerReference") ? "Buyer ref. " + val(R, "BuyerReference") : ""],
+      ["Purchase order", esc(val(R, "OrderReference/ID")), val(R, "BuyerReference") ? T("Buyer ref. {ref}", { ref: val(R, "BuyerReference") }) : ""],
       ["Buyer reference", first(R, "OrderReference/ID") ? "" : esc(val(R, "BuyerReference")), ""],
       ["Payment", esc(pmText), val(R, "PaymentTerms/Note")],
-      ["Lines", lines.length ? String(lines.length) : "", (state.atts.length ? state.atts.length + " attachment" + (state.atts.length > 1 ? "s" : "") : "")],
+      ["Lines", lines.length ? String(lines.length) : "", (state.atts.length ? T(state.atts.length > 1 ? "{n} attachments" : "{n} attachment", { n: state.atts.length }) : "")],
       ["Currency", esc(val(R, "DocumentCurrencyCode")), currencyNames && val(R, "DocumentCurrencyCode") ? (function () { try { return currencyNames.of(val(R, "DocumentCurrencyCode")); } catch (e) { return ""; } })() : ""]
     ].filter((f) => f[1]);
-    $("facts").innerHTML = facts.map((f) => '<div class="fact"><div class="l">' + esc(f[0]) + '</div><div class="v">' + f[1] + "</div>" + (f[2] ? '<div class="s">' + esc(f[2]) + "</div>" : "") + "</div>").join("");
+    $("facts").innerHTML = facts.map((f) => '<div class="fact"><div class="l">' + esc(T(f[0])) + '</div><div class="v">' + f[1] + "</div>" + (f[2] ? '<div class="s">' + esc(f[2]) + "</div>" : "") + "</div>").join("");
   }
 
   function partyBlock(el, cls, roleLabel) {
-    if (!el) return '<div class="party ' + cls + '"><div class="role">' + esc(roleLabel) + '</div><div class="pname muted">Not provided</div></div>';
+    if (!el) return '<div class="party ' + cls + '"><div class="role">' + esc(T(roleLabel)) + '</div><div class="pname muted">' + T("Not provided") + "</div></div>";
     const legal = val(el, "PartyLegalEntity/RegistrationName"), trade = val(el, "PartyName/Name");
     const a = first(el, "PostalAddress");
     const addr = a ? [val(a, "StreetName"), val(a, "AdditionalStreetName")].concat(byPath(a, "AddressLine/Line").map(txt),
@@ -994,8 +1015,8 @@
     items.push(["Legal form", esc(val(el, "PartyLegalEntity/CompanyLegalForm"))]);
     const contact = [val(el, "Contact/Name"), val(el, "Contact/Telephone"), val(el, "Contact/ElectronicMail")].filter(Boolean).map(esc).join(" · ");
     items.push(["Contact", contact]);
-    return '<div class="party ' + cls + '"><div class="role">' + esc(roleLabel) + '</div><div class="pname">' + esc(legal || trade || "(no name)") + "</div>" +
-      (legal && trade && trade !== legal ? '<div class="trade">Trading as ' + esc(trade) + "</div>" : "") +
+    return '<div class="party ' + cls + '"><div class="role">' + esc(T(roleLabel)) + '</div><div class="pname">' + esc(legal || trade || T("(no name)")) + "</div>" +
+      (legal && trade && trade !== legal ? '<div class="trade">' + esc(T("Trading as {name}", { name: trade })) + "</div>" : "") +
       (addr ? '<div class="addr">' + esc(addr) + "</div>" : "") + kv(items) + "</div>";
   }
 
@@ -1005,10 +1026,10 @@
     const ext = (a.filename.includes(".") ? a.filename.split(".").pop() : extFor(type).slice(1) || "file").slice(0, 4).toUpperCase();
     const cls = /pdf/.test(type) ? "pdf" : /^image\//.test(type) ? "img" : /xml/.test(type) ? "xml" : "";
     return '<div class="att" id="att-' + i + '"><div class="att-icon ' + cls + '">' + esc(ext) + '</div><div class="att-meta"><b>' + esc(a.filename) + "</b>" +
-      "<span>" + esc(a.mime || "unknown type") + " · " + formatSize(a.size) + (a.desc ? " · " + esc(a.desc) : "") + "</span>" +
-      (a.ref && a.ref !== a.filename ? "<span>Reference: " + esc(a.ref) + "</span>" : "") + (a.warn ? '<span class="warn">' + esc(a.warn) + "</span>" : "") +
-      '</div><div class="att-act"><button class="primary" type="button" data-act="preview" data-att="' + i + '">Preview</button>' +
-      '<button type="button" data-act="download" data-att="' + i + '">Download</button></div></div>';
+      "<span>" + esc(a.mime || T("unknown type")) + " · " + formatSize(a.size) + (a.desc ? " · " + esc(a.desc) : "") + "</span>" +
+      (a.ref && a.ref !== a.filename ? "<span>" + esc(T("Reference: {ref}", { ref: a.ref })) + "</span>" : "") + (a.warn ? '<span class="warn">' + esc(T(a.warn)) + "</span>" : "") +
+      '</div><div class="att-act"><button class="primary" type="button" data-act="preview" data-att="' + i + '">' + T("Preview") + "</button>" +
+      '<button type="button" data-act="download" data-att="' + i + '">' + T("Download") + "</button></div></div>";
   }
 
   function renderOverview() {
@@ -1025,53 +1046,56 @@
     // Notes
     const notes = byPath(R, "Note").map(txt).filter(Boolean);
     if (notes.length) {
-      h += '<h3 class="sh">Notes</h3><div class="notes">' + notes.map((n) => {
+      h += '<h3 class="sh">' + T("Notes") + '</h3><div class="notes">' + notes.map((n) => {
         const m = n.match(/^#([A-Z0-9]{2,4})#/);
-        return '<div class="note">' + (m ? '<span class="tag" title="Subject code ' + esc(m[1]) + '">' + esc(NOTE_SUBJECT[m[1]] || m[1]) + "</span>" : "") + esc(m ? n.slice(m[0].length) : n) + "</div>";
+        return '<div class="note">' + (m ? '<span class="tag" title="' + esc(T("Subject code {code}", { code: m[1] })) + '">' + esc(NOTE_SUBJECT[m[1]] ? T(NOTE_SUBJECT[m[1]]) : m[1]) + "</span>" : "") + esc(m ? n.slice(m[0].length) : n) + "</div>";
       }).join("") + "</div>";
     }
 
     // Lines
     const lines = byPath(R, kind === "CreditNote" ? "CreditNoteLine" : "InvoiceLine");
-    h += '<h3 class="sh">Lines' + (lines.length ? " · " + lines.length : "") + "</h3>";
+    h += '<h3 class="sh">' + T("Lines") + (lines.length ? " · " + lines.length : "") + "</h3>";
     if (lines.length) {
-      h += '<div class="tablewrap"><table class="inv"><thead><tr><th></th><th>Description</th><th class="r">Quantity</th><th class="r">Unit price</th><th>VAT</th><th class="r">Amount</th></tr></thead><tbody>';
+      h += '<div class="tablewrap"><table class="inv"><thead><tr><th></th><th>' + T("Description") + '</th><th class="r">' + T("Quantity") + '</th><th class="r">' + T("Unit price") +
+        "</th><th>" + T("VAT") + '</th><th class="r">' + T("Amount") + "</th></tr></thead><tbody>";
       lines.forEach((ln, i) => {
         const q = first(ln, "InvoicedQuantity") || first(ln, "CreditedQuantity");
         const unit = q ? q.getAttribute("unitCode") || "" : "";
         const base = first(ln, "Price/BaseQuantity");
-        const subs = [val(ln, "Item/Description"), val(ln, "Item/SellersItemIdentification/ID") ? "Item " + val(ln, "Item/SellersItemIdentification/ID") : "",
-          val(ln, "OrderLineReference/LineID") && val(ln, "OrderLineReference/LineID") !== "0" ? "PO line " + val(ln, "OrderLineReference/LineID") : "",
-          val(ln, "InvoicePeriod/StartDate") ? "Period " + val(ln, "InvoicePeriod/StartDate") + " – " + val(ln, "InvoicePeriod/EndDate") : ""].filter(Boolean);
+        const subs = [val(ln, "Item/Description"), val(ln, "Item/SellersItemIdentification/ID") ? T("Item {id}", { id: val(ln, "Item/SellersItemIdentification/ID") }) : "",
+          val(ln, "OrderLineReference/LineID") && val(ln, "OrderLineReference/LineID") !== "0" ? T("PO line {id}", { id: val(ln, "OrderLineReference/LineID") }) : "",
+          val(ln, "InvoicePeriod/StartDate") ? T("Period {from} – {to}", { from: val(ln, "InvoicePeriod/StartDate"), to: val(ln, "InvoicePeriod/EndDate") }) : ""].filter(Boolean);
         byPath(ln, "AllowanceCharge").forEach((ac) => {
           const charge = val(ac, "ChargeIndicator") === "true";
-          subs.push((charge ? "Charge + " : "Allowance − ") + (num(val(ac, "Amount")) !== null ? num(val(ac, "Amount")).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : val(ac, "Amount")) + (val(ac, "AllowanceChargeReason") || AC_REASON[val(ac, "AllowanceChargeReasonCode")] ? " (" + (val(ac, "AllowanceChargeReason") || AC_REASON[val(ac, "AllowanceChargeReasonCode")]) + ")" : ""));
+          const amount = num(val(ac, "Amount")) !== null ? money(num(val(ac, "Amount"))) : val(ac, "Amount");
+          const reason = val(ac, "AllowanceChargeReason") || (AC_REASON[val(ac, "AllowanceChargeReasonCode")] ? T(AC_REASON[val(ac, "AllowanceChargeReasonCode")]) : "");
+          subs.push(T(charge ? "Charge + {amount}" : "Allowance − {amount}", { amount }) + (reason ? " (" + reason + ")" : ""));
         });
         const cat = val(ln, "Item/ClassifiedTaxCategory/ID"), pct = val(ln, "Item/ClassifiedTaxCategory/Percent");
         const iss = state.issues.lines[i], nBad = iss ? iss.bad.size : 0;
         h += '<tr' + (nBad ? ' class="has-err"' : "") + '><td class="pos">' + esc(val(ln, "ID") || i + 1) +
-          (nBad ? '<button type="button" class="lerr" data-act="goline" data-line="' + i + '" title="' + esc([...iss.bad].join(", ") + " · show in Fields") + '">✗ ' + nBad + "</button>" : "") +
+          (nBad ? '<button type="button" class="lerr" data-act="goline" data-line="' + i + '" title="' + esc([...iss.bad].join(", ") + " · " + T("show in Fields")) + '">✗ ' + nBad + "</button>" : "") +
           '</td><td><div class="iname">' + esc(val(ln, "Item/Name") || "—") + "</div>" +
-          subs.map((s) => '<div class="isub">' + esc(s) + "</div>").join("") + '</td><td class="r">' + (q ? esc(txt(q)) + (unit ? ' <span class="unit" title="' + esc(unit) + '">' + esc(UNITS[unit] || unit) + "</span>" : "") : "—") +
-          '</td><td class="r">' + fmtMoney(val(ln, "Price/PriceAmount")) + (base && txt(base) !== "1" ? '<div class="isub">per ' + esc(txt(base)) + "</div>" : "") +
-          "</td><td>" + (cat || pct ? '<span class="vat-chip" title="' + esc(VAT_CAT[cat] || cat) + '">' + (pct ? esc(pct) + " %" : "") + (cat ? " " + esc(cat) : "") + "</span>" : "") +
+          subs.map((s) => '<div class="isub">' + esc(s) + "</div>").join("") + '</td><td class="r">' + (q ? esc(txt(q)) + (unit ? ' <span class="unit" title="' + esc(unit) + '">' + esc(UNITS[unit] ? T(UNITS[unit]) : unit) + "</span>" : "") : "—") +
+          '</td><td class="r">' + fmtMoney(val(ln, "Price/PriceAmount")) + (base && txt(base) !== "1" ? '<div class="isub">' + esc(T("per {n}", { n: txt(base) })) + "</div>" : "") +
+          "</td><td>" + (cat || pct ? '<span class="vat-chip" title="' + esc(VAT_CAT[cat] ? T(VAT_CAT[cat]) : cat) + '">' + (pct ? esc(pct) + " %" : "") + (cat ? " " + esc(cat) : "") + "</span>" : "") +
           '</td><td class="r">' + fmtMoney(val(ln, "LineExtensionAmount")) + "</td></tr>" + lineErrRow(i, 6);
       });
       h += "</tbody></table></div>";
-    } else h += '<div class="none">No lines in this document.</div>';
+    } else h += '<div class="none">' + T("No lines in this document.") + "</div>";
 
     // Totals block
     const lmt = first(R, "LegalMonetaryTotal");
     if (lmt) {
-      const t = (label, raw, cls, sign) => (raw === "" ? "" : '<div class="t' + (cls ? " " + cls : "") + '"><span>' + label + "</span><span>" + (sign || "") + fmtMoney(raw) + "</span></div>");
+      const t = (label, raw, cls, sign) => (raw === "" ? "" : '<div class="t' + (cls ? " " + cls : "") + '"><span>' + T(label) + "</span><span>" + (sign || "") + fmtMoney(raw) + "</span></div>");
       const tt = byPath(R, "TaxTotal").find((x) => { const a = first(x, "TaxAmount"); return a && (!docCur || a.getAttribute("currencyID") === docCur); });
       let vatRows = "";
       if (tt) {
         const subs = byPath(tt, "TaxSubtotal");
         if (subs.length) subs.forEach((st) => {
           const cat = val(st, "TaxCategory/ID"), pct = val(st, "TaxCategory/Percent");
-          vatRows += t("VAT " + (pct ? esc(pct) + " % " : "") + (cat ? '<span class="vat-chip" title="' + esc(VAT_CAT[cat] || cat) + '">' + esc(cat) + "</span>" : "") +
-            ' <span class="muted">on ' + fmtMoney(val(st, "TaxableAmount")) + "</span>", val(st, "TaxAmount"));
+          vatRows += t(T("VAT {rate}", { rate: pct ? esc(pct) + " % " : "" }) + (cat ? '<span class="vat-chip" title="' + esc(VAT_CAT[cat] ? T(VAT_CAT[cat]) : cat) + '">' + esc(cat) + "</span>" : "") +
+            ' <span class="muted">' + T("on {amount}", { amount: fmtMoney(val(st, "TaxableAmount")) }) + "</span>", val(st, "TaxAmount"));
         });
         else vatRows = t("VAT", val(tt, "TaxAmount"));
       }
@@ -1084,7 +1108,7 @@
         t("Total incl. VAT", val(lmt, "TaxInclusiveAmount"), "strong") +
         t("Already paid", val(lmt, "PrepaidAmount"), "", "− ") +
         (roundingInInclusive() ? "" : t("Rounding", val(lmt, "PayableRoundingAmount"))) +
-        t((kind === "CreditNote" ? "Amount credited" : "Amount due") + " " + esc(docCur), val(lmt, "PayableAmount"), "due") +
+        t(T(kind === "CreditNote" ? "Amount credited" : "Amount due") + " " + esc(docCur), val(lmt, "PayableAmount"), "due") +
         "</div></div>";
     }
 
@@ -1094,8 +1118,8 @@
       let body = "";
       byPath(R, "PaymentMeans").forEach((pm) => {
         const c = first(pm, "PaymentMeansCode");
-        const name = c ? PAY_MEANS[txt(c)] || c.getAttribute("name") || txt(c) : "Payment";
-        body += "<h4>" + esc(name) + (c ? ' <span class="muted" style="font-weight:400">· code ' + esc(txt(c)) + "</span>" : "") + "</h4>" + kv([
+        const name = c ? (PAY_MEANS[txt(c)] ? T(PAY_MEANS[txt(c)]) : c.getAttribute("name") || txt(c)) : T("Payment");
+        body += "<h4>" + esc(name) + (c ? ' <span class="muted" style="font-weight:400">· ' + esc(T("code {code}", { code: txt(c) })) + "</span>" : "") + "</h4>" + kv([
           ["IBAN / account", val(pm, "PayeeFinancialAccount/ID") ? iban(val(pm, "PayeeFinancialAccount/ID")) : ""],
           ["Account name", esc(val(pm, "PayeeFinancialAccount/Name"))],
           ["BIC", esc(val(pm, "PayeeFinancialAccount/FinancialInstitutionBranch/ID"))],
@@ -1107,7 +1131,7 @@
       });
       const terms = byPath(R, "PaymentTerms/Note").map(txt).filter(Boolean);
       body += kv([["Terms", terms.map(esc).join("<br>")], ["Due date", val(R, "DueDate") ? fmtDate(val(R, "DueDate")) : ""]]);
-      if (body) cards.push("<div>" + (body.startsWith("<h4") ? "" : "<h4>Payment</h4>") + body + "</div>");
+      if (body) cards.push("<div>" + (body.startsWith("<h4") ? "" : "<h4>" + T("Payment") + "</h4>") + body + "</div>");
     }
     {
       const refs = kv([
@@ -1118,9 +1142,9 @@
         ["Despatch advice", esc(val(R, "DespatchDocumentReference/ID"))], ["Receiving advice", esc(val(R, "ReceiptDocumentReference/ID"))],
         ["Tender / lot", esc(val(R, "OriginatorDocumentReference/ID"))],
         ["VAT point date", val(R, "TaxPointDate") ? fmtDate(val(R, "TaxPointDate")) : ""],
-        ["Period code", esc(val(R, "InvoicePeriod/DescriptionCode") ? val(R, "InvoicePeriod/DescriptionCode") + (DATE_CODE[val(R, "InvoicePeriod/DescriptionCode")] ? " · " + DATE_CODE[val(R, "InvoicePeriod/DescriptionCode")] : "") : "")]
+        ["Period code", esc(val(R, "InvoicePeriod/DescriptionCode") ? val(R, "InvoicePeriod/DescriptionCode") + (DATE_CODE[val(R, "InvoicePeriod/DescriptionCode")] ? " · " + T(DATE_CODE[val(R, "InvoicePeriod/DescriptionCode")]) : "") : "")]
       ]);
-      if (refs) cards.push("<div><h4>References</h4>" + refs + "</div>");
+      if (refs) cards.push("<div><h4>" + T("References") + "</h4>" + refs + "</div>");
     }
     byPath(R, "Delivery").forEach((d) => {
       const a = first(d, "DeliveryLocation/Address");
@@ -1128,24 +1152,25 @@
       const loc = first(d, "DeliveryLocation/ID");
       const body = kv([["Delivered", val(d, "ActualDeliveryDate") ? fmtDate(val(d, "ActualDeliveryDate")) : ""], ["Deliver to", esc(val(d, "DeliveryParty/PartyName/Name"))],
         ["Location ID", loc ? esc(txt(loc)) + schemeLabel(loc) : ""], ["Address", addr]]);
-      if (body) cards.push("<div><h4>Delivery</h4>" + body + "</div>");
+      if (body) cards.push("<div><h4>" + T("Delivery") + "</h4>" + body + "</div>");
     });
     const acs = byPath(R, "AllowanceCharge");
     [["Allowances", false], ["Charges", true]].forEach(([title, isCharge]) => {
       const list = acs.filter((ac) => (val(ac, "ChargeIndicator") === "true") === isCharge);
       if (!list.length) return;
-      cards.push("<div><h4>" + title + "</h4>" + kv(list.map((ac, i) => {
+      cards.push("<div><h4>" + T(title) + "</h4>" + kv(list.map((ac, i) => {
         const charge = isCharge;
-        const reason = val(ac, "AllowanceChargeReason") || AC_REASON[val(ac, "AllowanceChargeReasonCode")] || val(ac, "AllowanceChargeReasonCode");
-        return [reason || (charge ? "Charge" : "Allowance") + (list.length > 1 ? " " + (i + 1) : ""), (charge ? "+ " : "− ") + fmtMoney(val(ac, "Amount")) +
+        const code = val(ac, "AllowanceChargeReasonCode");
+        const reason = val(ac, "AllowanceChargeReason") || (AC_REASON[code] ? T(AC_REASON[code]) : code);
+        return [reason || T(charge ? "Charge" : "Allowance") + (list.length > 1 ? " " + (i + 1) : ""), (charge ? "+ " : "− ") + fmtMoney(val(ac, "Amount")) +
           (val(ac, "MultiplierFactorNumeric") ? ' <span class="muted">(' + esc(val(ac, "MultiplierFactorNumeric")) + " %)</span>" : "") +
           (val(ac, "TaxCategory/Percent") ? ' <span class="vat-chip">' + esc(val(ac, "TaxCategory/Percent")) + " % " + esc(val(ac, "TaxCategory/ID")) + "</span>" : "")];
       })) + "</div>");
     });
-    if (cards.length) h += '<h3 class="sh">Payment &amp; references</h3><div class="info">' + cards.join("") + "</div>";
+    if (cards.length) h += '<h3 class="sh">' + esc(T("Payment & references")) + '</h3><div class="info">' + cards.join("") + "</div>";
 
     // Attachments
-    if (state.atts.length) h += '<h3 class="sh">Attachments · ' + state.atts.length + '</h3><div class="atts">' + state.atts.map((a, i) => attTile(i).replace('id="att-' + i + '"', "")).join("") + "</div>";
+    if (state.atts.length) h += '<h3 class="sh">' + T("Attachments · {n}", { n: state.atts.length }) + '</h3><div class="atts">' + state.atts.map((a, i) => attTile(i).replace('id="att-' + i + '"', "")).join("") + "</div>";
 
     h += "</div>";
     $("pOverview").innerHTML = h;
@@ -1163,13 +1188,13 @@
   function renderFieldsTab() {
     const sections = buildSections();
     const byId = new Map(sections.map((s) => [s.id, s]));
-    const menu = (cls) => '<nav class="fnav ' + cls + '" aria-label="Sections">' + NAV_GROUPS.map(([label, ids]) => {
+    const menu = (cls) => '<nav class="fnav ' + cls + '" aria-label="' + esc(T("Sections")) + '">' + NAV_GROUPS.map(([label, ids]) => {
       const items = ids.filter((id) => byId.has(id)).map((id) => {
         const s = byId.get(id);
-        return '<a href="#sec-' + id + '" data-sec="' + id + '">' + dot(id) + esc(s.title) +
+        return '<a href="#sec-' + id + '" data-sec="' + id + '">' + dot(id) + esc(T(s.title)) +
           (s.count ? '<span class="n">' + s.count + "</span>" : "") + "</a>";
       }).join("");
-      return items ? '<div class="glabel">' + esc(label) + "</div>" + items : "";
+      return items ? '<div class="glabel">' + esc(T(label)) + "</div>" + items : "";
     }).join("") + "</nav>";
     const main = sections.filter((s) => s.id !== "lines").map((s) => s.html).join("");
     const lines = byId.get("lines");
@@ -1217,7 +1242,7 @@
     $("attCount").textContent = state.atts.length;
     $("pAtts").innerHTML = state.atts.length
       ? '<div class="atts">' + state.atts.map((a, i) => attTile(i)).join("") + "</div>"
-      : '<div class="sheet"><div class="none">This document has no embedded attachments.</div></div>';
+      : '<div class="sheet"><div class="none">' + T("This document has no embedded attachments.") + "</div></div>";
   }
 
   function render() {
@@ -1230,6 +1255,7 @@
     renderAttachments();
     $("rawXml").innerHTML = xmlHtml(state.root.ownerDocument);
     $("showEmpty").checked = state.showEmpty;
+    $("showTags").checked = state.showTags;
     $("out").hidden = false;
     $("intro").hidden = true;
   }
@@ -1266,11 +1292,11 @@
       });
     } else if (b.dataset.xml === "copy") {
       const label = b.textContent;
-      try { await navigator.clipboard.writeText(state.text || ""); b.textContent = "Copied"; }
+      try { await navigator.clipboard.writeText(state.text || ""); b.textContent = T("Copied"); }
       catch (err) {
         const ta = document.createElement("textarea");
         ta.value = state.text || ""; document.body.appendChild(ta); ta.select();
-        try { document.execCommand("copy"); b.textContent = "Copied"; } catch (e2) { b.textContent = "Copy failed"; }
+        try { document.execCommand("copy"); b.textContent = T("Copied"); } catch (e2) { b.textContent = T("Copy failed"); }
         ta.remove();
       }
       setTimeout(() => { b.textContent = label; }, 1500);
@@ -1287,20 +1313,34 @@
     try { localStorage.setItem("edocxml.showEmpty", state.showEmpty ? "1" : "0"); } catch (err) {}
     renderFieldsTab();
   });
+  // XML tags are always in the page; the checkbox only shows or hides them.
+  $("showTags").addEventListener("change", (e) => {
+    state.showTags = e.target.checked;
+    try { localStorage.setItem("edocxml.showTags", state.showTags ? "1" : "0"); } catch (err) {}
+    $("content").classList.toggle("show-tags", state.showTags);
+    if ($("filter").value) applyFilter();
+  });
 
+  // Text the filter searches: XML tags count only while they are shown.
+  function searchText(el) {
+    if (state.showTags || !el.querySelector(".xtag")) return el.textContent.toLowerCase();
+    const c = el.cloneNode(true);
+    c.querySelectorAll(".xtag").forEach((x) => x.remove());
+    return c.textContent.toLowerCase();
+  }
   function applyFilter() {
     const q = $("filter").value.trim().toLowerCase();
     const content = $("content");
-    content.querySelectorAll(".row").forEach((r) => { r.hidden = q && !r.textContent.toLowerCase().includes(q); });
+    content.querySelectorAll(".row").forEach((r) => { r.hidden = q && !searchText(r).includes(q); });
     content.querySelectorAll("tr.line").forEach((tr) => {
       const d = content.querySelector('tr[data-detail="' + tr.dataset.line + '"]');
-      const hit = !q || tr.textContent.toLowerCase().includes(q) || (d && d.textContent.toLowerCase().includes(q));
+      const hit = !q || searchText(tr).includes(q) || (d && searchText(d).includes(q));
       tr.hidden = !hit;
       const err = content.querySelector('tr[data-errline="' + tr.dataset.line + '"]');
       if (err) err.hidden = !hit;
       if (d) { if (q && hit) setLine(tr, true); if (!hit) d.hidden = true; }
     });
-    content.querySelectorAll("tr.frow:not(.line)").forEach((tr) => { tr.hidden = q && !tr.textContent.toLowerCase().includes(q); });
+    content.querySelectorAll("tr.frow:not(.line)").forEach((tr) => { tr.hidden = q && !searchText(tr).includes(q); });
     content.querySelectorAll(".sub").forEach((s) => { s.hidden = q && !s.querySelector(".row:not([hidden]), tr.frow:not([hidden])"); });
     content.querySelectorAll(".card").forEach((c) => { c.hidden = q && !c.querySelector(".row:not([hidden]), tr.frow:not([hidden])"); });
     content.querySelectorAll(".fnav a[data-sec]").forEach((a) => { const c = $("sec-" + a.dataset.sec); a.hidden = !!(c && c.hidden); });
@@ -1358,7 +1398,13 @@
 
   // ---------- Loading ----------
   const lbMsg = $("lbMsg"), drop = $("drop"), pasteArea = $("pasteArea"), pasteBtn = $("pasteBtn");
-  function setMsg(html, bad) { lbMsg.innerHTML = html; lbMsg.className = "lb-msg" + (bad ? " bad" : ""); }
+  // The message is kept as a function so it can be shown again in another language.
+  let lastMsg = null;
+  function setMsg(html, bad) {
+    lastMsg = typeof html === "function" ? html : null;
+    lbMsg.innerHTML = lastMsg ? lastMsg() : html;
+    lbMsg.className = "lb-msg" + (bad ? " bad" : "");
+  }
 
   function load(text, name) {
     text = String(text || "").replace(/^﻿/, "").trim();
@@ -1380,7 +1426,8 @@
     const doc = new DOMParser().parseFromString(text, "application/xml");
     const err = doc.getElementsByTagName("parsererror")[0];
     if (err) {
-      setMsg("<b>Not valid XML.</b> " + esc((err.textContent || "").split("\n").filter(Boolean)[0] || ""), true);
+      const why = esc((err.textContent || "").split("\n").filter(Boolean)[0] || "");
+      setMsg(() => "<b>" + T("Not valid XML.") + "</b> " + why, true);
       return false;
     }
     let root = doc.documentElement, wrapped = "";
@@ -1388,22 +1435,24 @@
     if (!kinds.includes(root.localName)) {
       const found = Array.from(root.getElementsByTagName("*")).find((e) => kinds.includes(e.localName));
       if (!found) {
-        const hint = /CrossIndustryInvoice/.test(root.localName) ? " This is a CII (UN/CEFACT) invoice; this viewer reads UBL." : "";
-        setMsg("<b>No UBL Invoice or CreditNote found.</b> Root element is &lt;" + esc(root.localName) + "&gt;." + hint, true);
+        const name = root.localName, cii = /CrossIndustryInvoice/.test(name);
+        setMsg(() => "<b>" + T("No UBL Invoice or CreditNote found.") + "</b> " + esc(T("Root element is <{name}>.", { name })) +
+          (cii ? " " + T("This is a CII (UN/CEFACT) invoice; this viewer reads UBL.") : ""), true);
         return false;
       }
       wrapped = root.localName; root = found;
     }
     // Extra rule sets (PEPPOL, France …) start from what the CustomizationID says; the Checks card can change them.
-    Object.assign(state, { root, kind: root.localName, name: name || "Pasted XML", size: text.length, wrapped, text, ruleSets: EN16931.detect(root) });
+    Object.assign(state, { root, kind: root.localName, name: name || "", size: text.length, wrapped, text, ruleSets: EN16931.detect(root) });
     $("filter").value = "";
     render();
     showTab("overview");
     drop.classList.add("loaded");
-    setMsg("<b>" + esc(state.name) + "</b> · " + formatSize(new Blob([text]).size) + " · " +
-      (state.kind === "CreditNote" ? "credit note" : "invoice") + " " + esc(val(root, "ID")) +
-      (dashes ? " · removed " + dashes + " leading “-” from tags" : "") +
-      (amps ? " · escaped " + amps + " bare “&amp;”" : ""));
+    const size = formatSize(new Blob([text]).size);
+    setMsg(() => "<b>" + esc(state.name || T("Pasted XML")) + "</b> · " + size + " · " +
+      T(state.kind === "CreditNote" ? "credit note" : "invoice") + " " + esc(val(state.root, "ID")) +
+      (dashes ? " · " + T("removed {n} leading “-” from tags", { n: dashes }) : "") +
+      (amps ? " · " + esc(T("escaped {n} bare “&”", { n: amps })) : ""));
     $("clearBtn").hidden = false;
     pasteArea.hidden = true; pasteBtn.setAttribute("aria-expanded", "false");
     return true;
@@ -1419,14 +1468,14 @@
     pasteArea.value = "";
     drop.classList.remove("loaded");
     $("clearBtn").hidden = true;
-    setMsg("Drop a UBL invoice or credit note XML here, or paste it anywhere with Ctrl+V.");
+    setMsg(() => T("Drop a UBL invoice or credit note XML here, or paste it anywhere with Ctrl+V."));
   }
 
   function loadFile(f) {
     if (!f) return;
     const r = new FileReader();
     r.onload = () => load(String(r.result), f.name);
-    r.onerror = () => setMsg("Couldn't read " + esc(f.name) + ".", true);
+    r.onerror = () => setMsg(() => esc(T("Couldn't read {name}.", { name: f.name })), true);
     r.readAsText(f);
   }
 
@@ -1438,8 +1487,8 @@
     if (pasteArea.hidden && navigator.clipboard && navigator.clipboard.readText) {
       try {
         const text = await navigator.clipboard.readText();
-        if (text && text.trim()) { load(text, "Pasted XML"); return; }
-        setMsg("The clipboard is empty. Copy the XML first, then click Paste text.", true);
+        if (text && text.trim()) { load(text, ""); return; }
+        setMsg(() => T("The clipboard is empty. Copy the XML first, then click Paste text."), true);
         return;
       } catch (e) {}
     }
@@ -1448,7 +1497,7 @@
     if (!pasteArea.hidden) pasteArea.focus();
   });
   let t;
-  pasteArea.addEventListener("input", () => { clearTimeout(t); t = setTimeout(() => load(pasteArea.value, "Pasted XML"), 250); });
+  pasteArea.addEventListener("input", () => { clearTimeout(t); t = setTimeout(() => load(pasteArea.value, ""), 250); });
 
   // Paste anywhere (except into the filter box or the paste area itself).
   document.addEventListener("paste", (e) => {
@@ -1458,8 +1507,29 @@
     if (!dt) return;
     if (dt.files && dt.files.length) { e.preventDefault(); loadFile(dt.files[0]); return; }
     const text = dt.getData("text");
-    if (text && text.trim()) { e.preventDefault(); load(text, "Pasted XML"); }
+    if (text && text.trim()) { e.preventDefault(); load(text, ""); }
   });
+
+  // Language: redraw everything in the new one, keeping the open tab and scroll position.
+  const langBtns = $("lang").querySelectorAll("[data-lang]");
+  const markLang = () => langBtns.forEach((b) => b.setAttribute("aria-pressed", b.dataset.lang === I18N.lang ? "true" : "false"));
+  langBtns.forEach((b) => b.addEventListener("click", () => I18N.set(b.dataset.lang)));
+  markLang();
+  I18N.onChange(() => {
+    markLang();
+    setDisplayNames();
+    if (lastMsg) lbMsg.innerHTML = lastMsg();
+    if (!state.root) return;
+    const tab = document.querySelector('.tab[aria-selected="true"]');
+    const y = window.scrollY;
+    render();
+    showTab(tab ? tab.dataset.tab : "overview");
+    window.scrollTo(0, y);
+  });
+  I18N.applyStatic();
+  setMsg(() => T("Drop a UBL invoice or credit note XML here, or paste it anywhere with Ctrl+V."));
+  $("content").classList.toggle("show-tags", state.showTags);
+  $("showTags").checked = state.showTags;
 
   // Drop anywhere on the page.
   let depth = 0;

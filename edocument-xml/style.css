@@ -417,3 +417,23 @@ dialog#viewer::backdrop { background: rgba(20, 18, 14, 0.6); }
   .hero, .sheet { padding: 16px; }
   .hero-amount { text-align: left; align-items: flex-start; }
 }
+
+/* Language picker in the top bar */
+#toolsNav .nav-end { display: flex; align-items: center; gap: 10px; }
+.lang-switch { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--paper); }
+.lang-switch button {
+  display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 0.82rem; padding: 3px 9px; border: 0; margin: 0;
+  background: transparent; color: var(--muted); cursor: pointer; border-radius: 0;
+}
+.lang-switch button + button { border-left: 1px solid var(--line); }
+.lang-switch button[aria-pressed="true"] { background: var(--accent-soft); color: var(--ink); font-weight: 600; }
+.lang-switch button:hover { color: var(--ink); }
+.lang-switch .flag { width: 20px; height: 13px; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.15); flex: none; }
+@media (max-width: 520px) { .lang-switch button span { display: none; } }
+
+/* "Show XML tags": each field's UBL path under its label */
+.xtag { display: none; }
+.show-tags .xtag {
+  display: block; margin-top: 2px; font: 0.68rem/1.35 "JetBrains Mono", ui-monospace, Consolas, monospace; font-style: normal;
+  color: var(--accent); text-transform: none; letter-spacing: 0; font-weight: 400; overflow-wrap: anywhere; white-space: normal;
+}

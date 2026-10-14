@@ -49,47 +49,47 @@
 
       // ---------- Seller and buyer identity ----------
       const sellerSiren = legalId(seller, "0002");
-      rule("FR-01", seller, !!sellerSiren, "Seller legal registration (BT-30) is a SIREN (scheme 0002)");
+      rule("FR-01", seller, !!sellerSiren, "Seller legal registration (BT-30) must be a SIREN (scheme 0002)");
       each("FR-02", items(c.allEls.filter((e) => e.getAttribute("schemeID") === "0002"), (el) => el.localName + " " + txt(el)), (el) => siren(txt(el)),
-        "SIREN numbers have 9 digits and a valid check digit");
+        "SIREN numbers must have 9 digits and a valid check digit");
       each("FR-03", items(c.allEls.filter((e) => e.getAttribute("schemeID") === "0009"), (el) => el.localName + " " + txt(el)), (el) => siret(txt(el)),
-        "SIRET numbers have 14 digits and a valid check digit");
-      if (!franchise) rule("FR-04", seller, c.taxIds(seller, true).length > 0, "Seller VAT identifier (BT-31) is given (not needed only under the VAT franchise)");
+        "SIRET numbers must have 14 digits and a valid check digit");
+      if (!franchise) rule("FR-04", seller, c.taxIds(seller, true).length > 0, "Seller VAT ID (BT-31) must be given (except under the VAT franchise)");
       const frIds = [[seller, "seller"], [buyer, "buyer"]].flatMap(([p, who]) => c.taxIds(p, true).filter((v) => v.startsWith("FR")).map((v) => ({ el: p, name: who + " " + v, v })));
-      each("FR-05", frIds, (el, o) => frVat(o.v), "French VAT identifiers are FR + a valid 2-character key + the 9-digit SIREN");
+      each("FR-05", frIds, (el, o) => frVat(o.v), "French VAT IDs must be FR + a valid 2-character key + the 9-digit SIREN");
       const sellerFrVat = c.taxIds(seller, true).find((v) => v.startsWith("FR"));
       if (sellerSiren && sellerFrVat) rule("FR-06", seller, sellerFrVat.slice(4) === txt(sellerSiren),
-        "Seller VAT identifier contains the seller SIREN", sellerFrVat + " / " + txt(sellerSiren), true);
+        "Seller VAT ID should contain the seller SIREN", sellerFrVat + " / " + txt(sellerSiren), true);
       if (country(buyer) === "FR" && !b2c) {
         const buyerSiren = legalId(buyer, "0002");
-        rule("FR-07", buyer, !!buyerSiren, "French business buyer: legal registration (BT-47) is a SIREN (scheme 0002)");
+        rule("FR-07", buyer, !!buyerSiren, "French business buyer: legal registration (BT-47) must be a SIREN (scheme 0002)");
       }
       rule("FR-08", [seller, buyer], !!first(seller, "EndpointID") && !!first(buyer, "EndpointID"),
-        "Seller and buyer electronic addresses (BT-34, BT-49) are given for routing through the platforms");
-      rule("FR-17", seller, addressOk(seller), "Seller address has street, city and post code (legal mention)");
-      if (!b2c) rule("FR-18", buyer, addressOk(buyer), "Buyer address has street, city and post code (legal mention)");
+        "Seller and buyer electronic addresses (BT-34, BT-49) must be given for routing");
+      rule("FR-17", seller, addressOk(seller), "Seller address must have street, city and post code (legal mention)");
+      if (!b2c) rule("FR-18", buyer, addressOk(buyer), "Buyer address must have street, city and post code (legal mention)");
 
       // ---------- Document ----------
       rule("FR-11", first(R, "ProfileID") || R, FRAMEWORKS.has(val(R, "ProfileID")),
-        "Business process (BT-23) is a French billing framework code (B1, S1, M1, B2 …)", val(R, "ProfileID") || "missing");
+        "Business process (BT-23) must be a French billing framework code (B1, S1, M1, B2 …)", val(R, "ProfileID") || "missing");
       if (c.typeCode) rule("FR-12", first(R, c.cn ? "CreditNoteTypeCode" : "InvoiceTypeCode"), DOC_TYPES.has(c.typeCode),
-        "Document type (BT-3) is one the French reform accepts", c.typeCode);
+        "Document type (BT-3) must be one the French reform accepts", c.typeCode);
       const precedingRef = has(R, "BillingReference/InvoiceDocumentReference/ID");
-      if (CORRECTIVE.has(c.typeCode)) rule("FR-13", R, precedingRef, "A corrective invoice references the invoice it corrects (BT-25)", c.typeCode);
-      if (CREDIT.has(c.typeCode)) rule("FR-14", R, precedingRef, "A credit note references the invoice it credits (BT-25)", c.typeCode, true);
+      if (CORRECTIVE.has(c.typeCode)) rule("FR-13", R, precedingRef, "A corrective invoice must reference the invoice it corrects (BT-25)", c.typeCode);
+      if (CREDIT.has(c.typeCode)) rule("FR-14", R, precedingRef, "A credit note should reference the invoice it credits (BT-25)", c.typeCode, true);
       const id = val(R, "ID");
       if (id) rule("FR-16", first(R, "ID"), id.length <= 35 && /^[A-Za-z0-9+\-_/]+$/.test(id),
-        "Invoice number (BT-1) has at most 35 characters: letters, digits, + - _ /", id, true);
+        "Invoice number (BT-1) should have at most 35 characters: letters, digits, + - _ /", id, true);
       if (num(val(c.lmt, "PayableAmount")) > 0) rule("FR-15", R, has(R, "DueDate") || has(R, "PaymentMeans/PaymentDueDate"),
-        "A payment due date (BT-9) is given (legal mention)");
+        "A payment due date (BT-9) must be given (legal mention)");
       rule("FR-19", R, has(R, "Delivery/ActualDeliveryDate") || !!first(R, "InvoicePeriod"),
-        "Delivery date (BT-72) or invoicing period (BG-14) is given (date of the sale or service)", "", true);
+        "Delivery date (BT-72) or invoicing period (BG-14) should be given (date of the sale or service)", "", true);
 
       // ---------- Mandatory notes ----------
       [["PMT", "fixed recovery fee of 40 € (indemnité forfaitaire)"], ["PMD", "late payment penalties"], ["AAB", "early payment discount (escompte)"]]
-        .forEach(([code, what]) => rule("FR-09", noteOf(code) ? noteOf(code).el : R, !!noteOf(code), "Note #" + code + "# states the " + what));
+        .forEach(([code, what]) => rule("FR-09", noteOf(code) ? noteOf(code).el : R, !!noteOf(code), "Note #" + code + "# must state the " + what));
       rule("FR-10", noteOf("BAR") ? noteOf("BAR").el : R, OPERATIONS.has(operation),
-        "Note #BAR# gives the operation type (B2B, B2BINT, B2C, OUTOFSCOPE or ARCHIVEONLY)", operation || "missing", true);
+        "Note #BAR# should give the operation type (B2B, B2BINT, B2C, OUTOFSCOPE or ARCHIVEONLY)", operation || "missing", true);
     }
   });
 })();

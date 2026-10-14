@@ -33,7 +33,7 @@
   const has = (ctx, path) => !!val(ctx, path);
   function num(raw) { const s = String(raw).trim(); const n = Number(s); return s !== "" && isFinite(n) ? n : null; }
   const round = (x) => Math.round(x * 100) / 100;
-  const fmt = (x) => round(x).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmt = (x) => round(x).toLocaleString(window.I18N ? I18N.locale() : undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   // ---------- Code lists ----------
   const VAT_CAT = {
@@ -90,13 +90,13 @@
     { cat: "M", prefix: "IP", party: "seller", rate: "nonneg", reason: false, single: false, calc: true }
   ];
   const PARTY_TEXT = {
-    seller: "the seller VAT identifier (BT-31), tax registration (BT-32) or tax representative VAT identifier (BT-63) is present",
-    reverse: "seller VAT ID (BT-31), tax registration (BT-32) or representative VAT ID (BT-63), and buyer VAT ID (BT-48) or legal registration (BT-47), are present",
-    intra: "seller VAT ID (BT-31) or representative VAT ID (BT-63), and buyer VAT ID (BT-48), are present",
-    export: "the seller VAT identifier (BT-31) or tax representative VAT identifier (BT-63) is present",
-    none: "no seller, tax representative or buyer VAT identifier (BT-31, BT-63, BT-48) is present"
+    seller: "the seller VAT ID (BT-31), tax registration (BT-32) or tax representative VAT ID (BT-63) must be present",
+    reverse: "seller VAT ID (BT-31), tax registration (BT-32) or representative VAT ID (BT-63), and buyer VAT ID (BT-48) or legal registration (BT-47), must be present",
+    intra: "seller VAT ID (BT-31) or representative VAT ID (BT-63), and buyer VAT ID (BT-48), must be present",
+    export: "the seller VAT ID (BT-31) or tax representative VAT ID (BT-63) must be present",
+    none: "no seller, tax representative or buyer VAT ID (BT-31, BT-63, BT-48) may be present"
   };
-  const RATE_TEXT = { pos: "the VAT rate is greater than 0", zero: "the VAT rate is 0", absent: "no VAT rate is given", nonneg: "the VAT rate is 0 or greater" };
+  const RATE_TEXT = { pos: "the VAT rate must be greater than 0", zero: "the VAT rate must be 0", absent: "no VAT rate may be given", nonneg: "the VAT rate must be 0 or greater" };
   const RATE_OK = {
     pos: (o) => o.rate !== null && o.rate > 0,
     zero: (o) => o.rate === 0,
@@ -197,95 +197,95 @@
     const lmt = first(R, "LegalMonetaryTotal");
 
     // ---------- Mandatory content ----------
-    req("BR-01", R, "CustomizationID", "Specification identifier (BT-24) is present");
-    req("BR-02", R, "ID", "Invoice number (BT-1) is present");
-    req("BR-03", R, "IssueDate", "Issue date (BT-2) is present");
-    req("BR-04", R, cn ? "CreditNoteTypeCode" : "InvoiceTypeCode", "Invoice type code (BT-3) is present");
-    req("BR-05", R, "DocumentCurrencyCode", "Invoice currency code (BT-5) is present");
-    req("BR-06", seller, "PartyLegalEntity/RegistrationName", "Seller name (BT-27) is present");
-    req("BR-07", buyer, "PartyLegalEntity/RegistrationName", "Buyer name (BT-44) is present");
-    rule("BR-08", seller, !!first(seller, "PostalAddress"), "Seller postal address (BG-5) is present");
-    req("BR-09", seller, "PostalAddress/Country/IdentificationCode", "Seller country code (BT-40) is present");
-    rule("BR-10", buyer, !!first(buyer, "PostalAddress"), "Buyer postal address (BG-8) is present");
-    req("BR-11", buyer, "PostalAddress/Country/IdentificationCode", "Buyer country code (BT-55) is present");
-    req("BR-12", lmt, "LineExtensionAmount", "Sum of line net amounts (BT-106) is present");
-    req("BR-13", lmt, "TaxExclusiveAmount", "Total without VAT (BT-109) is present");
-    req("BR-14", lmt, "TaxInclusiveAmount", "Total with VAT (BT-112) is present");
-    req("BR-15", lmt, "PayableAmount", "Amount due for payment (BT-115) is present");
-    rule("BR-16", R, lines.length > 0, "The document has at least one line (BG-25)");
-    if (payee) req("BR-17", payee, "PartyName/Name", "Payee name (BT-59) is present");
+    req("BR-01", R, "CustomizationID", "Specification identifier (BT-24) must be present");
+    req("BR-02", R, "ID", "Invoice number (BT-1) must be present");
+    req("BR-03", R, "IssueDate", "Issue date (BT-2) must be present");
+    req("BR-04", R, cn ? "CreditNoteTypeCode" : "InvoiceTypeCode", "Invoice type code (BT-3) must be present");
+    req("BR-05", R, "DocumentCurrencyCode", "Invoice currency code (BT-5) must be present");
+    req("BR-06", seller, "PartyLegalEntity/RegistrationName", "Seller name (BT-27) must be present");
+    req("BR-07", buyer, "PartyLegalEntity/RegistrationName", "Buyer name (BT-44) must be present");
+    rule("BR-08", seller, !!first(seller, "PostalAddress"), "Seller postal address (BG-5) must be present");
+    req("BR-09", seller, "PostalAddress/Country/IdentificationCode", "Seller country code (BT-40) must be present");
+    rule("BR-10", buyer, !!first(buyer, "PostalAddress"), "Buyer postal address (BG-8) must be present");
+    req("BR-11", buyer, "PostalAddress/Country/IdentificationCode", "Buyer country code (BT-55) must be present");
+    req("BR-12", lmt, "LineExtensionAmount", "Sum of line net amounts (BT-106) must be present");
+    req("BR-13", lmt, "TaxExclusiveAmount", "Total without VAT (BT-109) must be present");
+    req("BR-14", lmt, "TaxInclusiveAmount", "Total with VAT (BT-112) must be present");
+    req("BR-15", lmt, "PayableAmount", "Amount due for payment (BT-115) must be present");
+    rule("BR-16", R, lines.length > 0, "The document must have at least one line (BG-25)");
+    if (payee) req("BR-17", payee, "PartyName/Name", "Payee name (BT-59) must be present");
     if (rep) {
-      req("BR-18", rep, "PartyName/Name", "Tax representative name (BT-62) is present");
-      rule("BR-19", rep, !!first(rep, "PostalAddress"), "Tax representative postal address (BG-12) is present");
-      req("BR-20", rep, "PostalAddress/Country/IdentificationCode", "Tax representative country code (BT-69) is present");
-      rule("BR-56", rep, taxIds(rep, true).length > 0, "Tax representative VAT identifier (BT-63) is present");
+      req("BR-18", rep, "PartyName/Name", "Tax representative name (BT-62) must be present");
+      rule("BR-19", rep, !!first(rep, "PostalAddress"), "Tax representative postal address (BG-12) must be present");
+      req("BR-20", rep, "PostalAddress/Country/IdentificationCode", "Tax representative country code (BT-69) must be present");
+      rule("BR-56", rep, taxIds(rep, true).length > 0, "Tax representative VAT identifier (BT-63) must be present");
     }
 
     // ---------- Lines ----------
-    each("BR-21", lines, (el) => has(el, "ID"), "Every line has a line identifier (BT-126)");
-    each("BR-22", lines, (el) => has(el, qtyTag), "Every line has an invoiced quantity (BT-129)");
-    each("BR-23", lines, (el) => { const q = first(el, qtyTag); return !!(q && q.getAttribute("unitCode")); }, "Every line has a quantity unit of measure (BT-130)");
-    each("BR-24", lines, (el) => has(el, "LineExtensionAmount"), "Every line has a line net amount (BT-131)");
-    each("BR-25", lines, (el) => has(el, "Item/Name"), "Every line has an item name (BT-153)");
-    each("BR-26", lines, (el) => has(el, "Price/PriceAmount"), "Every line has an item net price (BT-146)");
+    each("BR-21", lines, (el) => has(el, "ID"), "Each line must have a line identifier (BT-126)");
+    each("BR-22", lines, (el) => has(el, qtyTag), "Each line must have an invoiced quantity (BT-129)");
+    each("BR-23", lines, (el) => { const q = first(el, qtyTag); return !!(q && q.getAttribute("unitCode")); }, "Each line must have a unit of measure (BT-130)");
+    each("BR-24", lines, (el) => has(el, "LineExtensionAmount"), "Each line must have a net amount (BT-131)");
+    each("BR-25", lines, (el) => has(el, "Item/Name"), "Each line must have an item name (BT-153)");
+    each("BR-26", lines, (el) => has(el, "Price/PriceAmount"), "Each line must have an item net price (BT-146)");
     each("BR-27", lines.filter((o) => has(o.el, "Price/PriceAmount")), (el) => nonNeg(val(el, "Price/PriceAmount")),
-      "Item net price (BT-146) is not negative");
+      "Item net price (BT-146) must not be negative");
     each("BR-28", lines.filter((o) => has(o.el, "Price/AllowanceCharge/BaseAmount")), (el) => nonNeg(val(el, "Price/AllowanceCharge/BaseAmount")),
-      "Item gross price (BT-148) is not negative");
-    each("BR-CO-04", lines, (el, o) => !!o.cat, "Every line has a VAT category code (BT-151)");
+      "Item gross price (BT-148) must not be negative");
+    each("BR-CO-04", lines, (el, o) => !!o.cat, "Each line must have a VAT category code (BT-151)");
     const fromLines = (path) => [].concat(...lines.map((l) => byPath(l.el, path)));
     each("BR-54", items(fromLines("Item/AdditionalItemProperty"), (el, i) => "item attribute " + (val(el, "Name") || i + 1)),
-      (el) => has(el, "Name") && has(el, "Value"), "Every item attribute (BG-32) has a name (BT-160) and a value (BT-161)");
+      (el) => has(el, "Name") && has(el, "Value"), "Each item attribute (BG-32) must have a name (BT-160) and a value (BT-161)");
     each("BR-64", items(fromLines("Item/StandardItemIdentification/ID"), txt),
-      (el) => !!el.getAttribute("schemeID"), "Item standard identifiers (BT-157) have a scheme (schemeID)");
+      (el) => !!el.getAttribute("schemeID"), "Item standard identifiers (BT-157) must have a scheme (schemeID)");
     each("BR-65", items(fromLines("Item/CommodityClassification/ItemClassificationCode"), txt),
-      (el) => !!el.getAttribute("listID"), "Item classification codes (BT-158) have a scheme (listID)");
+      (el) => !!el.getAttribute("listID"), "Item classification codes (BT-158) must have a scheme (listID)");
 
     // ---------- Periods ----------
     const period = first(R, "InvoicePeriod");
     if (period) {
       rule("BR-CO-19", period, has(period, "StartDate") || has(period, "EndDate") || has(period, "DescriptionCode"),
-        "Invoicing period (BG-14) has a start date, an end date or a description code");
+        "Invoicing period (BG-14) must have a start date, end date or description code");
       if (has(period, "StartDate") && has(period, "EndDate"))
-        rule("BR-29", period, val(period, "EndDate") >= val(period, "StartDate"), "Invoicing period end date (BT-74) is not before its start date (BT-73)",
+        rule("BR-29", period, val(period, "EndDate") >= val(period, "StartDate"), "Invoicing period end date (BT-74) must not be before its start date (BT-73)",
           val(period, "StartDate") + " → " + val(period, "EndDate"));
     }
     const linePeriods = lines.filter((o) => first(o.el, "InvoicePeriod"));
     each("BR-CO-20", linePeriods, (el) => has(el, "InvoicePeriod/StartDate") || has(el, "InvoicePeriod/EndDate"),
-      "Line periods (BG-26) have a start or end date");
+      "Line periods (BG-26) must have a start or end date");
     each("BR-30", linePeriods.filter((o) => has(o.el, "InvoicePeriod/StartDate") && has(o.el, "InvoicePeriod/EndDate")),
-      (el) => val(el, "InvoicePeriod/EndDate") >= val(el, "InvoicePeriod/StartDate"), "Line period end date (BT-135) is not before its start date (BT-134)");
+      (el) => val(el, "InvoicePeriod/EndDate") >= val(el, "InvoicePeriod/StartDate"), "Line period end date (BT-135) must not be before its start date (BT-134)");
     if (has(R, "TaxPointDate") || has(R, "InvoicePeriod/DescriptionCode"))
       rule("BR-CO-03", R, !(has(R, "TaxPointDate") && has(R, "InvoicePeriod/DescriptionCode")),
-        "VAT point date (BT-7) and VAT point date code (BT-8) are not both used");
+        "VAT point date (BT-7) and VAT point date code (BT-8) must not both be used");
 
     // ---------- Allowances and charges ----------
     const hasReason = (el) => has(el, "AllowanceChargeReason") || has(el, "AllowanceChargeReasonCode");
-    each("BR-31", allows, (el) => has(el, "Amount"), "Document level allowances have an amount (BT-92)");
-    each("BR-32", allows, (el, o) => !!o.cat, "Document level allowances have a VAT category code (BT-95)");
-    each("BR-CO-21", allows, hasReason, "Document level allowances have a reason (BT-97) or reason code (BT-98)");
-    each("BR-36", charges, (el) => has(el, "Amount"), "Document level charges have an amount (BT-99)");
-    each("BR-37", charges, (el, o) => !!o.cat, "Document level charges have a VAT category code (BT-102)");
-    each("BR-CO-22", charges, hasReason, "Document level charges have a reason (BT-104) or reason code (BT-105)");
-    each("BR-41", lineAllows, (el) => has(el, "Amount"), "Line allowances have an amount (BT-136)");
-    each("BR-CO-23", lineAllows, hasReason, "Line allowances have a reason (BT-139) or reason code (BT-140)");
-    each("BR-43", lineCharges, (el) => has(el, "Amount"), "Line charges have an amount (BT-141)");
-    each("BR-CO-24", lineCharges, hasReason, "Line charges have a reason (BT-144) or reason code (BT-145)");
+    each("BR-31", allows, (el) => has(el, "Amount"), "Document allowances must have an amount (BT-92)");
+    each("BR-32", allows, (el, o) => !!o.cat, "Document allowances must have a VAT category code (BT-95)");
+    each("BR-CO-21", allows, hasReason, "Document allowances must have a reason (BT-97) or reason code (BT-98)");
+    each("BR-36", charges, (el) => has(el, "Amount"), "Document charges must have an amount (BT-99)");
+    each("BR-37", charges, (el, o) => !!o.cat, "Document charges must have a VAT category code (BT-102)");
+    each("BR-CO-22", charges, hasReason, "Document charges must have a reason (BT-104) or reason code (BT-105)");
+    each("BR-41", lineAllows, (el) => has(el, "Amount"), "Line allowances must have an amount (BT-136)");
+    each("BR-CO-23", lineAllows, hasReason, "Line allowances must have a reason (BT-139) or reason code (BT-140)");
+    each("BR-43", lineCharges, (el) => has(el, "Amount"), "Line charges must have an amount (BT-141)");
+    each("BR-CO-24", lineCharges, hasReason, "Line charges must have a reason (BT-144) or reason code (BT-145)");
 
     // ---------- VAT breakdown ----------
-    rule("BR-CO-18", vatTotal, subs.length > 0, "The document has at least one VAT breakdown (BG-23)");
-    each("BR-45", subs, (el) => has(el, "TaxableAmount"), "Every VAT breakdown has a taxable amount (BT-116)");
-    each("BR-46", subs, (el) => has(el, "TaxAmount"), "Every VAT breakdown has a VAT amount (BT-117)");
-    each("BR-47", subs, (el, o) => !!o.cat, "Every VAT breakdown has a VAT category code (BT-118)");
-    each("BR-48", subs, (el, o) => o.cat === "O" || !!o.rateRaw, "Every VAT breakdown, except “not subject to VAT”, has a VAT rate (BT-119)");
+    rule("BR-CO-18", vatTotal, subs.length > 0, "The document must have at least one VAT breakdown (BG-23)");
+    each("BR-45", subs, (el) => has(el, "TaxableAmount"), "Each VAT breakdown must have a taxable amount (BT-116)");
+    each("BR-46", subs, (el) => has(el, "TaxAmount"), "Each VAT breakdown must have a VAT amount (BT-117)");
+    each("BR-47", subs, (el, o) => !!o.cat, "Each VAT breakdown must have a VAT category code (BT-118)");
+    each("BR-48", subs, (el, o) => o.cat === "O" || !!o.rateRaw, "Each VAT breakdown, except “not subject to VAT”, must have a VAT rate (BT-119)");
     subs.forEach((s) => {
       if (s.amt === null || s.tax === null) return;
-      if (s.rate === null || round(s.rate) === 0) cmp("BR-CO-17", s.el, 0, s.tax, s.name + ": VAT amount is 0 at a 0 % rate", "BT-117");
-      else cmp("BR-CO-17", s.el, round(s.amt * s.rate / 100), s.tax, s.name + ": VAT amount = taxable amount × rate", "BT-117", 1,
+      if (s.rate === null || round(s.rate) === 0) cmp("BR-CO-17", s.el, 0, s.tax, s.name + ": VAT amount must be 0 at a 0 % rate", "BT-117");
+      else cmp("BR-CO-17", s.el, round(s.amt * s.rate / 100), s.tax, s.name + ": VAT amount must equal taxable amount × rate", "BT-117", 1,
         "BT-116 " + n(s.amt) + " × " + s.rateRaw + " %");
     });
     if (taxCur) rule("BR-53", vatTotal, taxTotals.some((t) => { const a = first(t, "TaxAmount"); return a && a.getAttribute("currencyID") === taxCur; }),
-      "VAT total in accounting currency (BT-111) is present because an accounting currency (BT-6) is given");
+      "VAT total in accounting currency (BT-111) must be present, because an accounting currency (BT-6) is given");
 
     // ---------- Totals ----------
     if (lmt) {
@@ -294,35 +294,35 @@
       const b109 = g("TaxExclusiveAmount"), b112 = g("TaxInclusiveAmount"), b113 = g("PrepaidAmount") || 0;
       const b114 = g("PayableRoundingAmount") || 0, b115 = g("PayableAmount");
       const inIncl = roundingInInclusive(R);
-      if (lines.length) cmp("BR-CO-10", lmt, sum(lines, "amt"), b106, "Sum of line net amounts", "BT-106", 0, terms(lines, "amt"));
-      if (allows.length || has(lmt, "AllowanceTotalAmount")) cmp("BR-CO-11", lmt, sum(allows, "amt"), g("AllowanceTotalAmount"), "Sum of document level allowances", "BT-107", 0, terms(allows, "amt"));
-      if (charges.length || has(lmt, "ChargeTotalAmount")) cmp("BR-CO-12", lmt, sum(charges, "amt"), g("ChargeTotalAmount"), "Sum of document level charges", "BT-108", 0, terms(charges, "amt"));
-      if (b106 !== null && b109 !== null) cmp("BR-CO-13", lmt, b106 - b107 + b108, b109, "Lines − allowances + charges", "BT-109", 0,
+      if (lines.length) cmp("BR-CO-10", lmt, sum(lines, "amt"), b106, "Sum of line net amounts (BT-106) must equal the line net amounts added up", "BT-106", 0, terms(lines, "amt"));
+      if (allows.length || has(lmt, "AllowanceTotalAmount")) cmp("BR-CO-11", lmt, sum(allows, "amt"), g("AllowanceTotalAmount"), "Sum of allowances (BT-107) must equal the document allowances added up", "BT-107", 0, terms(allows, "amt"));
+      if (charges.length || has(lmt, "ChargeTotalAmount")) cmp("BR-CO-12", lmt, sum(charges, "amt"), g("ChargeTotalAmount"), "Sum of charges (BT-108) must equal the document charges added up", "BT-108", 0, terms(charges, "amt"));
+      if (b106 !== null && b109 !== null) cmp("BR-CO-13", lmt, b106 - b107 + b108, b109, "Total without VAT (BT-109) must equal lines − allowances + charges", "BT-109", 0,
         "BT-106 " + n(b106) + " − BT-107 " + n(b107) + " + BT-108 " + n(b108));
       const vatCalc = "BT-109 " + n(b109) + " + BT-110 " + n(vat || 0);
       if (b109 !== null && b112 !== null) {
-        if (inIncl) cmp("BR-CO-15", lmt, b109 + (vat || 0) + b114, b112, "Total excl. VAT + VAT + rounding (rounding folded in, as older UBL samples do)", "BT-112", 0,
+        if (inIncl) cmp("BR-CO-15", lmt, b109 + (vat || 0) + b114, b112, "Total with VAT (BT-112) must equal total without VAT + VAT + rounding (rounding included, as in older UBL samples)", "BT-112", 0,
           vatCalc + " + BT-114 " + n(b114));
-        else cmp("BR-CO-15", lmt, b109 + (vat || 0), b112, "Total excl. VAT + VAT", "BT-112", 0, vatCalc);
+        else cmp("BR-CO-15", lmt, b109 + (vat || 0), b112, "Total with VAT (BT-112) must equal total without VAT + VAT", "BT-112", 0, vatCalc);
       }
       if (b112 !== null && b115 !== null) {
         const dueCalc = "BT-112 " + n(b112) + " − BT-113 " + n(b113);
-        if (inIncl) cmp("BR-CO-16", lmt, b112 - b113, b115, "Total incl. VAT − paid (rounding already included)", "BT-115", 0, dueCalc);
-        else cmp("BR-CO-16", lmt, b112 - b113 + b114, b115, b114 ? "Total incl. VAT − paid + rounding" : "Total incl. VAT − paid", "BT-115", 0,
+        if (inIncl) cmp("BR-CO-16", lmt, b112 - b113, b115, "Amount due (BT-115) must equal total with VAT − paid (rounding already included)", "BT-115", 0, dueCalc);
+        else cmp("BR-CO-16", lmt, b112 - b113 + b114, b115, b114 ? "Amount due (BT-115) must equal total with VAT − paid + rounding" : "Amount due (BT-115) must equal total with VAT − paid", "BT-115", 0,
           dueCalc + (b114 ? " + BT-114 " + n(b114) : ""));
       }
       if (b115 !== null && b115 > 0)
         rule("BR-CO-25", R, has(R, "DueDate") || has(R, "PaymentMeans/PaymentDueDate") || has(R, "PaymentTerms/Note"),
-          "A positive amount due has a payment due date (BT-9) or payment terms (BT-20)");
+          "A positive amount due must have a due date (BT-9) or payment terms (BT-20)");
     }
-    if (vat !== null && subs.length) cmp("BR-CO-14", vatTotal, sum(subs, "tax"), vat, "Sum of VAT breakdown amounts", "BT-110", 0, terms(subs, "tax"));
+    if (vat !== null && subs.length) cmp("BR-CO-14", vatTotal, sum(subs, "tax"), vat, "VAT total (BT-110) must equal the VAT breakdown amounts added up", "BT-110", 0, terms(subs, "tax"));
 
     // ---------- Decimals: amounts carry at most two ----------
     const decimals = (id, els, label) => {
       els = els.filter(Boolean);
       if (!els.length) return;
       const bad = els.filter((e) => (txt(e).split(".")[1] || "").length > 2);
-      rule(id, bad.length ? bad : els, !bad.length, label + " has at most 2 decimals", bad.length ? "Found " + names(bad.map(txt)) : "");
+      rule(id, bad.length ? bad : els, !bad.length, label + " must have at most 2 decimals", bad.length ? "Found " + names(bad.map(txt)) : "");
     };
     const at = (list, path) => list.map((o) => first(o.el, path));
     decimals("BR-DEC-01", at(allows, "Amount"), "Document allowance amount (BT-92)");
@@ -365,7 +365,7 @@
 
       if (L.length || A.length || C.length) {
         rule(id("01"), B.length ? B.map((b) => b.el) : vatTotal, v.single ? B.length === 1 : B.length > 0,
-          "Using " + nm + " needs " + (v.single ? "exactly one" : "a") + " VAT breakdown in that category", B.length + " found");
+          nm + " is used, so it must have " + (v.single ? "exactly one" : "a") + " VAT breakdown", B.length + " found");
         [["02", L, "lines"], ["03", A, "document allowances"], ["04", C, "document charges"]].forEach(([n, list, what]) => {
           if (list.length) rule(id(n), seller, partyOk[v.party], "With " + what + " in " + nm + ", " + PARTY_TEXT[v.party]);
         });
@@ -385,12 +385,12 @@
         return plus + (minus ? " − " + minus : "");
       };
       if (v.single) {
-        if (B.length) cmp(id("08"), B.map((b) => b.el), basis(() => true), sum(B, "amt"), "Taxable amount in " + nm + " = its lines + charges − allowances", "BT-116", 0,
+        if (B.length) cmp(id("08"), B.map((b) => b.el), basis(() => true), sum(B, "amt"), "Taxable amount in " + nm + " must equal its lines + charges − allowances", "BT-116", 0,
           basisCalc(() => true));
       } else {
         B.forEach((b) => {
           const match = (o) => o.rate !== null && b.rate !== null && round(o.rate) === round(b.rate);
-          const text = "Taxable amount in " + nm + " at " + (b.rateRaw || "?") + " % = lines + charges − allowances at that rate";
+          const text = "Taxable amount in " + nm + " at " + (b.rateRaw || "?") + " % must equal lines + charges − allowances at that rate";
           if (L.concat(A, C).some(match)) cmp(id("08"), b.el, basis(match), b.amt, text, "BT-116", 1, basisCalc(match));
           else rule(id("08"), b.el, false, text, "No line, allowance or charge is in " + v.cat + " at " + (b.rateRaw || "?") +
             " %, yet the breakdown taxes " + (b.amt === null ? "?" : fmt(b.amt)));
@@ -399,98 +399,98 @@
 
       B.forEach((b) => {
         if (b.tax === null) return;
-        if (!v.calc) cmp(id("09"), b.el, 0, b.tax, "VAT amount in " + nm + " is 0", "BT-117");
+        if (!v.calc) cmp(id("09"), b.el, 0, b.tax, "VAT amount in " + nm + " must be 0", "BT-117");
         else if (b.amt !== null && b.rate !== null)
-          cmp(id("09"), b.el, round(b.amt * b.rate / 100), b.tax, "VAT amount in " + nm + " at " + b.rateRaw + " % = taxable amount × rate", "BT-117", 1,
+          cmp(id("09"), b.el, round(b.amt * b.rate / 100), b.tax, "VAT amount in " + nm + " at " + b.rateRaw + " % must equal taxable amount × rate", "BT-117", 1,
             "BT-116 " + n(b.amt) + " × " + b.rateRaw + " %");
       });
       each(id("10"), B, (el) => (v.reason ? hasExemption(el) : !hasExemption(el)),
-        "VAT breakdown in " + nm + (v.reason ? " has an exemption reason (BT-120) or code (BT-121)" : " has no exemption reason (BT-120/BT-121)"));
+        "VAT breakdown in " + nm + (v.reason ? " must have an exemption reason (BT-120) or code (BT-121)" : " must not have an exemption reason (BT-120/BT-121)"));
 
       if (v.cat === "K" && B.length) {
         rule("BR-IC-11", first(R, "Delivery"), has(R, "Delivery/ActualDeliveryDate") || !!first(R, "InvoicePeriod"),
-          "Intra-community supply gives an actual delivery date (BT-72) or an invoicing period (BG-14)");
+          "Intra-community supply must give an actual delivery date (BT-72) or an invoicing period (BG-14)");
         rule("BR-IC-12", first(R, "Delivery"), has(R, "Delivery/DeliveryLocation/Address/Country/IdentificationCode"),
-          "Intra-community supply gives the deliver-to country code (BT-80)");
+          "Intra-community supply must give the deliver-to country code (BT-80)");
       }
       if (v.cat === "O" && B.length) {
-        rule("BR-O-11", vatTotal, subs.length === B.length, "With “not subject to VAT” there is no VAT breakdown in another category");
-        each("BR-O-12", lines, (el, o) => o.cat === "O", "With “not subject to VAT” every line is in category O");
-        each("BR-O-13", allows, (el, o) => o.cat === "O", "With “not subject to VAT” every document allowance is in category O");
-        each("BR-O-14", charges, (el, o) => o.cat === "O", "With “not subject to VAT” every document charge is in category O");
+        rule("BR-O-11", vatTotal, subs.length === B.length, "With “not subject to VAT” there must be no VAT breakdown in another category");
+        each("BR-O-12", lines, (el, o) => o.cat === "O", "With “not subject to VAT” every line must be in category O");
+        each("BR-O-13", allows, (el, o) => o.cat === "O", "With “not subject to VAT” every document allowance must be in category O");
+        each("BR-O-14", charges, (el, o) => o.cat === "O", "With “not subject to VAT” every document charge must be in category O");
       }
     });
     const taxedItems = lines.concat(allows, charges);
     if (taxedItems.some((o) => o.cat === "B")) {
-      rule("BR-B-01", seller, val(seller, "PostalAddress/Country/IdentificationCode") === "IT", "Split payment (B) is only used on a domestic Italian invoice");
-      rule("BR-B-02", vatTotal, !taxedItems.some((o) => o.cat === "S"), "Split payment (B) is not combined with standard rated (S) lines, allowances or charges");
+      rule("BR-B-01", seller, val(seller, "PostalAddress/Country/IdentificationCode") === "IT", "Split payment (B) may only be used on a domestic Italian invoice");
+      rule("BR-B-02", vatTotal, !taxedItems.some((o) => o.cat === "S"), "Split payment (B) must not be combined with standard rated (S) lines, allowances or charges");
     }
 
     // ---------- Parties and payment ----------
     const vatIds = [[seller, "seller"], [buyer, "buyer"], [rep, "tax representative"]]
       .flatMap(([party, who]) => taxIds(party, true).map((id) => ({ el: party, name: who + " " + id, id })));
     each("BR-CO-09", vatIds, (el, o) => o.id.slice(0, 2) === "EL" || validCountry(o.id.slice(0, 2)),
-      "VAT identifiers (BT-31, BT-48, BT-63) start with a country prefix");
+      "VAT identifiers (BT-31, BT-48, BT-63) must start with a country prefix");
     rule("BR-CO-26", seller, has(seller, "PartyIdentification/ID") || has(seller, "PartyLegalEntity/CompanyID") || sellerVat,
-      "The seller has an identifier (BT-29), legal registration (BT-30) or VAT identifier (BT-31)");
+      "The seller must have an identifier (BT-29), legal registration (BT-30) or VAT ID (BT-31)");
     const endpoint = (id, party, text) => { const e = first(party, "EndpointID"); if (e) rule(id, e, !!e.getAttribute("schemeID"), text); };
-    endpoint("BR-62", seller, "Seller electronic address (BT-34) has a scheme (schemeID)");
-    endpoint("BR-63", buyer, "Buyer electronic address (BT-49) has a scheme (schemeID)");
+    endpoint("BR-62", seller, "Seller electronic address (BT-34) must have a scheme (schemeID)");
+    endpoint("BR-63", buyer, "Buyer electronic address (BT-49) must have a scheme (schemeID)");
 
     const payMeans = items(byPath(R, "PaymentMeans"), (el, i) => "payment means " + (val(el, "PaymentMeansCode") || i + 1));
-    each("BR-49", payMeans, (el) => has(el, "PaymentMeansCode"), "Every payment instruction has a payment means code (BT-81)");
+    each("BR-49", payMeans, (el) => has(el, "PaymentMeansCode"), "Each payment instruction must have a payment means code (BT-81)");
     each("BR-50", payMeans.filter((o) => first(o.el, "PayeeFinancialAccount")), (el) => has(el, "PayeeFinancialAccount/ID"),
-      "Credit transfer details (BG-17) include the account identifier (BT-84)");
+      "Credit transfer details (BG-17) must include the account ID (BT-84)");
     each("BR-61", payMeans.filter((o) => ["30", "58"].includes(val(o.el, "PaymentMeansCode"))), (el) => has(el, "PayeeFinancialAccount/ID"),
-      "Credit transfers (code 30 or 58) give the payment account identifier (BT-84)");
+      "Credit transfers (code 30 or 58) must give the payment account ID (BT-84)");
     const cards = byPath(R, "PaymentMeans/CardAccount"), mandates = byPath(R, "PaymentMeans/PaymentMandate");
-    if (cards.length) rule("BR-66", cards, cards.length === 1, "At most one payment card (BG-18)", cards.length + " found");
-    if (mandates.length) rule("BR-67", mandates, mandates.length === 1, "At most one direct debit mandate (BG-19)", mandates.length + " found");
+    if (cards.length) rule("BR-66", cards, cards.length === 1, "Only one payment card (BG-18) is allowed", cards.length + " found");
+    if (mandates.length) rule("BR-67", mandates, mandates.length === 1, "Only one direct debit mandate (BG-19) is allowed", mandates.length + " found");
     each("BR-51", items(cards, (el) => "card " + val(el, "PrimaryAccountNumberID")),
       (el) => (val(el, "PrimaryAccountNumberID").match(/\d/g) || []).length <= 10,
-      "Card number (BT-87) shows no more than the first 6 and last 4 digits", true);
+      "Card number (BT-87) should show no more than the first 6 and last 4 digits", true);
 
     // ---------- References ----------
     each("BR-52", items(byPath(R, "AdditionalDocumentReference"), (el, i) => "supporting document " + (i + 1)), (el) => has(el, "ID"),
-      "Every supporting document (BG-24) has a reference (BT-122)");
+      "Each supporting document (BG-24) must have a reference (BT-122)");
     each("BR-55", items(byPath(R, "BillingReference/InvoiceDocumentReference"), (el, i) => "preceding invoice " + (i + 1)), (el) => has(el, "ID"),
-      "Every preceding invoice reference (BG-3) has an invoice number (BT-25)");
+      "Each preceding invoice reference (BG-3) must have an invoice number (BT-25)");
     each("BR-57", items(byPath(R, "Delivery/DeliveryLocation/Address"), (el, i) => "deliver-to address " + (i + 1)), (el) => has(el, "Country/IdentificationCode"),
-      "Every deliver-to address (BG-15) has a country code (BT-80)");
+      "Each deliver-to address (BG-15) must have a country code (BT-80)");
 
     // ---------- Data types (UBL schema) ----------
     // EN 16931 leaves these to XSD validation, so its schematron never reports them.
     const allEls = Array.from(R.getElementsByTagName("*"));
     const named = (el) => el.localName + " “" + txt(el) + "”";
     each("XSD-DATE", items(allEls.filter((e) => /Date$/.test(e.localName) && !e.children.length), named), (el) => validDate(txt(el)),
-      "Dates are real calendar dates written as YYYY-MM-DD");
+      "Dates must be real calendar dates written as YYYY-MM-DD");
     each("XSD-DEC", items(allEls.filter((e) => !e.children.length &&
       (e.hasAttribute("currencyID") || /(Quantity|Percent|MultiplierFactorNumeric)$/.test(e.localName))), named),
-      (el) => /^[+-]?(\d+(\.\d*)?|\.\d+)$/.test(txt(el)), "Amounts, quantities and percentages are plain decimal numbers");
+      (el) => /^[+-]?(\d+(\.\d*)?|\.\d+)$/.test(txt(el)), "Amounts, quantities and percentages must be plain decimal numbers");
 
     // ---------- Code lists ----------
     const typeCode = val(R, cn ? "CreditNoteTypeCode" : "InvoiceTypeCode");
-    if (typeCode) rule("BR-CL-01", first(R, cn ? "CreditNoteTypeCode" : "InvoiceTypeCode"), DOC_TYPE_CODES.has(typeCode), "Invoice type code (BT-3) is in the EN 16931 subset of UNTDID 1001", typeCode);
+    if (typeCode) rule("BR-CL-01", first(R, cn ? "CreditNoteTypeCode" : "InvoiceTypeCode"), DOC_TYPE_CODES.has(typeCode), "Invoice type code (BT-3) must be in the EN 16931 subset of UNTDID 1001", typeCode);
     each("BR-CL-03", items(allEls.filter((e) => e.hasAttribute("currencyID")), (el) => el.localName + " " + el.getAttribute("currencyID")),
-      (el) => validCurrency(el.getAttribute("currencyID")), "Amount currencies (currencyID) are ISO 4217 codes");
-    if (docCur) rule("BR-CL-04", first(R, "DocumentCurrencyCode"), validCurrency(docCur), "Invoice currency code (BT-5) is an ISO 4217 code", docCur);
-    if (taxCur) rule("BR-CL-05", first(R, "TaxCurrencyCode"), validCurrency(taxCur), "VAT accounting currency code (BT-6) is an ISO 4217 code", taxCur);
+      (el) => validCurrency(el.getAttribute("currencyID")), "Amount currencies (currencyID) must be ISO 4217 codes");
+    if (docCur) rule("BR-CL-04", first(R, "DocumentCurrencyCode"), validCurrency(docCur), "Invoice currency code (BT-5) must be an ISO 4217 code", docCur);
+    if (taxCur) rule("BR-CL-05", first(R, "TaxCurrencyCode"), validCurrency(taxCur), "VAT accounting currency code (BT-6) must be an ISO 4217 code", taxCur);
     each("BR-CL-14", items(allEls.filter((e) => e.localName === "IdentificationCode" && e.parentElement && e.parentElement.localName === "Country"),
-      (el) => txt(el) || "(empty)"), (el) => validCountry(txt(el)), "Country codes are ISO 3166-1 alpha-2 codes");
+      (el) => txt(el) || "(empty)"), (el) => validCountry(txt(el)), "Country codes must be ISO 3166-1 alpha-2 codes");
     each("BR-CL-16", items(byPath(R, "PaymentMeans/PaymentMeansCode"), txt),
-      (el) => txt(el) === "ZZZ" || (/^[1-9]\d?$/.test(txt(el)) && +txt(el) <= 97), "Payment means codes (BT-81) are UNTDID 4461 codes");
-    each("BR-CL-17", lines.filter((o) => o.cat), (el, o) => !!VAT_CAT[o.cat], "Line VAT category codes (BT-151) are UNTDID 5305 codes");
+      (el) => txt(el) === "ZZZ" || (/^[1-9]\d?$/.test(txt(el)) && +txt(el) <= 97), "Payment means codes (BT-81) must be UNTDID 4461 codes");
+    each("BR-CL-17", lines.filter((o) => o.cat), (el, o) => !!VAT_CAT[o.cat], "Line VAT category codes (BT-151) must be UNTDID 5305 codes");
     each("BR-CL-18", subs.concat(allows, charges).filter((o) => o.cat), (el, o) => !!VAT_CAT[o.cat],
-      "VAT category codes (BT-95, BT-102, BT-118) are UNTDID 5305 codes");
+      "VAT category codes (BT-95, BT-102, BT-118) must be UNTDID 5305 codes");
     each("BR-CL-19", allows.concat(lineAllows).filter((o) => has(o.el, "AllowanceChargeReasonCode")),
-      (el) => ALLOWANCE_CODES.has(val(el, "AllowanceChargeReasonCode")), "Allowance reason codes (BT-98, BT-140) are UNTDID 5189 codes");
+      (el) => ALLOWANCE_CODES.has(val(el, "AllowanceChargeReasonCode")), "Allowance reason codes (BT-98, BT-140) must be UNTDID 5189 codes");
     each("BR-CL-20", charges.concat(lineCharges).filter((o) => has(o.el, "AllowanceChargeReasonCode")),
-      (el) => /^[A-Z]{2,3}$/.test(val(el, "AllowanceChargeReasonCode")), "Charge reason codes (BT-105, BT-145) are UNTDID 7161 codes");
+      (el) => /^[A-Z]{2,3}$/.test(val(el, "AllowanceChargeReasonCode")), "Charge reason codes (BT-105, BT-145) must be UNTDID 7161 codes");
     each("BR-CL-22", subs.filter((o) => has(o.el, "TaxCategory/TaxExemptionReasonCode")),
-      (el) => VATEX.has(val(el, "TaxCategory/TaxExemptionReasonCode").toUpperCase()), "VAT exemption reason codes (BT-121) are on the CEF VATEX list");
+      (el) => VATEX.has(val(el, "TaxCategory/TaxExemptionReasonCode").toUpperCase()), "VAT exemption reason codes (BT-121) must be on the CEF VATEX list");
     each("BR-CL-24", items(byPath(R, "AdditionalDocumentReference/Attachment/EmbeddedDocumentBinaryObject"),
       (el) => el.getAttribute("filename") || el.getAttribute("mimeCode") || "attachment"),
-      (el) => MIME_CODES.has(el.getAttribute("mimeCode")), "Attachments use an allowed MIME code (PDF, PNG, JPEG, CSV, XLSX or ODS)");
+      (el) => MIME_CODES.has(el.getAttribute("mimeCode")), "Attachments must use an allowed MIME code (PDF, PNG, JPEG, CSV, XLSX or ODS)");
 
     // ---------- Consistency (this tool's own CHK- checks) ----------
     // Things EN 16931 does not test but that are wrong in practice. Errors where the data cannot be right,
@@ -504,16 +504,17 @@
     if (dateOk(issue)) {
       [["DueDate", "Due date (BT-9)"], ["PaymentMeans/PaymentDueDate", "Payment due date"]].forEach(([path, label]) => {
         const d = val(R, path);
-        if (dateOk(d)) rule("CHK-01", dateEl(path), d >= issue, label + " is not before the issue date (BT-2)", "due " + d + (d >= issue ? " ≥ " : " < ") + "issued " + issue);
+        if (dateOk(d)) rule("CHK-01", dateEl(path), d >= issue, label + " must not be before the issue date (BT-2)",
+          d >= issue ? "due date " + d + ", issue date " + issue : "due date " + d + " is before the issue date " + issue);
       });
       const today = new Date().toISOString().slice(0, 10);
-      rule("CHK-02", dateEl("IssueDate"), issue <= today, "Issue date (BT-2) is not in the future", "issued " + issue + (issue <= today ? " ≤ " : " > ") + "today " + today, true);
+      rule("CHK-02", dateEl("IssueDate"), issue <= today, "Issue date (BT-2) should not be in the future", "issued " + issue + (issue <= today ? " ≤ " : " > ") + "today " + today, true);
       const prev = items(byPath(R, "BillingReference/InvoiceDocumentReference").filter((e) => dateOk(val(e, "IssueDate"))),
         (el) => "preceding invoice " + (val(el, "ID") || "?") + " issued " + val(el, "IssueDate"));
-      each("CHK-03", prev, (el) => val(el, "IssueDate") <= issue, "Preceding invoices (BT-26) are not dated after this document (" + issue + ")");
+      each("CHK-03", prev, (el) => val(el, "IssueDate") <= issue, "Preceding invoices (BT-26) must not be dated after this document (" + issue + ")");
       const docStart = val(R, "InvoicePeriod/StartDate");
       if (dateOk(docStart) && docStart > issue)
-        rule("CHK-04", first(R, "InvoicePeriod"), false, "Invoicing period (BG-14) starts after the issue date", "period starts " + docStart + " > issued " + issue + " (fine for an advance invoice)", true);
+        rule("CHK-04", first(R, "InvoicePeriod"), false, "Invoicing period (BG-14) should not start after the issue date", "period starts " + docStart + " > issued " + issue + " (fine for an advance invoice)", true);
     }
     if (!peppol) {
       // PEPPOL-EN16931-R110/R111 do this when PEPPOL is on.
@@ -523,21 +524,21 @@
         each("CHK-05", inPeriod, (el) => {
           const s = val(el, "InvoicePeriod/StartDate"), e = val(el, "InvoicePeriod/EndDate");
           return (!dateOk(ps) || !s || s >= ps) && (!dateOk(pe) || !e || e <= pe);
-        }, "Line periods (BG-26) fall inside the invoicing period (" + (ps || "…") + " to " + (pe || "…") + ")", true);
+        }, "Line periods (BG-26) should fall inside the invoicing period (" + (ps || "…") + " to " + (pe || "…") + ")", true);
     }
 
     // Document type
     if (!cn && typeCode && ["381", "261", "262", "296", "308", "532"].includes(typeCode))
-      rule("CHK-06", first(R, "InvoiceTypeCode"), false, "A credit note type code (" + typeCode + ") is used in an Invoice document", "Credit notes normally use the CreditNote document", true);
+      rule("CHK-06", first(R, "InvoiceTypeCode"), false, "A credit note type code (" + typeCode + ") should not be used in an Invoice document", "Credit notes normally use the CreditNote document", true);
     if (cn) rule("CHK-07", first(R, "BillingReference") || R, byPath(R, "BillingReference/InvoiceDocumentReference/ID").some((e) => txt(e) && !/^(NA|N\/A|-)$/i.test(txt(e))),
-      "The credit note refers to the invoice it corrects (BT-25)", val(R, "BillingReference/InvoiceDocumentReference/ID") ? "Given as “" + val(R, "BillingReference/InvoiceDocumentReference/ID") + "”" : "No preceding invoice", true);
+      "The credit note should refer to the invoice it corrects (BT-25)", val(R, "BillingReference/InvoiceDocumentReference/ID") ? "Given as “" + val(R, "BillingReference/InvoiceDocumentReference/ID") + "”" : "No preceding invoice", true);
 
     // Lines
     const lineIds = lines.map((o) => val(o.el, "ID")).filter(Boolean);
     const dupIds = lineIds.filter((v, i) => lineIds.indexOf(v) !== i);
     if (lines.length > 1) rule("CHK-08", dupIds.length ? lines.filter((o) => dupIds.includes(val(o.el, "ID"))).map((o) => o.el) : lines.map((o) => o.el),
-      !dupIds.length, "Line identifiers (BT-126) are unique", dupIds.length ? "Repeated: " + names(dupIds.filter((v, i) => dupIds.indexOf(v) === i)) : "");
-    each("CHK-09", lines.filter((o) => num(val(o.el, qtyTag)) === 0), (el, o) => !o.amt, "Lines with quantity 0 have no net amount", true);
+      !dupIds.length, "Line identifiers (BT-126) must be unique", dupIds.length ? "Repeated: " + names(dupIds.filter((v, i) => dupIds.indexOf(v) === i)) : "");
+    each("CHK-09", lines.filter((o) => num(val(o.el, qtyTag)) === 0), (el, o) => !o.amt, "Lines with quantity 0 should have no net amount", true);
     if (!peppol) lines.forEach((o) => {
       // Same calculation as PEPPOL-EN16931-R120, for documents checked without PEPPOL.
       const qty = num(val(o.el, qtyTag)), price = num(val(o.el, "Price/PriceAmount"));
@@ -545,51 +546,51 @@
       if (qty === null || price === null || !baseQty || o.amt === null) return;
       const own = (charge) => byPath(o.el, "AllowanceCharge").filter((ac) => isCharge(ac) === charge).reduce((s, ac) => s + (num(val(ac, "Amount")) || 0), 0);
       const ch = own(true), al = own(false);
-      cmp("CHK-10", o.el, round(qty * price / baseQty) + ch - al, o.amt, o.name + ": net amount = quantity × net price / base quantity + charges − allowances", "BT-131", 0.02,
+      cmp("CHK-10", o.el, round(qty * price / baseQty) + ch - al, o.amt, o.name + ": net amount must equal quantity × net price / base quantity + charges − allowances", "BT-131", 0.02,
         "qty " + val(o.el, qtyTag) + " × price " + fmt(price) + " / base qty " + baseQty + " + charges " + fmt(ch) + " − allowances " + fmt(al));
     });
     if (!peppol) allows.concat(charges, lineAllows, lineCharges).filter((o) => has(o.el, "BaseAmount") && has(o.el, "MultiplierFactorNumeric")).forEach((o) => {
       const base = num(val(o.el, "BaseAmount")), pct = num(val(o.el, "MultiplierFactorNumeric"));
-      if (base !== null && pct !== null) cmp("CHK-11", o.el, base * pct / 100, num(val(o.el, "Amount")), o.name + ": amount = base amount × percentage", "amount", 0.02,
+      if (base !== null && pct !== null) cmp("CHK-11", o.el, base * pct / 100, num(val(o.el, "Amount")), o.name + ": amount must equal base amount × percentage", "amount", 0.02,
         "base " + fmt(base) + " × " + val(o.el, "MultiplierFactorNumeric") + " %");
     });
 
     // VAT breakdown
     const subKey = (o) => (o.cat || "?") + (o.rate === null ? "" : " " + round(o.rate) + " %");
     const subKeys = subs.map(subKey), dupSubs = subKeys.filter((k, i) => subKeys.indexOf(k) !== i);
-    if (subs.length > 1) rule("CHK-12", subs.map((o) => o.el), !dupSubs.length, "Each VAT category and rate has only one VAT breakdown", dupSubs.length ? "Repeated: " + names(dupSubs) : "");
+    if (subs.length > 1) rule("CHK-12", subs.map((o) => o.el), !dupSubs.length, "Each VAT category and rate must have only one VAT breakdown", dupSubs.length ? "Repeated: " + names(dupSubs) : "");
     const usedKeys = taxedItems.filter((o) => o.cat).map(subKey).filter((k, i, a) => a.indexOf(k) === i);
     if (subs.length) {
       const missing = usedKeys.filter((k) => !subKeys.includes(k));
-      rule("CHK-13", vatTotal, !missing.length, "Every VAT category and rate used on lines, allowances and charges has a VAT breakdown",
+      rule("CHK-13", vatTotal, !missing.length, "Each VAT category and rate used on lines, allowances or charges must have a VAT breakdown",
         missing.length ? "No breakdown for " + names(missing) : "Used: " + names(usedKeys));
     }
-    each("CHK-14", taxedItems.concat(subs).filter((o) => o.rate !== null), (el, o) => o.rate >= 0 && o.rate <= 30, "VAT rates are between 0 and 30 %", true);
+    each("CHK-14", taxedItems.concat(subs).filter((o) => o.rate !== null), (el, o) => o.rate >= 0 && o.rate <= 30, "VAT rates should be between 0 and 30 %", true);
 
     // Currency
     if (docCur) {
       const amounts = allEls.filter((e) => e.hasAttribute("currencyID"));
       const taxCurEls = taxCur ? taxTotals.map((t) => first(t, "TaxAmount")).filter((a) => a && a.getAttribute("currencyID") === taxCur) : [];
       each("CHK-15", items(amounts.filter((e) => !taxCurEls.includes(e)), (el) => el.localName + " " + el.getAttribute("currencyID")),
-        (el) => el.getAttribute("currencyID") === docCur, "All amounts are in the document currency (" + docCur + ")");
+        (el) => el.getAttribute("currencyID") === docCur, "All amounts must be in the document currency (" + docCur + ")");
     }
 
     // Totals
     if (lmt) {
       const g = (p) => num(val(lmt, p)), paid = g("PrepaidAmount"), incl = g("TaxInclusiveAmount"), rnd = g("PayableRoundingAmount");
       if (paid !== null && incl !== null && incl >= 0)
-        rule("CHK-16", first(lmt, "PrepaidAmount"), paid <= incl, "Paid amount (BT-113) is not more than the total with VAT (BT-112)", "paid " + fmt(paid) + (paid <= incl ? " ≤ " : " > ") + "total " + fmt(incl), true);
-      if (rnd !== null) rule("CHK-17", first(lmt, "PayableRoundingAmount"), Math.abs(rnd) < 1, "Rounding amount (BT-114) is less than 1", fmt(rnd), true);
+        rule("CHK-16", first(lmt, "PrepaidAmount"), paid <= incl, "Paid amount (BT-113) should not exceed the total with VAT (BT-112)", "paid " + fmt(paid) + (paid <= incl ? " ≤ " : " > ") + "total " + fmt(incl), true);
+      if (rnd !== null) rule("CHK-17", first(lmt, "PayableRoundingAmount"), Math.abs(rnd) < 1, "Rounding amount (BT-114) should be less than 1", fmt(rnd), true);
     }
 
     // Parties
     const sellerIds = taxIds(seller, true), buyerIds = taxIds(buyer, true);
     if (sellerIds.length && buyerIds.length)
-      rule("CHK-18", [seller, buyer], !sellerIds.some((v) => buyerIds.includes(v)), "Seller and buyer have different VAT identifiers", "seller " + sellerIds.join(", ") + " · buyer " + buyerIds.join(", "), true);
+      rule("CHK-18", [seller, buyer], !sellerIds.some((v) => buyerIds.includes(v)), "Seller and buyer should have different VAT IDs", "seller " + sellerIds.join(", ") + " · buyer " + buyerIds.join(", "), true);
     const vatCountry = [[seller, "seller"], [buyer, "buyer"]].flatMap(([p, who]) => taxIds(p, true).map((v) => ({ el: p, name: who + " " + v, v,
       c: val(p, "PostalAddress/Country/IdentificationCode") })).filter((o) => o.c));
-    each("CHK-19", vatCountry, (el, o) => o.v.slice(0, 2) === (o.c === "GR" ? "EL" : o.c), "VAT identifiers start with the country of the party’s address", true);
-    each("CHK-20", items(allEls.filter((e) => e.localName === "ElectronicMail"), txt), (el) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(txt(el)), "E-mail addresses are well formed");
+    each("CHK-19", vatCountry, (el, o) => o.v.slice(0, 2) === (o.c === "GR" ? "EL" : o.c), "VAT IDs should start with the country of the party’s address", true);
+    each("CHK-20", items(allEls.filter((e) => e.localName === "ElectronicMail"), txt), (el) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(txt(el)), "E-mail addresses must be well formed");
 
     // Payment account
     const iban = (s) => {
@@ -600,9 +601,9 @@
       return r === 1;
     };
     const accounts = byPath(R, "PaymentMeans/PayeeFinancialAccount/ID").map((e) => ({ el: e, name: txt(e), v: txt(e).replace(/\s+/g, "").toUpperCase() }));
-    each("CHK-21", accounts.filter((o) => /^[A-Z]{2}\d{2}/.test(o.v)), (el, o) => iban(o.v), "IBANs (BT-84) have a valid length and check digits");
+    each("CHK-21", accounts.filter((o) => /^[A-Z]{2}\d{2}/.test(o.v)), (el, o) => iban(o.v), "IBANs (BT-84) must have a valid length and check digits");
     each("CHK-22", items(byPath(R, "PaymentMeans/PayeeFinancialAccount/FinancialInstitutionBranch/ID"), txt),
-      (el) => /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(txt(el).toUpperCase()), "BIC codes (BT-86) are 8 or 11 characters (bank, country, location, branch)");
+      (el) => /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(txt(el).toUpperCase()), "BIC codes (BT-86) must be 8 or 11 characters (bank, country, location, branch)");
 
     // ---------- Extra rule sets ----------
     // They get the same document model and reporting helpers as the rules above.
