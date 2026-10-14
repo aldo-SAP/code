@@ -86,6 +86,10 @@ header h1 {
   letter-spacing: -0.01em;
 }
 header { position: relative; padding-right: clamp(16px,4vw,40px); }
+.header-top { display: flex; align-items: center; gap: 10px; }
+.tools-icon { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 34px; height: 30px; border: 1px solid var(--border); border-radius: 6px; color: var(--ink-dim); text-decoration: none; }
+.tools-icon:hover { border-color: var(--accent); color: var(--ink); }
+.tools-icon svg { width: 18px; height: 18px; }
 .header-actions {
   position: static;
   margin-top: 10px;

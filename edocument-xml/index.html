@@ -7,55 +7,73 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script>try { var t = localStorage.getItem("tools.theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="../shared/nav.css">
 <link rel="stylesheet" href="../shared/table-cards.css">
 </head>
 <body>
-<nav id="toolsNav" aria-label="Site"><h1 data-i18n>eDocument XML Viewer</h1>
+<nav id="toolsNav" aria-label="Site"><a class="nav-home" href="../index.html" aria-label="All tools" data-i18n-aria="All tools" title="All tools"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/></svg></a><h1><span class="long" data-i18n>eDocument XML Viewer</span><span class="short" data-i18n>XML Viewer</span></h1>
   <div class="nav-end">
+    <button type="button" class="theme-btn" id="themeBtn" data-pref="system" aria-label="Theme: follow the device" title="Theme: follow the device">
+      <svg class="ic-system" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg>
+      <svg class="ic-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></svg>
+      <svg class="ic-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+    </button>
     <div class="lang-switch" id="lang" role="group" aria-label="Language" data-i18n-aria="Language">
       <button type="button" data-lang="en" aria-pressed="true" title="English"><svg class="flag" viewBox="0 0 60 30" aria-hidden="true"><clipPath id="fuk"><path d="M0 0v30h60V0z"/></clipPath><clipPath id="fukt"><path d="M30 15h30v15zv15H0zH0V0zV0h30z"/></clipPath><g clip-path="url(#fuk)"><path d="M0 0v30h60V0z" fill="#012169"/><path d="M0 0l60 30m0-30L0 30" stroke="#fff" stroke-width="6"/><path d="M0 0l60 30m0-30L0 30" clip-path="url(#fukt)" stroke="#C8102E" stroke-width="4"/><path d="M30 0v30M0 15h60" stroke="#fff" stroke-width="10"/><path d="M30 0v30M0 15h60" stroke="#C8102E" stroke-width="6"/></g></svg><span>English</span></button>
       <button type="button" data-lang="it" aria-pressed="false" title="Italiano"><svg class="flag" viewBox="0 0 3 2" aria-hidden="true"><path fill="#009246" d="M0 0h1v2H0z"/><path fill="#fff" d="M1 0h1v2H1z"/><path fill="#CE2B37" d="M2 0h1v2H2z"/></svg><span>Italiano</span></button>
     </div>
-    <a href="../index.html" data-i18n>All tools</a>
   </div>
 </nav>
 
 <main>
   <div class="loadbar" id="drop">
     <span class="lb-msg" id="lbMsg" role="status">Drop a UBL invoice or credit note XML here, or paste it anywhere with Ctrl+V.</span>
-    <button class="primary" id="pickBtn" type="button" data-i18n>Choose file</button>
-    <button id="pasteBtn" type="button" aria-expanded="false" aria-controls="pasteArea" data-i18n>Paste text</button>
-    <button id="clearBtn" type="button" hidden data-i18n>Clear</button>
+    <div class="lb-actions">
+      <button class="primary" id="pickBtn" type="button" data-i18n>Choose file</button>
+      <button id="pasteBtn" type="button" aria-expanded="false" aria-controls="pasteArea" data-i18n>Paste text</button>
+      <button id="sampleBtn" type="button" data-i18n>Try a sample invoice</button>
+      <button id="clearBtn" type="button" hidden data-i18n>Clear</button>
+    </div>
     <input type="file" id="file" accept=".xml,text/xml,application/xml">
   </div>
   <textarea id="pasteArea" hidden spellcheck="false" aria-label="XML input" data-i18n-aria="XML input" placeholder="Paste the XML here; it is read as soon as it's complete." data-i18n-ph="Paste the XML here; it is read as soon as it's complete."></textarea>
 
-  <div class="intro" id="intro">
-    <div><i style="background:var(--from)"></i><b data-i18n>Overview</b><span data-i18n>Reads like the invoice: who bills whom, the amount due, the lines and the totals, checked for you.</span></div>
-    <div><i style="background:var(--to)"></i><b data-i18n>All fields</b><span data-i18n>Every UBL field by section, with its EN 16931 business term (BT-xx) and decoded codes.</span></div>
-    <div><i style="background:var(--money)"></i><b data-i18n>Attachments</b><span data-i18n>Preview or download the PDFs and files embedded in the XML. Nothing leaves your browser.</span></div>
-  </div>
+  <p class="intro" id="intro"><span data-i18n>Checks a UBL invoice or credit note against the EN 16931 rules and, when the file asks for them, PEPPOL, France and Italy. Everything stays in your browser.</span></p>
 
   <div id="out" hidden>
+    <div class="verdict" id="verdict" hidden></div>
+    <div class="keyfig" id="keyfig"></div>
     <div class="hero" id="hero"></div>
-    <div class="facts" id="facts"></div>
     <div class="tabbar" id="tabbar">
       <div class="tabs" role="tablist" aria-label="Views" data-i18n-aria="Views">
-        <button class="tab" role="tab" id="tab-overview" data-tab="overview" aria-selected="true" aria-controls="pOverview" data-i18n>Overview</button>
-        <button class="tab" role="tab" id="tab-fields" data-tab="fields" aria-selected="false" aria-controls="pFields" data-i18n>All fields</button>
+        <button class="tab" role="tab" id="tab-fields" data-tab="fields" aria-selected="true" aria-controls="pFields" data-i18n>Invoice</button>
         <button class="tab" role="tab" id="tab-atts" data-tab="atts" aria-selected="false" aria-controls="pAtts"><span data-i18n>Attachments</span><span class="n" id="attCount">0</span></button>
         <button class="tab" role="tab" id="tab-raw" data-tab="raw" aria-selected="false" aria-controls="pRaw" data-i18n>Raw XML</button>
       </div>
+      <button type="button" class="filters-btn" id="filtersBtn" aria-expanded="false" aria-controls="fieldTools" aria-label="Filters" data-i18n-aria="Filters" title="Filters" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16l-6 7.5V19l-4-2v-4.5z"/></svg>
+        <span class="fcount" id="filtersCount" hidden>0</span>
+      </button>
       <div class="tab-tools" id="fieldTools" hidden>
         <input type="search" id="filter" placeholder="Filter fields…" aria-label="Filter fields" data-i18n-ph="Filter fields…" data-i18n-aria="Filter fields">
-        <label><input type="checkbox" id="showEmpty"> <span data-i18n>Show empty fields</span></label>
-        <label><input type="checkbox" id="showTags"> <span data-i18n>Show XML tags</span></label>
+        <div class="display" id="display">
+          <button type="button" class="display-btn" id="displayBtn" aria-expanded="false" aria-controls="displayMenu"><span data-i18n>Display</span><span class="fcount" id="displayCount" hidden>0</span></button>
+          <div class="display-menu" id="displayMenu">
+            <label><input type="checkbox" id="showEmpty"> <span data-i18n>Show empty fields</span></label>
+            <label title="Show every BT number and the XML path of each field"><input type="checkbox" id="showTags"> <span data-i18n>Technical view</span></label>
+            <label title="Dates and amounts exactly as written in the XML, for comparing with SAP"><input type="checkbox" id="showRaw"> <span data-i18n>Exact values</span></label>
+            <label title="Fold the blocks that have no problem to one line; the arrow on a block folds it by hand"><input type="checkbox" id="showFold"> <span data-i18n>Fold passing blocks</span></label>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="tabpanel" id="pOverview" role="tabpanel" aria-labelledby="tab-overview"></div>
-    <div class="tabpanel" id="pFields" role="tabpanel" aria-labelledby="tab-fields" hidden>
+    <div class="issue-nav" id="issueNav" hidden>
+      <button type="button" id="issuePrev" aria-label="Previous issue" data-i18n-aria="Previous issue">&uarr;</button>
+      <button type="button" id="issueNext" class="issue-next"><span data-i18n>Next issue</span> <b id="issueN">1/1</b></button>
+    </div>
+    <div class="tabpanel" id="pFields" role="tabpanel" aria-labelledby="tab-fields">
       <div id="content"></div>
     </div>
     <div class="tabpanel" id="pAtts" role="tabpanel" aria-labelledby="tab-atts" hidden></div>

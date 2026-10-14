@@ -2,7 +2,10 @@
 #toolsNav { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px clamp(16px,4vw,40px);
   background: rgba(127,127,127,.10); border-bottom: 1px solid rgba(127,127,127,.28);
   font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-#toolsNav h1 { margin: 0; font: inherit; font-weight: 600; }
+#toolsNav h1 { margin: 0; font: inherit; font-weight: 600; flex: 1 1 auto; min-width: 0; }
+/* "All tools" icon, first thing on the left of every tool page */
+#toolsNav .nav-home { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 34px; height: 30px; padding: 0; margin: 0 4px 0 0; border: 1px solid rgba(127,127,127,.35); border-radius: 8px; }
+#toolsNav .nav-home svg { width: 18px; height: 18px; }
 #toolsNav a, #toolsNav span { color: inherit; text-decoration: none; font-weight: 500; padding: 2px 6px; margin-right: -6px; border-radius: 6px; }
 #toolsNav span { opacity: .7; }
 #toolsNav a:hover, #toolsNav a:focus-visible { background: rgba(127,127,127,.22); outline: none; }

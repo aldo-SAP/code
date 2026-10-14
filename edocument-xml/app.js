@@ -230,8 +230,8 @@
     "BT-126 BT-129 BT-130 BT-131 BT-146 BT-151 BT-153").split(" "));
 
   // ---------- State ----------
-  const state = { root: null, kind: null, name: "", size: 0, wrapped: "", showEmpty: false, showTags: false, atts: [], attIndex: new Map(), cache: new Map() };
-  try { state.showEmpty = localStorage.getItem("edocxml.showEmpty") === "1"; state.showTags = localStorage.getItem("edocxml.showTags") === "1"; } catch (e) {}
+  const state = { root: null, kind: null, name: "", size: 0, wrapped: "", showEmpty: false, showTags: false, raw: false, foldPassing: false, openCards: new Set(), closedCards: new Set(), flaggedRules: new Set(), secFlag: {}, atts: [], attIndex: new Map(), cache: new Map() };
+  try { state.showEmpty = localStorage.getItem("edocxml.showEmpty") === "1"; state.showTags = localStorage.getItem("edocxml.showTags") === "1"; state.raw = localStorage.getItem("edocxml.raw") === "1"; state.foldPassing = localStorage.getItem("edocxml.foldPassing") === "1"; } catch (e) {}
 
   // ---------- Helpers ----------
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -262,7 +262,7 @@
   function num(raw) { const n = Number(String(raw).trim()); return isFinite(n) && String(raw).trim() !== "" ? n : null; }
   function fmtAmount(raw, cur) {
     const n = num(raw);
-    if (n === null) return esc(raw) + (cur ? ' <span class="unit">' + esc(cur) + "</span>" : "");
+    if (n === null || state.raw) return (state.raw && n !== null ? '<span class="amt">' + esc(raw) + "</span>" : esc(raw)) + (cur ? ' <span class="unit">' + esc(cur) + "</span>" : "");
     const dec = (String(raw).split(".")[1] || "").length;
     const s = n.toLocaleString(I18N.locale(), { minimumFractionDigits: Math.max(2, Math.min(dec, 6)), maximumFractionDigits: Math.max(2, Math.min(dec, 6)) });
     return '<span class="amt" title="' + esc(raw) + '">' + s + "</span>" + (cur ? ' <span class="unit">' + esc(cur) + "</span>" : "");
@@ -307,6 +307,7 @@
       const m = raw.match(/^#([A-Z0-9]{2,4})#/);
       html = '<span class="chip" style="margin-left:0" title="' + esc(T("Subject code (BT-21)")) + '">' + esc(m[1]) + (NOTE_SUBJECT[m[1]] ? " · " + esc(T(NOTE_SUBJECT[m[1]])) : "") + "</span> " + esc(raw.slice(m[0].length));
     } else if (n === "URI" && /^https?:\/\//i.test(raw)) html = '<a href="' + esc(raw) + '" target="_blank" rel="noopener noreferrer">' + esc(raw) + "</a>";
+    else if (/Date$/.test(n) && /^\d{4}-\d{2}-\d{2}$/.test(raw)) html = fmtDate(raw);   // readable, or as written with "Exact values"
     else html = raw === "" ? '<span class="dec">' + T("(empty)") + "</span>" : esc(raw) + decodeValue(el, raw);
 
     for (const a of attrs) {
@@ -348,18 +349,22 @@
     const hits = (state.failed || []).filter((f) => els.some((e) => f.at.includes(e)) ||
       (own.some((b) => f.bts.has(b)) && (!ctx || f.at.some((a) => a === ctx || a.contains(ctx) || ctx.contains(a)))));
     if (!hits.length) return null;
-    return { lvl: hits.some((f) => !f.c.warn) ? "bad" : "warn", ids: hits.map((f) => f.c.id).filter((id, i, a) => a.indexOf(id) === i) };
+    return { lvl: hits.some((f) => !f.c.warn) ? "bad" : "warn", ids: hits.map((f) => f.c.id).filter((id, i, a) => a.indexOf(id) === i),
+      msgs: hits.map((f) => I18N.tr(f.c.text)).filter((m, i, a) => a.indexOf(m) === i).slice(0, 2) };
   }
   // A required field that is missing counts as an error even when no rule set names it.
   const requiredFlag = (ctx, bt) => (ctx && bts(bt).some((b) => REQUIRED.has(b)) ? { lvl: "bad", ids: [] } : null);
   // A group that is missing altogether still shows when a failed check names one of its fields.
   const specFlagged = (spec, role) => spec.some((f) => fieldFlag(null, btFor(f[2], role), []));
+  const dataRules = (flag) => (flag && flag.ids && flag.ids.length ? ' data-rules="' + esc(flag.ids.join(" ")) + '"' : "");
+  // the short reason under a flagged field, so the failure is read where the field is
+  const whyHtml = (flag) => (flag ? '<div class="why">' + (flag.msgs && flag.msgs.length ? flag.msgs.map(esc).join("<br>") : esc(T("Required field"))) + "</div>" : "");
   const flagTitle = (flag) => (flag.ids.length ? T("Fails {ids}", { ids: flag.ids.join(", ") }) : T("Required field"));
   const missing = () => '<span class="missing">' + T("Missing") + "</span>";
   function row(label, bt, valueHtml, cls, tag, flag) {
     if (flag) cls = (cls ? cls + " " : "") + "flag-" + flag.lvl;
-    return '<div class="row' + (cls ? " " + cls : "") + '"' + (flag ? ' title="' + esc(flagTitle(flag)) + '"' : "") + '><div class="k"><span class="kl">' + esc(T(label)) + "</span>" +
-      (bt ? '<span class="bt">' + esc(bt) + "</span>" : "") + xtag(tag) + '</div><div class="v">' + valueHtml + "</div></div>";
+    return '<div class="row' + (cls ? " " + cls : "") + '"' + (flag ? ' title="' + esc(flagTitle(flag)) + '"' + dataRules(flag) : "") + '><div class="k"><span class="kl">' + esc(T(label)) + "</span>" +
+      (bt ? '<span class="bt">' + esc(bt) + "</span>" : "") + xtag(tag) + '</div><div class="v">' + valueHtml + whyHtml(flag) + "</div></div>";
   }
   function markDeep(el, used) { used.add(el); for (const k of el.querySelectorAll("*")) used.add(k); }
 
@@ -409,18 +414,31 @@
   // ---------- Sections ----------
   function card(id, title, body, opts) {
     opts = opts || {};
-    // Failed rules for this block, in red right under its name (Lines shows them per row, Checks lists them all).
-    const iss = id !== "lines" && id !== "checks" && state.issues.secs[id];
-    const errs = iss ? '<ul class="checks card-errs">' + iss.list.map((c) => checkLi(c, false)).join("") + "</ul>" : "";
-    return '<section class="card' + (opts.full ? " full" : "") + '" id="sec-' + id + '"><h2>' + dot(id) + esc(T(title)) +
-      (opts.count != null ? '<span class="n">' + opts.count + "</span>" : "") + (opts.act ? '<span class="act">' + opts.act + "</span>" : "") +
-      "</h2>" + errs + (body || '<div class="none">' + T("Not present in this document.") + "</div>") + "</section>";
+    body = body || "";
+    const sec = state.issues.secs[id], hasIssue = !!(sec && (sec.bad.size || sec.warn.size)) || !!state.secFlag[id];
+    // Every block opens by default; the arrow folds one by hand, and "Fold passing blocks" folds the ones without a problem
+    // (a block you opened yourself stays open, Checks never folds).
+    const collapsible = id !== "checks";
+    const open = !collapsible || (!state.closedCards.has(id) && (!state.foldPassing || hasIssue || state.openCards.has(id)));
+    // Failed rules for this block that no field shows by itself (document-level rules); the rest sit on their field.
+    const marked = new Set((body.match(/data-rules="[^"]*"/g) || []).flatMap((m) => m.slice(12, -1).split(" ")));
+    if (state.flaggedRules) state.flaggedRules.forEach((r) => marked.add(r));   // a failure already shown on a field anywhere is not listed again
+    const iss = id !== "lines" && id !== "checks" && sec;
+    const loose = iss ? iss.list.filter((c) => !marked.has(c.id)) : [];
+    const errs = loose.length ? '<ul class="checks card-errs">' + loose.map((c) => checkLi(c, false)).join("") + "</ul>" : "";
+    const nRows = (body.match(/<div class="row[ "]|<tr class="line /g) || []).length;
+    return '<section class="card' + (opts.full ? " full" : "") + (collapsible ? " collapsible" + (open ? "" : " collapsed") : "") + '" id="sec-' + id + '"><h2' +
+      (collapsible ? ' tabindex="0" role="button" aria-expanded="' + open + '" data-act="card"' : "") + ">" + (collapsible ? '<span class="chev" aria-hidden="true"></span>' : "") +
+      dot(id) + esc(T(title)) + (opts.count != null ? '<span class="n">' + opts.count + "</span>" : "") +
+      (collapsible && nRows ? '<span class="sum">' + T(nRows > 1 ? "{n} fields" : "{n} field", { n: nRows }) + "</span>" : "") +
+      (opts.act ? '<span class="act">' + opts.act + "</span>" : "") +
+      '</h2><div class="card-body">' + errs + (body || '<div class="none">' + T("Not present in this document.") + "</div>") + "</div></section>";
   }
   function sub(title, body) { return '<div class="sub"><h3>' + esc(T(title)) + "</h3>" + body + "</div>"; }
 
   // A line's allowances and charges: one table each, a row per entry and their total underneath,
   // then quantity × price + charges − allowances worked out against the line net amount.
-  const money = (n) => n.toLocaleString(I18N.locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const money = (n) => (state.raw ? n.toFixed(2) : n.toLocaleString(I18N.locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   function lineAcTables(ln, used) {
     const acs = byPath(ln, "AllowanceCharge");
     acs.forEach((ac) => markDeep(ac, used));
@@ -508,7 +526,7 @@
               [id, date].forEach((e) => e && used.add(e));
               // an empty cell is only marked when a failed rule points at it (BT-26 is optional unless a rule says otherwise)
               const cell = (e, bt) => { const f = fieldFlag(d, bt, e ? [e] : []);
-                return "<td" + (f ? ' class="flag-' + f.lvl + '" title="' + esc(flagTitle(f)) + '"' : "") + ">" + (e ? renderValue(e) : f ? missing() : "—") + "</td>"; };
+                return "<td" + (f ? ' class="flag-' + f.lvl + '" title="' + esc(flagTitle(f)) + '"' + dataRules(f) : "") + ">" + (e ? renderValue(e) : f ? missing() : "—") + "</td>"; };
               return '<tr class="frow"><td>' + (i + 1) + "</td>" + cell(id, "BT-25") + cell(date, "BT-26") + "</tr>";
             }).join("") + "</tbody></table></div>";
         }
@@ -656,7 +674,7 @@
         if (!e && !state.showEmpty && !flag) return "";
         if (e) u.add(e);
         return '<tr class="frow' + (e ? "" : " empty") + (strong[path] ? " " + strong[path] : "") + (flag ? " flag-" + flag.lvl : "") + '"' +
-          (flag ? ' title="' + esc(flagTitle(flag)) + '"' : "") + '><td class="k">' + btCell(esc(T(label)), bt) +
+          (flag ? ' title="' + esc(flagTitle(flag)) + '"' + dataRules(flag) : "") + '><td class="k">' + btCell(esc(T(label)), bt) +
           xtag(e ? tagPath(e) : "cac:LegalMonetaryTotal/cbc:" + path) + "</td>" +
           '<td class="r">' + (e ? (sign[path] || "") + fmtAmount(txt(e), "") : flag ? missing() : "—") + '</td><td class="cur">' + (e ? esc(e.getAttribute("currencyID") || "") : "") + "</td></tr>";
       }).join("");
@@ -866,6 +884,7 @@
   const fmtMoney = (raw) => (raw === "" || raw == null ? "—" : fmtAmount(raw, ""));
   function parseDate(raw) { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw || ""); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; }
   function fmtDate(raw) {
+    if (state.raw) return esc(raw || "");
     const d = parseDate(raw);
     return d ? '<span title="' + esc(raw) + '">' + esc(d.toLocaleDateString(I18N.locale(), { day: "numeric", month: "short", year: "numeric" })) + "</span>" : esc(raw || "");
   }
@@ -936,8 +955,10 @@
     } else if (state.issues.secs[id]) {
       bad = [...state.issues.secs[id].bad]; warn = [...state.issues.secs[id].warn];
     }
-    const cls = bad.length ? "bad" : warn.length ? "warn" : "ok";
-    const title = bad.length ? T("Fails {ids}", { ids: bad.join(", ") }) : warn.length ? T("Warning {ids}", { ids: warn.join(", ") }) : T("No rule fails here");
+    // a field marked inside the block counts too, even when no rule points at the block itself
+    const fl = state.secFlag[id];
+    const cls = bad.length || fl === "bad" ? "bad" : warn.length || fl === "warn" ? "warn" : "ok";
+    const title = bad.length ? T("Fails {ids}", { ids: bad.join(", ") }) : warn.length ? T("Warning {ids}", { ids: warn.join(", ") }) : fl ? T("A field in this block is flagged") : T("No rule fails here");
     return '<span class="dot ' + cls + '" title="' + esc(title) + '"></span>';
   }
   // inList: an entry of the Checks list; a failed one is clickable (arrow under its ID) and jumps to where it fails.
@@ -990,6 +1011,53 @@
     return h;
   }
 
+  // Verdict first: one banner at the very top says whether the document follows the rules, and where it does not.
+  function renderVerdict() {
+    const el = $("verdict"), checks = state.checks;
+    if (!checks.length) { el.hidden = true; el.innerHTML = ""; return; }
+    const bad = checks.filter((c) => !c.ok && !c.warn).length, warn = checks.filter((c) => !c.ok && c.warn).length;
+    const lvl = bad ? "bad" : warn ? "warn" : "ok";
+    const where = Object.keys(state.issues.secs).filter((id) => id !== "checks" && (state.issues.secs[id].bad.size || state.issues.secs[id].warn.size));
+    const chips = where.map((id) => {
+      const s = state.issues.secs[id], n = s.bad.size + s.warn.size;
+      return '<button type="button" class="vchip ' + (s.bad.size ? "bad" : "warn") + '" data-act="gosec" data-sec="' + esc(id) + '">' +
+        esc(T((state.sectionTitles && state.sectionTitles.get(id)) || humanize(id))) + " <b>" + n + "</b></button>";
+    }).join("");
+    el.className = "verdict " + lvl;
+    el.hidden = false;
+    el.innerHTML = '<div class="v-main"><span class="v-icon" aria-hidden="true">' + (bad ? "✗" : "✓") + "</span><div><div class=\"v-text\">" +
+      (bad ? T("✗ {bad} of {n} rules fail", { bad, n: checks.length }).replace(/^✗\s*/, "") : T("✓ {n} rules pass", { n: checks.length }).replace(/^✓\s*/, "")) + "</div>" +
+      (warn ? '<div class="v-sub">' + T(warn > 1 ? "{n} warnings" : "{n} warning", { n: warn }) + "</div>" : "") +
+      '<button type="button" class="v-sets" data-act="checks" title="' + esc(T("Change the rule sets")) + '">' + esc(T("Checked against")) + " EN 16931" +
+      state.ruleSets.map((id) => " · " + esc(T(EN16931.sets[id].name))).join("") + "</button></div></div>" +
+      (chips ? '<div class="v-chips">' + chips + "</div>" : "") +
+      (bad || warn ? '<button type="button" class="v-btn" data-act="checks">' + T("Show the rules") + "</button>" : "");
+  }
+
+  // Phone summary: the figures to match against SAP in one compact card (the wide hero and fact tiles are hidden there).
+  function renderKeyFig() {
+    const R = state.root, kind = state.kind;
+    const cur = val(R, "DocumentCurrencyCode");
+    const code = val(R, kind === "CreditNote" ? "CreditNoteTypeCode" : "InvoiceTypeCode");
+    const partyName = (tag) => val(R, tag + "/Party/PartyLegalEntity/RegistrationName") || val(R, tag + "/Party/PartyName/Name");
+    const amt = (path) => { const e = first(R, path); return e ? fmtAmount(txt(e), e.getAttribute("currencyID") || cur) : ""; };
+    const due = val(R, "DueDate") || val(R, "PaymentMeans/PaymentDueDate");
+    const rows = [
+      ["Document number", esc(val(R, "ID") || T("(no number)"))],
+      ["Document type", esc(T(kind === "CreditNote" ? "Credit note" : "Invoice")) + (code ? " " + esc(code) : "")],
+      ["Issued", fmtDate(val(R, "IssueDate"))],
+      ["Due", due ? fmtDate(due) : ""],
+      ["Currency", esc(cur)],
+      ["Seller", esc(partyName("AccountingSupplierParty"))],
+      ["Buyer", esc(partyName("AccountingCustomerParty"))],
+      ["Net amount", amt("LegalMonetaryTotal/TaxExclusiveAmount") || amt("LegalMonetaryTotal/LineExtensionAmount")],
+      ["VAT", amt("TaxTotal/TaxAmount")],
+      ["Total", amt("LegalMonetaryTotal/TaxInclusiveAmount")],
+      [kind === "CreditNote" ? "Amount credited" : "Amount due", amt("LegalMonetaryTotal/PayableAmount")]
+    ].filter((r) => r[1]);
+    $("keyfig").innerHTML = rows.map((r) => '<div class="kf"><span class="kf-l">' + esc(T(r[0])) + '</span><span class="kf-v">' + r[1] + "</span></div>").join("");
+  }
+
   function renderHero() {
     const R = state.root, kind = state.kind;
     const code = val(R, kind === "CreditNote" ? "CreditNoteTypeCode" : "InvoiceTypeCode");
@@ -998,7 +1066,6 @@
     const issue = val(R, "IssueDate"), due = val(R, "DueDate") || val(R, "PaymentMeans/PaymentDueDate");
     const di = parseDate(issue), dd = parseDate(due);
     const days = di && dd ? Math.round((dd - di) / 86400000) : null;
-    const checks = state.checks, bad = checks.filter((c) => !c.ok && !c.warn).length;
     $("hero").innerHTML =
       '<div class="hero-main"><div class="eyebrow"><span class="badge' + (kind === "CreditNote" ? " cn" : "") + '">' + T(kind === "CreditNote" ? "Credit note" : "Invoice") + "</span>" +
       (code ? "<span>" + esc(code) + (DOC_TYPES[code] ? " · " + esc(T(DOC_TYPES[code])) : "") + "</span>" : "") +
@@ -1009,47 +1076,8 @@
       '<div class="hero-amount">' +
       (pay ? '<div class="lbl">' + T(kind === "CreditNote" ? "Amount credited" : "Amount due") + '</div><div class="big">' + fmtMoney(txt(pay)) + '<span class="cur">' + esc(pay.getAttribute("currencyID") || "") + "</span></div>" : "") +
       (due ? '<div class="due">' + T("Due") + " <b>" + fmtDate(due) + "</b>" + (days !== null ? " · " + T("{n} days after issue", { n: days }) : "") + "</div>" : "") +
-      (checks.length ? '<button type="button" class="pill ' + (bad ? "bad" : "ok") + '" data-act="checks">' +
-        (bad ? T("✗ {bad} of {n} rules fail", { bad, n: checks.length }) : T("✓ {n} rules pass", { n: checks.length })) + "</button>" : "") + "</div>";
+      "</div>";
 
-    const pm = first(R, "PaymentMeans/PaymentMeansCode");
-    const pmText = pm ? (PAY_MEANS[txt(pm)] ? T(PAY_MEANS[txt(pm)]) : pm.getAttribute("name") || txt(pm)) : "";
-    const ps = val(R, "InvoicePeriod/StartDate"), pe = val(R, "InvoicePeriod/EndDate");
-    const lines = byPath(R, kind === "CreditNote" ? "CreditNoteLine" : "InvoiceLine");
-    const facts = [
-      ["Issued", issue ? fmtDate(issue) : "", val(R, "IssueTime")],
-      ["Invoicing period", ps || pe ? fmtDate(ps) + " – " + fmtDate(pe) : "", ""],
-      ["Purchase order", esc(val(R, "OrderReference/ID")), val(R, "BuyerReference") ? T("Buyer ref. {ref}", { ref: val(R, "BuyerReference") }) : ""],
-      ["Buyer reference", first(R, "OrderReference/ID") ? "" : esc(val(R, "BuyerReference")), ""],
-      ["Payment", esc(pmText), val(R, "PaymentTerms/Note")],
-      ["Lines", lines.length ? String(lines.length) : "", (state.atts.length ? T(state.atts.length > 1 ? "{n} attachments" : "{n} attachment", { n: state.atts.length }) : "")],
-      ["Currency", esc(val(R, "DocumentCurrencyCode")), currencyNames && val(R, "DocumentCurrencyCode") ? (function () { try { return currencyNames.of(val(R, "DocumentCurrencyCode")); } catch (e) { return ""; } })() : ""]
-    ].filter((f) => f[1]);
-    $("facts").innerHTML = facts.map((f) => '<div class="fact"><div class="l">' + esc(T(f[0])) + '</div><div class="v">' + f[1] + "</div>" + (f[2] ? '<div class="s">' + esc(f[2]) + "</div>" : "") + "</div>").join("");
-  }
-
-  function partyBlock(el, cls, roleLabel) {
-    if (!el) return '<div class="party ' + cls + '"><div class="role">' + esc(T(roleLabel)) + '</div><div class="pname muted">' + T("Not provided") + "</div></div>";
-    const legal = val(el, "PartyLegalEntity/RegistrationName"), trade = val(el, "PartyName/Name");
-    const a = first(el, "PostalAddress");
-    const addr = a ? [val(a, "StreetName"), val(a, "AdditionalStreetName")].concat(byPath(a, "AddressLine/Line").map(txt),
-      [[val(a, "PostalZone"), val(a, "CityName")].filter(Boolean).join(" "), val(a, "CountrySubentity"), countryName(val(a, "Country/IdentificationCode"))]).filter(Boolean).join("\n") : "";
-    const items = [];
-    byPath(el, "PartyTaxScheme").forEach((pts) => {
-      const scheme = val(pts, "TaxScheme/ID");
-      items.push([scheme && scheme !== "VAT" ? "Tax number" : "VAT number", esc(val(pts, "CompanyID"))]);
-    });
-    const lid = first(el, "PartyLegalEntity/CompanyID");
-    if (lid) items.push(["Legal ID", esc(txt(lid)) + schemeLabel(lid)]);
-    byPath(el, "PartyIdentification/ID").forEach((id) => items.push(["Identifier", esc(txt(id)) + schemeLabel(id)]));
-    const ep = first(el, "EndpointID");
-    if (ep) items.push(["Electronic address", esc(txt(ep)) + schemeLabel(ep)]);
-    items.push(["Legal form", esc(val(el, "PartyLegalEntity/CompanyLegalForm"))]);
-    const contact = [val(el, "Contact/Name"), val(el, "Contact/Telephone"), val(el, "Contact/ElectronicMail")].filter(Boolean).map(esc).join(" · ");
-    items.push(["Contact", contact]);
-    return '<div class="party ' + cls + '"><div class="role">' + esc(T(roleLabel)) + '</div><div class="pname">' + esc(legal || trade || T("(no name)")) + "</div>" +
-      (legal && trade && trade !== legal ? '<div class="trade">' + esc(T("Trading as {name}", { name: trade })) + "</div>" : "") +
-      (addr ? '<div class="addr">' + esc(addr) + "</div>" : "") + kv(items) + "</div>";
   }
 
   function attTile(i) {
@@ -1064,160 +1092,23 @@
       '<button type="button" data-act="download" data-att="' + i + '">' + T("Download") + "</button></div></div>";
   }
 
-  function renderOverview() {
-    const R = state.root, kind = state.kind;
-    const docCur = val(R, "DocumentCurrencyCode");
-    let h = '<div class="sheet">';
-
-    // Parties
-    h += '<div class="parties">' + partyBlock(first(R, "AccountingSupplierParty/Party"), "from", "From · Seller") +
-      partyBlock(first(R, "AccountingCustomerParty/Party"), "to", "To · Buyer") + "</div>";
-    const payee = first(R, "PayeeParty"), rep = first(R, "TaxRepresentativeParty");
-    if (payee || rep) h += '<div class="parties" style="margin-top:14px">' + (payee ? partyBlock(payee, "from", "Payee (paid to)") : "") + (rep ? partyBlock(rep, "from", "Seller tax representative") : "") + "</div>";
-
-    // Notes
-    const notes = byPath(R, "Note").map(txt).filter(Boolean);
-    if (notes.length) {
-      h += '<h3 class="sh">' + T("Notes") + '</h3><div class="notes">' + notes.map((n) => {
-        const m = n.match(/^#([A-Z0-9]{2,4})#/);
-        return '<div class="note">' + (m ? '<span class="tag" title="' + esc(T("Subject code {code}", { code: m[1] })) + '">' + esc(NOTE_SUBJECT[m[1]] ? T(NOTE_SUBJECT[m[1]]) : m[1]) + "</span>" : "") + esc(m ? n.slice(m[0].length) : n) + "</div>";
-      }).join("") + "</div>";
-    }
-
-    // Lines
-    const lines = byPath(R, kind === "CreditNote" ? "CreditNoteLine" : "InvoiceLine");
-    h += '<h3 class="sh">' + T("Lines") + (lines.length ? " · " + lines.length : "") + "</h3>";
-    if (lines.length) {
-      h += '<div class="tablewrap"><table class="inv"><thead><tr><th></th><th>' + T("Description") + '</th><th class="r">' + T("Quantity") + '</th><th class="r">' + T("Unit price") +
-        "</th><th>" + T("VAT") + '</th><th class="r">' + T("Amount") + "</th></tr></thead><tbody>";
-      lines.forEach((ln, i) => {
-        const q = first(ln, "InvoicedQuantity") || first(ln, "CreditedQuantity");
-        const unit = q ? q.getAttribute("unitCode") || "" : "";
-        const base = first(ln, "Price/BaseQuantity");
-        const subs = [val(ln, "Item/Description"), val(ln, "Item/SellersItemIdentification/ID") ? T("Item {id}", { id: val(ln, "Item/SellersItemIdentification/ID") }) : "",
-          val(ln, "OrderLineReference/LineID") && val(ln, "OrderLineReference/LineID") !== "0" ? T("PO line {id}", { id: val(ln, "OrderLineReference/LineID") }) : "",
-          val(ln, "InvoicePeriod/StartDate") ? T("Period {from} – {to}", { from: val(ln, "InvoicePeriod/StartDate"), to: val(ln, "InvoicePeriod/EndDate") }) : ""].filter(Boolean);
-        byPath(ln, "AllowanceCharge").forEach((ac) => {
-          const charge = val(ac, "ChargeIndicator") === "true";
-          const amount = num(val(ac, "Amount")) !== null ? money(num(val(ac, "Amount"))) : val(ac, "Amount");
-          const reason = val(ac, "AllowanceChargeReason") || (AC_REASON[val(ac, "AllowanceChargeReasonCode")] ? T(AC_REASON[val(ac, "AllowanceChargeReasonCode")]) : "");
-          subs.push(T(charge ? "Charge + {amount}" : "Allowance − {amount}", { amount }) + (reason ? " (" + reason + ")" : ""));
-        });
-        const cat = val(ln, "Item/ClassifiedTaxCategory/ID"), pct = val(ln, "Item/ClassifiedTaxCategory/Percent");
-        const iss = state.issues.lines[i], nBad = iss ? iss.bad.size : 0;
-        h += '<tr' + (nBad ? ' class="has-err"' : "") + '><td class="pos">' + esc(val(ln, "ID") || i + 1) +
-          (nBad ? '<button type="button" class="lerr" data-act="goline" data-line="' + i + '" title="' + esc([...iss.bad].join(", ") + " · " + T("show in Fields")) + '">✗ ' + nBad + "</button>" : "") +
-          '</td><td><div class="iname">' + esc(val(ln, "Item/Name") || "—") + "</div>" +
-          subs.map((s) => '<div class="isub">' + esc(s) + "</div>").join("") + '</td><td class="r">' + (q ? esc(txt(q)) + (unit ? ' <span class="unit" title="' + esc(unit) + '">' + esc(UNITS[unit] ? T(UNITS[unit]) : unit) + "</span>" : "") : "—") +
-          '</td><td class="r">' + fmtMoney(val(ln, "Price/PriceAmount")) + (base && txt(base) !== "1" ? '<div class="isub">' + esc(T("per {n}", { n: txt(base) })) + "</div>" : "") +
-          "</td><td>" + (cat || pct ? '<span class="vat-chip" title="' + esc(VAT_CAT[cat] ? T(VAT_CAT[cat]) : cat) + '">' + (pct ? esc(pct) + " %" : "") + (cat ? " " + esc(cat) : "") + "</span>" : "") +
-          '</td><td class="r">' + fmtMoney(val(ln, "LineExtensionAmount")) + "</td></tr>" + lineErrRow(i, 6);
-      });
-      h += "</tbody></table></div>";
-    } else h += '<div class="none">' + T("No lines in this document.") + "</div>";
-
-    // Totals block
-    const lmt = first(R, "LegalMonetaryTotal");
-    if (lmt) {
-      const t = (label, raw, cls, sign) => (raw === "" ? "" : '<div class="t' + (cls ? " " + cls : "") + '"><span>' + T(label) + "</span><span>" + (sign || "") + fmtMoney(raw) + "</span></div>");
-      const tt = byPath(R, "TaxTotal").find((x) => { const a = first(x, "TaxAmount"); return a && (!docCur || a.getAttribute("currencyID") === docCur); });
-      let vatRows = "";
-      if (tt) {
-        const subs = byPath(tt, "TaxSubtotal");
-        if (subs.length) subs.forEach((st) => {
-          const cat = val(st, "TaxCategory/ID"), pct = val(st, "TaxCategory/Percent");
-          vatRows += t(T("VAT {rate}", { rate: pct ? esc(pct) + " % " : "" }) + (cat ? '<span class="vat-chip" title="' + esc(VAT_CAT[cat] ? T(VAT_CAT[cat]) : cat) + '">' + esc(cat) + "</span>" : "") +
-            ' <span class="muted">' + T("on {amount}", { amount: fmtMoney(val(st, "TaxableAmount")) }) + "</span>", val(st, "TaxAmount"));
-        });
-        else vatRows = t("VAT", val(tt, "TaxAmount"));
-      }
-      h += '<div class="totals-wrap"><div class="totals">' +
-        t("Lines total", val(lmt, "LineExtensionAmount")) +
-        t("Allowances", val(lmt, "AllowanceTotalAmount"), "", "− ") +
-        t("Charges", val(lmt, "ChargeTotalAmount"), "", "+ ") +
-        t("Total excl. VAT", val(lmt, "TaxExclusiveAmount"), "strong") + vatRows +
-        (roundingInInclusive() ? t("Rounding", val(lmt, "PayableRoundingAmount")) : "") +
-        t("Total incl. VAT", val(lmt, "TaxInclusiveAmount"), "strong") +
-        t("Already paid", val(lmt, "PrepaidAmount"), "", "− ") +
-        (roundingInInclusive() ? "" : t("Rounding", val(lmt, "PayableRoundingAmount"))) +
-        t(T(kind === "CreditNote" ? "Amount credited" : "Amount due") + " " + esc(docCur), val(lmt, "PayableAmount"), "due") +
-        "</div></div>";
-    }
-
-    // Payment, references, delivery, allowances
-    const cards = [];
-    {
-      let body = "";
-      byPath(R, "PaymentMeans").forEach((pm) => {
-        const c = first(pm, "PaymentMeansCode");
-        const name = c ? (PAY_MEANS[txt(c)] ? T(PAY_MEANS[txt(c)]) : c.getAttribute("name") || txt(c)) : T("Payment");
-        body += "<h4>" + esc(name) + (c ? ' <span class="muted" style="font-weight:400">· ' + esc(T("code {code}", { code: txt(c) })) + "</span>" : "") + "</h4>" + kv([
-          ["IBAN / account", val(pm, "PayeeFinancialAccount/ID") ? iban(val(pm, "PayeeFinancialAccount/ID")) : ""],
-          ["Account name", esc(val(pm, "PayeeFinancialAccount/Name"))],
-          ["BIC", esc(val(pm, "PayeeFinancialAccount/FinancialInstitutionBranch/ID"))],
-          ["Remittance info", esc(val(pm, "PaymentID"))],
-          ["Card", esc([val(pm, "CardAccount/NetworkID"), val(pm, "CardAccount/PrimaryAccountNumberID"), val(pm, "CardAccount/HolderName")].filter(Boolean).join(" · "))],
-          ["Mandate", esc(val(pm, "PaymentMandate/ID"))],
-          ["Debited account", val(pm, "PaymentMandate/PayerFinancialAccount/ID") ? iban(val(pm, "PaymentMandate/PayerFinancialAccount/ID")) : ""]
-        ]);
-      });
-      const terms = byPath(R, "PaymentTerms/Note").map(txt).filter(Boolean);
-      body += kv([["Terms", terms.map(esc).join("<br>")], ["Due date", val(R, "DueDate") ? fmtDate(val(R, "DueDate")) : ""]]);
-      if (body) cards.push("<div>" + (body.startsWith("<h4") ? "" : "<h4>" + T("Payment") + "</h4>") + body + "</div>");
-    }
-    {
-      const refs = kv([
-        ["Purchase order", esc(val(R, "OrderReference/ID"))], ["Sales order", esc(val(R, "OrderReference/SalesOrderID"))],
-        ["Buyer reference", esc(val(R, "BuyerReference"))], ["Accounting ref.", esc(val(R, "AccountingCost"))],
-        ["Contract", esc(val(R, "ContractDocumentReference/ID"))], ["Project", esc(val(R, "ProjectReference/ID"))],
-        ["Preceding invoice", esc(byPath(R, "BillingReference/InvoiceDocumentReference").map((d) => val(d, "ID") + (val(d, "IssueDate") ? " (" + val(d, "IssueDate") + ")" : "")).join(", "))],
-        ["Despatch advice", esc(val(R, "DespatchDocumentReference/ID"))], ["Receiving advice", esc(val(R, "ReceiptDocumentReference/ID"))],
-        ["Tender / lot", esc(val(R, "OriginatorDocumentReference/ID"))],
-        ["VAT point date", val(R, "TaxPointDate") ? fmtDate(val(R, "TaxPointDate")) : ""],
-        ["Period code", esc(val(R, "InvoicePeriod/DescriptionCode") ? val(R, "InvoicePeriod/DescriptionCode") + (DATE_CODE[val(R, "InvoicePeriod/DescriptionCode")] ? " · " + T(DATE_CODE[val(R, "InvoicePeriod/DescriptionCode")]) : "") : "")]
-      ]);
-      if (refs) cards.push("<div><h4>" + T("References") + "</h4>" + refs + "</div>");
-    }
-    byPath(R, "Delivery").forEach((d) => {
-      const a = first(d, "DeliveryLocation/Address");
-      const addr = a ? [val(a, "StreetName"), val(a, "AdditionalStreetName"), [val(a, "PostalZone"), val(a, "CityName")].filter(Boolean).join(" "), countryName(val(a, "Country/IdentificationCode"))].filter(Boolean).map(esc).join("<br>") : "";
-      const loc = first(d, "DeliveryLocation/ID");
-      const body = kv([["Delivered", val(d, "ActualDeliveryDate") ? fmtDate(val(d, "ActualDeliveryDate")) : ""], ["Deliver to", esc(val(d, "DeliveryParty/PartyName/Name"))],
-        ["Location ID", loc ? esc(txt(loc)) + schemeLabel(loc) : ""], ["Address", addr]]);
-      if (body) cards.push("<div><h4>" + T("Delivery") + "</h4>" + body + "</div>");
-    });
-    const acs = byPath(R, "AllowanceCharge");
-    [["Allowances", false], ["Charges", true]].forEach(([title, isCharge]) => {
-      const list = acs.filter((ac) => (val(ac, "ChargeIndicator") === "true") === isCharge);
-      if (!list.length) return;
-      cards.push("<div><h4>" + T(title) + "</h4>" + kv(list.map((ac, i) => {
-        const charge = isCharge;
-        const code = val(ac, "AllowanceChargeReasonCode");
-        const reason = val(ac, "AllowanceChargeReason") || (AC_REASON[code] ? T(AC_REASON[code]) : code);
-        return [reason || T(charge ? "Charge" : "Allowance") + (list.length > 1 ? " " + (i + 1) : ""), (charge ? "+ " : "− ") + fmtMoney(val(ac, "Amount")) +
-          (val(ac, "MultiplierFactorNumeric") ? ' <span class="muted">(' + esc(val(ac, "MultiplierFactorNumeric")) + " %)</span>" : "") +
-          (val(ac, "TaxCategory/Percent") ? ' <span class="vat-chip">' + esc(val(ac, "TaxCategory/Percent")) + " % " + esc(val(ac, "TaxCategory/ID")) + "</span>" : "")];
-      })) + "</div>");
-    });
-    if (cards.length) h += '<h3 class="sh">' + esc(T("Payment & references")) + '</h3><div class="info">' + cards.join("") + "</div>";
-
-    // Attachments
-    if (state.atts.length) h += '<h3 class="sh">' + T("Attachments · {n}", { n: state.atts.length }) + '</h3><div class="atts">' + state.atts.map((a, i) => attTile(i).replace('id="att-' + i + '"', "")).join("") + "</div>";
-
-    h += "</div>";
-    $("pOverview").innerHTML = h;
-  }
-
+  // Same order as the billing document in VF03 / FB03: header, partners, delivery and payment, items, then amounts and the rule check.
   const NAV_GROUPS = [
     ["Document", ["doc", "refs", "preceding", "notes", "docs"]],
     ["Parties", ["seller", "buyer", "payee", "taxrep"]],
     ["Delivery & payment", ["delivery", "payment", "allowances", "charges"]],
+    ["Lines", ["lines"]],
     ["Amounts", ["vat", "totals", "checks"]],
-    ["More", ["other"]],
-    ["Lines", ["lines"]]
+    ["More", ["other"]]
   ];
-  let navObserver = null;
   function renderFieldsTab() {
+    // first pass finds which failures sit on a field, second pass leaves those out of the block-level lists
+    state.flaggedRules = null;
+    state.secFlag = {};
+    const first = buildSections();
+    state.flaggedRules = new Set(first.flatMap((s) => (s.html.match(/data-rules="[^"]*"/g) || []).flatMap((m) => m.slice(12, -1).split(" "))));
+    state.secFlag = {};
+    first.forEach((s) => { if (/flag-bad/.test(s.html)) state.secFlag[s.id] = "bad"; else if (/flag-warn/.test(s.html)) state.secFlag[s.id] = "warn"; });
     const sections = buildSections();
     const byId = new Map(sections.map((s) => [s.id, s]));
     const menu = (cls) => '<nav class="fnav ' + cls + '" aria-label="' + esc(T("Sections")) + '">' + NAV_GROUPS.map(([label, ids]) => {
@@ -1228,46 +1119,100 @@
       }).join("");
       return items ? '<div class="glabel">' + esc(T(label)) + "</div>" + items : "";
     }).join("") + "</nav>";
-    const main = sections.filter((s) => s.id !== "lines").map((s) => s.html).join("");
+    state.sectionTitles = new Map(sections.map((s) => [s.id, s.title]));
+    const topIds = NAV_GROUPS.slice(0, 3).flatMap((g) => g[1]);
+    const part = (list) => '<div class="fgrid">' + list.map((s) => s.html).join("") + "</div>";
+    const top = sections.filter((s) => topIds.includes(s.id)), bottom = sections.filter((s) => s.id !== "lines" && !topIds.includes(s.id));
     const lines = byId.get("lines");
     $("content").innerHTML =
-      '<div class="fields-layout">' + menu("fnav-side") + '<div class="fgrid">' + main + "</div></div>" +
-      (lines ? '<div class="lines-zone">' + lines.html + "</div>" : "");
+      '<div class="fields-layout">' + menu("fnav-side") + '<div class="fmain">' + part(top) +
+      (lines ? '<div class="lines-zone">' + lines.html + "</div>" : "") + part(bottom) + "</div></div>";
     if ($("filter").value) applyFilter();
     measureStick();
     watchSections();
   }
 
-  // Height of the sticky tab bar, used to offset the sticky menus and scroll targets.
+  // Heights of the sticky bars: the tab bar, and on phones the strip of section chips under it. Scroll targets and the
+  // "where am I" highlight both measure from the bottom of these.
+  const horizontalNav = () => {
+    const nav = document.querySelector("#content .fnav-side");
+    return nav && getComputedStyle(nav).position === "sticky" && nav.offsetWidth > $("content").clientWidth * 0.9 ? nav : null;
+  };
   function measureStick() {
-    const bar = $("tabbar");
+    const bar = $("tabbar"), nav = horizontalNav();
     if (bar && bar.offsetHeight) document.documentElement.style.setProperty("--stick", bar.offsetHeight + "px");
+    document.documentElement.style.setProperty("--navh", nav ? nav.offsetHeight + "px" : "0px");
   }
-  window.addEventListener("resize", measureStick);
+  window.addEventListener("resize", () => { measureStick(); watchSections(); });
 
-  // Highlight the section currently in view in the menu.
-  function watchSections() {
-    if (navObserver) navObserver.disconnect();
-    if (!("IntersectionObserver" in window)) return;
-    const visible = new Map();
-    const stick = $("tabbar") ? $("tabbar").offsetHeight : 48;
-    navObserver = new IntersectionObserver((entries) => {
-      entries.forEach((e) => { if (e.isIntersecting) visible.set(e.target.id, e.target.getBoundingClientRect().top); else visible.delete(e.target.id); });
-      let best = null, bestTop = Infinity;
-      visible.forEach((_, id) => { const t = $(id).getBoundingClientRect().top; if (t < bestTop) { bestTop = t; best = id; } });
-      if (best) setActive(best.replace(/^sec-/, ""));
-    }, { rootMargin: "-" + (stick + 20) + "px 0px -55% 0px" });
-    $("content").querySelectorAll(".card").forEach((c) => navObserver.observe(c));
+  // Highlight the section you are in: the block that covers the line just under the sticky bars (the lowest one when
+  // two sit side by side), or the next block below when that line is between blocks, or the last block at the very end.
+  function spy() {
+    spyFrame = 0;
+    if ($("pFields").hidden) return;
+    const cards = Array.from($("content").querySelectorAll(".card")).filter((c) => !c.hidden);
+    if (!cards.length) return;
+    const bar = $("tabbar"), nav = horizontalNav();
+    const y = Math.max(bar ? bar.getBoundingClientRect().bottom : 0, nav ? nav.getBoundingClientRect().bottom : 0) + 16;
+    // the block you just picked in the menu stays highlighted while it is the one on screen
+    if (pinned.id) {
+      const pc = $("sec-" + pinned.id), pr = pc && pc.getBoundingClientRect();
+      if (pr && !pc.hidden && (Date.now() - pinned.at < 1300 || (pr.top <= y + 2 && pr.bottom > y))) { setActive(pinned.id); return; }
+      pinned.id = null;
+    }
+    let best = null;
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 3) best = cards[cards.length - 1];
+    else {
+      let topMost = -Infinity;
+      cards.forEach((c) => { const r = c.getBoundingClientRect(); if (r.top <= y && r.bottom > y && r.top > topMost + 2) { best = c; topMost = r.top; } });
+      if (!best) {
+        const below = cards.filter((c) => c.getBoundingClientRect().top > y).sort((p, q) => p.getBoundingClientRect().top - q.getBoundingClientRect().top)[0];
+        best = below || cards[cards.length - 1];
+      }
+    }
+    if (best) setActive(best.id.replace(/^sec-/, ""));
   }
+  let spyFrame = 0;
+  const pinned = { id: null, at: 0 };
+  // scrolling by hand (wheel, touch, keys) releases the block picked in the menu
+  ["wheel", "touchmove", "keydown"].forEach((ev) => window.addEventListener(ev, () => { pinned.id = null; }, { passive: true }));
+  function watchSections() { if (!spyFrame) spyFrame = requestAnimationFrame(spy); }
+  window.addEventListener("scroll", watchSections, { passive: true });
   function setActive(id) {
-    $("content").querySelectorAll(".fnav a").forEach((a) => a.classList.toggle("active", a.dataset.sec === id));
+    let on = null;
+    $("content").querySelectorAll(".fnav a").forEach((a) => { const active = a.dataset.sec === id; a.classList.toggle("active", active); if (active) on = a; });
+    // keep the highlighted entry in view inside the menu itself (a sideways strip on phones, a tall list on desktop)
+    const nav = on && on.closest(".fnav");
+    if (!nav) return;
+    const n = nav.getBoundingClientRect(), r = on.getBoundingClientRect();
+    if (nav.scrollWidth > nav.clientWidth + 1) nav.scrollTo({ left: nav.scrollLeft + (r.left - n.left) - (n.width - r.width) / 2, behavior: "smooth" });
+    else if (nav.scrollHeight > nav.clientHeight + 1) nav.scrollTo({ top: nav.scrollTop + (r.top - n.top) - (n.height - r.height) / 2, behavior: "smooth" });
   }
+  // Folded blocks: click the heading to open or close; anything that jumps to a field opens its block first.
+  function toggleCard(card, open) {
+    const id = card.id.replace(/^sec-/, "");
+    const willOpen = open == null ? card.classList.contains("collapsed") : open;
+    card.classList.toggle("collapsed", !willOpen);
+    const h = card.querySelector(":scope > h2");
+    if (h) h.setAttribute("aria-expanded", willOpen ? "true" : "false");
+    if (willOpen) { state.openCards.add(id); state.closedCards.delete(id); } else { state.openCards.delete(id); state.closedCards.add(id); }
+    watchSections();
+  }
+  function openCard(el) { const c = el && el.closest && el.closest(".card.collapsed"); if (c) toggleCard(c, true); }
+  $("content").addEventListener("click", (e) => {
+    const h = e.target.closest('h2[data-act="card"]');
+    if (h && !e.target.closest(".act")) toggleCard(h.parentElement);
+  });
+  $("content").addEventListener("keydown", (e) => {
+    const h = e.target.closest && e.target.closest('h2[data-act="card"]');
+    if (h && e.target === h && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); toggleCard(h.parentElement); }
+  });
   $("content").addEventListener("click", (e) => {
     const a = e.target.closest(".fnav a[data-sec]");
     if (!a) return;
     e.preventDefault();
     const el = $("sec-" + a.dataset.sec);
-    if (el) { el.scrollIntoView({ behavior: "smooth", block: "start" }); setActive(a.dataset.sec); }
+    if (el) { openCard(el); pinned.id = a.dataset.sec; pinned.at = Date.now(); el.scrollIntoView({ behavior: "smooth", block: "start" }); setActive(a.dataset.sec); }
   });
 
   function renderAttachments() {
@@ -1280,29 +1225,100 @@
   function render() {
     state.checks = computeChecks();
     state.issues = mapIssues(state.checks);
-    state.failed = state.checks.filter((c) => !c.ok).map((c) => ({ c, at: c.at, bts: new Set(c.text.match(/\bB[TG]-\d+\b/g) || []) }));
+    state.failed = state.checks.filter((c) => !c.ok).map((c) => ({ c, at: c.at, bts: new Set(c.only || c.text.match(/\bB[TG]-\d+\b/g) || []) }));
     collectAttachments();
     renderHero();
-    renderOverview();
+    renderKeyFig();
     renderFieldsTab();
+    renderVerdict();
     renderAttachments();
     $("rawXml").innerHTML = xmlHtml(state.root.ownerDocument);
     $("showEmpty").checked = state.showEmpty;
     $("showTags").checked = state.showTags;
+    $("showRaw").checked = state.raw;
+    $("showFold").checked = state.foldPassing;
+    updateFilterBadge();
+    updateIssues();
     $("out").hidden = false;
     $("intro").hidden = true;
   }
 
   function showTab(name) {
     document.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", t.dataset.tab === name ? "true" : "false"));
-    $("pOverview").hidden = name !== "overview";
     $("pFields").hidden = name !== "fields";
     $("pAtts").hidden = name !== "atts";
     $("pRaw").hidden = name !== "raw";
     $("fieldTools").hidden = name !== "fields";
+    $("filtersBtn").hidden = name !== "fields";
+    $("issueNav").hidden = name !== "fields" || !issueList.length;
     if (name === "fields") measureStick();
   }
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => showTab(t.dataset.tab)));
+
+  // Phones: the filter box and the checkboxes sit behind a Filters button (see style.css); the badge counts what is switched on.
+  function updateFilterBadge() {
+    const toggles = (state.showEmpty ? 1 : 0) + (state.showTags ? 1 : 0) + (state.raw ? 1 : 0) + (state.foldPassing ? 1 : 0);
+    const n = ($("filter").value.trim() ? 1 : 0) + toggles;
+    const c = $("filtersCount"), d = $("displayCount");
+    c.textContent = n; c.hidden = !n;
+    d.textContent = toggles; d.hidden = !toggles;
+  }
+  $("filtersBtn").addEventListener("click", () => {
+    const open = !$("tabbar").classList.contains("filters-open");
+    $("tabbar").classList.toggle("filters-open", open);
+    $("filtersBtn").setAttribute("aria-expanded", open ? "true" : "false");
+    measureStick();
+    watchSections();
+  });
+  ["input", "change"].forEach((ev) => $("fieldTools").addEventListener(ev, updateFilterBadge));
+  // Display menu (wide screens): one button instead of four checkboxes in the toolbar
+  $("displayBtn").addEventListener("click", (e) => {
+    e.stopPropagation();
+    const open = !$("display").classList.contains("open");
+    $("display").classList.toggle("open", open);
+    $("displayBtn").setAttribute("aria-expanded", open ? "true" : "false");
+  });
+  document.addEventListener("click", (e) => { if (!e.target.closest("#display")) { $("display").classList.remove("open"); $("displayBtn").setAttribute("aria-expanded", "false"); } });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") { $("display").classList.remove("open"); $("displayBtn").setAttribute("aria-expanded", "false"); } });
+  $("showFold").addEventListener("change", (e) => {
+    state.foldPassing = e.target.checked;
+    state.openCards.clear(); state.closedCards.clear();   // the checkbox decides again, block by block
+    try { localStorage.setItem("edocxml.foldPassing", state.foldPassing ? "1" : "0"); } catch (err) {}
+    if (state.root) render();
+  });
+
+  // Next / previous issue: walks through every failing field, line or block, errors first, each in page order.
+  let issueList = [], issueIdx = -1;
+  function updateIssues() {
+    const fails = state.checks.filter((c) => !c.ok);
+    const content = $("content"), seen = new Set(), items = [];
+    const pos = (x, y) => (x.compareDocumentPosition(y) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1);
+    [false, true].forEach((warn) => {
+      const els = [];
+      fails.filter((c) => !!c.warn === warn).forEach((c) => {
+        let t = Array.from(content.querySelectorAll('[data-rules~="' + c.id + '"]'));
+        if (!t.length && c.lines && c.lines.length) t = c.lines.map((i) => content.querySelector('tr.line[data-line="' + i + '"]')).filter(Boolean);
+        if (!t.length && c.sec) t = [$("sec-" + c.sec)].filter(Boolean);
+        t.forEach((el) => { if (!seen.has(el)) { seen.add(el); els.push(el); } });
+      });
+      els.sort(pos).forEach((el) => items.push({ el, warn }));
+    });
+    issueList = items; issueIdx = -1;
+    $("issueNav").hidden = !items.length || $("pFields").hidden;
+    $("issueN").textContent = "–/" + items.length;
+  }
+  function stepIssue(d) {
+    if (!issueList.length) return;
+    issueIdx = (issueIdx + d + issueList.length) % issueList.length;
+    const it = issueList[issueIdx];
+    openCard(it.el);
+    it.el.scrollIntoView({ behavior: "smooth", block: "center" });
+    it.el.classList.add("flash");
+    setTimeout(() => it.el.classList.remove("flash"), 1600);
+    $("issueN").textContent = (issueIdx + 1) + "/" + issueList.length;
+  }
+  $("issueNext").addEventListener("click", () => stepIssue(1));
+  $("issuePrev").addEventListener("click", () => stepIssue(-1));
 
   const setFold = (n, closed) => {
     n.classList.toggle("closed", closed);
@@ -1337,6 +1353,7 @@
   });
   function goTo(el) {
     if (!el) return;
+    openCard(el);
     el.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -1347,6 +1364,11 @@
     renderFieldsTab();
   });
   // XML tags are always in the page; the checkbox only shows or hides them.
+  $("showRaw").addEventListener("change", (e) => {
+    state.raw = e.target.checked;
+    try { localStorage.setItem("edocxml.raw", state.raw ? "1" : "0"); } catch (err) {}
+    if (state.root) render();
+  });
   $("showTags").addEventListener("change", (e) => {
     state.showTags = e.target.checked;
     try { localStorage.setItem("edocxml.showTags", state.showTags ? "1" : "0"); } catch (err) {}
@@ -1356,14 +1378,16 @@
 
   // Text the filter searches: XML tags count only while they are shown.
   function searchText(el) {
-    if (state.showTags || !el.querySelector(".xtag")) return el.textContent.toLowerCase();
+    const dates = Array.from(el.querySelectorAll("span[title]")).map((x) => x.getAttribute("title")).filter((t) => /^\d{4}-\d{2}-\d{2}/.test(t)).join(" ");
+    if (state.showTags || !el.querySelector(".xtag")) return (el.textContent + " " + dates).toLowerCase();
     const c = el.cloneNode(true);
     c.querySelectorAll(".xtag").forEach((x) => x.remove());
-    return c.textContent.toLowerCase();
+    return (c.textContent + " " + dates).toLowerCase();
   }
   function applyFilter() {
     const q = $("filter").value.trim().toLowerCase();
     const content = $("content");
+    content.classList.toggle("filtering", !!q);
     content.querySelectorAll(".row").forEach((r) => { r.hidden = q && !searchText(r).includes(q); });
     content.querySelectorAll("tr.line").forEach((tr) => {
       const d = content.querySelector('tr[data-detail="' + tr.dataset.line + '"]');
@@ -1407,6 +1431,7 @@
         const row = $("content").querySelector('tr.line[data-line="' + btn.dataset.line + '"]');
         if (row) { row.hidden = false; setLine(row, true); flash(row); }
       }
+      else if (act === "gosec") { showTab("fields"); flash($("sec-" + btn.dataset.sec)); }
       else if (act === "goerr") goToCheck(state.checks[+btn.dataset.check]);
       else if (act === "expand" || act === "collapse") $("content").querySelectorAll("tr.line:not([hidden])").forEach((tr) => setLine(tr, act === "expand"));
       return;
@@ -1479,14 +1504,15 @@
     Object.assign(state, { root, kind: root.localName, name: name || "", size: text.length, wrapped, text, ruleSets: EN16931.detect(root) });
     $("filter").value = "";
     render();
-    showTab("overview");
+    showTab("fields");
     drop.classList.add("loaded");
     const size = formatSize(new Blob([text]).size);
     setMsg(() => "<b>" + esc(state.name || T("Pasted XML")) + "</b> · " + size + " · " +
-      T(state.kind === "CreditNote" ? "credit note" : "invoice") + " " + esc(val(state.root, "ID")) +
+      T(state.kind === "CreditNote" ? "credit note" : "invoice") +
       (dashes ? " · " + T("removed {n} leading “-” from tags", { n: dashes }) : "") +
       (amps ? " · " + esc(T("escaped {n} bare “&”", { n: amps })) : ""));
     $("clearBtn").hidden = false;
+    $("sampleBtn").hidden = true;
     pasteArea.hidden = true; pasteArea.value = ""; pasteBtn.setAttribute("aria-expanded", "false");
     return true;
   }
@@ -1496,13 +1522,18 @@
     state.cache.forEach((c) => c.url && URL.revokeObjectURL(c.url));
     Object.assign(state, { root: null, kind: null, atts: [], attIndex: new Map(), cache: new Map() });
     $("out").hidden = true; $("intro").hidden = false;
-    ["content", "hero", "facts", "pOverview", "pAtts", "rawXml"].forEach((id) => { $(id).innerHTML = ""; });
+    ["content", "hero", "verdict", "keyfig", "pAtts", "rawXml"].forEach((id) => { $(id).innerHTML = ""; });
     $("filter").value = "";
     pasteArea.value = "";
     drop.classList.remove("loaded");
     $("clearBtn").hidden = true;
+    $("sampleBtn").hidden = false;
     setMsg(() => T("Drop a UBL invoice or credit note XML here, or paste it anywhere with Ctrl+V."));
   }
+
+  // A small invoice that follows the EN 16931 rules, so a first visit shows a green verdict.
+  const SAMPLE_XML = `<?xml version="1.0" encoding="UTF-8"?><Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"><cbc:CustomizationID>urn:cen.eu:en16931:2017</cbc:CustomizationID><cbc:ProfileID>urn:fdc:peppol.eu:2017:poacc:billing:01:1.0</cbc:ProfileID><cbc:ID>INV-2026-0042</cbc:ID><cbc:IssueDate>2026-10-01</cbc:IssueDate><cbc:DueDate>2026-10-31</cbc:DueDate><cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode><cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode><cbc:BuyerReference>PO-7781</cbc:BuyerReference><cac:AccountingSupplierParty><cac:Party><cbc:EndpointID schemeID="EM">billing@example-supplies.test</cbc:EndpointID><cac:PartyName><cbc:Name>Example Supplies GmbH</cbc:Name></cac:PartyName><cac:PostalAddress><cbc:StreetName>Hauptstrasse 12</cbc:StreetName><cbc:CityName>Berlin</cbc:CityName><cbc:PostalZone>10115</cbc:PostalZone><cac:Country><cbc:IdentificationCode>DE</cbc:IdentificationCode></cac:Country></cac:PostalAddress><cac:PartyTaxScheme><cbc:CompanyID>DE123456789</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme><cac:PartyLegalEntity><cbc:RegistrationName>Example Supplies GmbH</cbc:RegistrationName></cac:PartyLegalEntity></cac:Party></cac:AccountingSupplierParty><cac:AccountingCustomerParty><cac:Party><cbc:EndpointID schemeID="EM">accounts@sample-buyer.test</cbc:EndpointID><cac:PartyName><cbc:Name>Sample Buyer SRL</cbc:Name></cac:PartyName><cac:PostalAddress><cbc:StreetName>Via Roma 5</cbc:StreetName><cbc:CityName>Milano</cbc:CityName><cbc:PostalZone>20121</cbc:PostalZone><cac:Country><cbc:IdentificationCode>IT</cbc:IdentificationCode></cac:Country></cac:PostalAddress><cac:PartyLegalEntity><cbc:RegistrationName>Sample Buyer SRL</cbc:RegistrationName></cac:PartyLegalEntity></cac:Party></cac:AccountingCustomerParty><cac:PaymentMeans><cbc:PaymentMeansCode>58</cbc:PaymentMeansCode><cac:PayeeFinancialAccount><cbc:ID>DE89370400440532013000</cbc:ID></cac:PayeeFinancialAccount></cac:PaymentMeans><cac:TaxTotal><cbc:TaxAmount currencyID="EUR">38.00</cbc:TaxAmount><cac:TaxSubtotal><cbc:TaxableAmount currencyID="EUR">200.00</cbc:TaxableAmount><cbc:TaxAmount currencyID="EUR">38.00</cbc:TaxAmount><cac:TaxCategory><cbc:ID>S</cbc:ID><cbc:Percent>19</cbc:Percent><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:TaxCategory></cac:TaxSubtotal></cac:TaxTotal><cac:LegalMonetaryTotal><cbc:LineExtensionAmount currencyID="EUR">200.00</cbc:LineExtensionAmount><cbc:TaxExclusiveAmount currencyID="EUR">200.00</cbc:TaxExclusiveAmount><cbc:TaxInclusiveAmount currencyID="EUR">238.00</cbc:TaxInclusiveAmount><cbc:PayableAmount currencyID="EUR">238.00</cbc:PayableAmount></cac:LegalMonetaryTotal><cac:InvoiceLine><cbc:ID>1</cbc:ID><cbc:InvoicedQuantity unitCode="C62">4</cbc:InvoicedQuantity><cbc:LineExtensionAmount currencyID="EUR">200.00</cbc:LineExtensionAmount><cac:Item><cbc:Name>Office chair, ergonomic</cbc:Name><cac:SellersItemIdentification><cbc:ID>CH-100</cbc:ID></cac:SellersItemIdentification><cac:ClassifiedTaxCategory><cbc:ID>S</cbc:ID><cbc:Percent>19</cbc:Percent><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:ClassifiedTaxCategory></cac:Item><cac:Price><cbc:PriceAmount currencyID="EUR">50.00</cbc:PriceAmount></cac:Price></cac:InvoiceLine></Invoice>`;
+  $("sampleBtn").addEventListener("click", () => load(SAMPLE_XML, "sample-invoice.xml"));
 
   function loadFile(f) {
     if (!f) return;
@@ -1551,7 +1582,28 @@
   const markLang = () => langBtns.forEach((b) => b.setAttribute("aria-pressed", b.dataset.lang === I18N.lang ? "true" : "false"));
   langBtns.forEach((b) => b.addEventListener("click", () => I18N.set(b.dataset.lang)));
   markLang();
+  // Light / dark: follow the device by default; one tap cycles device → light → dark and the choice is remembered.
+  const THEMES = ["system", "light", "dark"];
+  const THEME_LABEL = { system: "Theme: follow the device", light: "Theme: light", dark: "Theme: dark" };
+  let themePref = "system";
+  try { const t = localStorage.getItem("tools.theme"); if (t === "light" || t === "dark") themePref = t; } catch (err) {}
+  function applyTheme() {
+    const root = document.documentElement;
+    if (themePref === "system") root.removeAttribute("data-theme"); else root.setAttribute("data-theme", themePref);
+    const b = $("themeBtn");
+    b.dataset.pref = themePref;
+    b.setAttribute("aria-label", T(THEME_LABEL[themePref]));
+    b.title = T(THEME_LABEL[themePref]);
+  }
+  $("themeBtn").addEventListener("click", () => {
+    themePref = THEMES[(THEMES.indexOf(themePref) + 1) % THEMES.length];
+    try { if (themePref === "system") localStorage.removeItem("tools.theme"); else localStorage.setItem("tools.theme", themePref); } catch (err) {}
+    applyTheme();
+  });
+  applyTheme();
+
   I18N.onChange(() => {
+    applyTheme();
     markLang();
     setDisplayNames();
     if (lastMsg) lbMsg.innerHTML = lastMsg();
@@ -1559,13 +1611,14 @@
     const tab = document.querySelector('.tab[aria-selected="true"]');
     const y = window.scrollY;
     render();
-    showTab(tab ? tab.dataset.tab : "overview");
+    showTab(tab ? tab.dataset.tab : "fields");
     window.scrollTo(0, y);
   });
   I18N.applyStatic();
   setMsg(() => T("Drop a UBL invoice or credit note XML here, or paste it anywhere with Ctrl+V."));
   $("content").classList.toggle("show-tags", state.showTags);
   $("showTags").checked = state.showTags;
+  $("showRaw").checked = state.raw;
 
   // Drop anywhere on the page.
   let depth = 0;

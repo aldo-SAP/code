@@ -418,7 +418,11 @@
         rule(id("01"), B.length ? B.map((b) => b.el) : vatTotal, v.single ? B.length === 1 : B.length > 0,
           nm + " is used, so it must have " + (v.single ? "exactly one" : "a") + " VAT breakdown", B.length + " found");
         [["02", L, "lines"], ["03", A, "document allowances"], ["04", C, "document charges"]].forEach(([n, list, what]) => {
-          if (list.length) rule(id(n), seller, partyOk[v.party], "With " + what + " in " + nm + ", " + PARTY_TEXT[v.party]);
+          if (!list.length) return;
+          // "No VAT ID may be present": point at the parties that do hold one (and only their BT numbers), not at the empty fields.
+          const bad = v.party === "none" ? [[seller, "BT-31", sellerVat], [rep, "BT-63", repVat], [buyer, "BT-48", buyerVat]].filter((x) => x[2]) : [];
+          rule(id(n), bad.length ? bad.map((x) => x[0]) : seller, partyOk[v.party], "With " + what + " in " + nm + ", " + PARTY_TEXT[v.party]);
+          if (bad.length) out[out.length - 1].only = bad.map((x) => x[1]);
         });
       }
 
