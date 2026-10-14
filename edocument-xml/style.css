@@ -538,14 +538,8 @@ td > .dl .xtag { display: none; }
 .fmain { min-width: 0; }
 .lines-zone { margin-bottom: 0; }
 .lines-zone + .fgrid { margin-top: 18px; }
-.keyfig { display: none; }
 @media (max-width: 720px) {
-  .hero,   .keyfig { display: block; background: var(--paper); border-radius: 12px; box-shadow: var(--shadow); padding: 2px 14px; margin: 0 0 4px; }
-  .kf { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 7px 0; border-top: 1px solid var(--line-soft); }
-  .kf:first-child { border-top: 0; }
-  .kf .kf-l { flex: 0 0 38%; color: var(--muted); font-size: 0.8rem; }
-  .kf .kf-v { flex: 1 1 0; min-width: 0; text-align: right; font-weight: 500; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-  .kf:last-child .kf-v { font-size: 1.1rem; font-weight: 700; }
+  .hero { display: block; margin: 0 0 4px; }
   .v-btn { margin-left: 0; }
 }
 

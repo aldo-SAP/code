@@ -1035,29 +1035,6 @@
   }
 
   // Phone summary: the figures to match against SAP in one compact card (the wide hero and fact tiles are hidden there).
-  function renderKeyFig() {
-    const R = state.root, kind = state.kind;
-    const cur = val(R, "DocumentCurrencyCode");
-    const code = val(R, kind === "CreditNote" ? "CreditNoteTypeCode" : "InvoiceTypeCode");
-    const partyName = (tag) => val(R, tag + "/Party/PartyLegalEntity/RegistrationName") || val(R, tag + "/Party/PartyName/Name");
-    const amt = (path) => { const e = first(R, path); return e ? fmtAmount(txt(e), e.getAttribute("currencyID") || cur) : ""; };
-    const due = val(R, "DueDate") || val(R, "PaymentMeans/PaymentDueDate");
-    const rows = [
-      ["Document number", esc(val(R, "ID") || T("(no number)"))],
-      ["Document type", esc(T(kind === "CreditNote" ? "Credit note" : "Invoice")) + (code ? " " + esc(code) : "")],
-      ["Issued", fmtDate(val(R, "IssueDate"))],
-      ["Due", due ? fmtDate(due) : ""],
-      ["Currency", esc(cur)],
-      ["Seller", esc(partyName("AccountingSupplierParty"))],
-      ["Buyer", esc(partyName("AccountingCustomerParty"))],
-      ["Net amount", amt("LegalMonetaryTotal/TaxExclusiveAmount") || amt("LegalMonetaryTotal/LineExtensionAmount")],
-      ["VAT", amt("TaxTotal/TaxAmount")],
-      ["Total", amt("LegalMonetaryTotal/TaxInclusiveAmount")],
-      [kind === "CreditNote" ? "Amount credited" : "Amount due", amt("LegalMonetaryTotal/PayableAmount")]
-    ].filter((r) => r[1]);
-    $("keyfig").innerHTML = rows.map((r) => '<div class="kf"><span class="kf-l">' + esc(T(r[0])) + '</span><span class="kf-v">' + r[1] + "</span></div>").join("");
-  }
-
   function renderHero() {
     const R = state.root, kind = state.kind;
     const code = val(R, kind === "CreditNote" ? "CreditNoteTypeCode" : "InvoiceTypeCode");
@@ -1228,7 +1205,6 @@
     state.failed = state.checks.filter((c) => !c.ok).map((c) => ({ c, at: c.at, bts: new Set(c.only || c.text.match(/\bB[TG]-\d+\b/g) || []) }));
     collectAttachments();
     renderHero();
-    renderKeyFig();
     renderFieldsTab();
     renderVerdict();
     renderAttachments();
@@ -1522,7 +1498,7 @@
     state.cache.forEach((c) => c.url && URL.revokeObjectURL(c.url));
     Object.assign(state, { root: null, kind: null, atts: [], attIndex: new Map(), cache: new Map() });
     $("out").hidden = true; $("intro").hidden = false;
-    ["content", "hero", "verdict", "keyfig", "pAtts", "rawXml"].forEach((id) => { $(id).innerHTML = ""; });
+    ["content", "hero", "verdict", "pAtts", "rawXml"].forEach((id) => { $(id).innerHTML = ""; });
     $("filter").value = "";
     pasteArea.value = "";
     drop.classList.remove("loaded");
