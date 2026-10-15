@@ -36,7 +36,7 @@
       <button id="sampleBtn" type="button" data-i18n>Try a sample invoice</button>
       <button id="clearBtn" type="button" hidden data-i18n>Clear</button>
     </div>
-    <input type="file" id="file" accept=".xml,text/xml,application/xml">
+    <input type="file" id="file" accept=".xml,.json,text/xml,application/xml,application/json">
   </div>
   <textarea id="pasteArea" hidden spellcheck="false" aria-label="XML input" data-i18n-aria="XML input" placeholder="Paste the XML here; it is read as soon as it's complete." data-i18n-ph="Paste the XML here; it is read as soon as it's complete."></textarea>
 
@@ -50,6 +50,7 @@
         <button class="tab" role="tab" id="tab-fields" data-tab="fields" aria-selected="true" aria-controls="pFields" data-i18n>Invoice</button>
         <button class="tab" role="tab" id="tab-atts" data-tab="atts" aria-selected="false" aria-controls="pAtts"><span data-i18n>Attachments</span><span class="n" id="attCount">0</span></button>
         <button class="tab" role="tab" id="tab-raw" data-tab="raw" aria-selected="false" aria-controls="pRaw" data-i18n>Raw XML</button>
+        <button class="tab" role="tab" id="tab-json" data-tab="json" aria-selected="false" aria-controls="pJson" hidden data-i18n>From JSON</button>
         <button class="tab" role="tab" id="tab-ereport" data-tab="ereport" aria-selected="false" aria-controls="pEreport" hidden data-i18n>E-report</button>
       </div>
       <button type="button" class="filters-btn" id="filtersBtn" aria-expanded="false" aria-controls="fieldTools" aria-label="Filters" data-i18n-aria="Filters" title="Filters" hidden>
@@ -84,6 +85,15 @@
       <div id="content"></div>
     </div>
     <div class="tabpanel" id="pAtts" role="tabpanel" aria-labelledby="tab-atts" hidden></div>
+    <div class="tabpanel" id="pJson" role="tabpanel" aria-labelledby="tab-json" hidden>
+      <div id="jsonInfo"></div>
+      <div class="xmlbar">
+        <span class="hint" data-i18n>The XML built from the JSON, exactly as it is checked.</span>
+        <button type="button" id="jsonCopy" data-i18n>Copy XML</button>
+        <button type="button" id="jsonDownload" data-i18n>Download XML</button>
+      </div>
+      <pre class="xml" id="jsonXml"></pre>
+    </div>
     <div class="tabpanel" id="pEreport" role="tabpanel" aria-labelledby="tab-ereport" hidden>
       <div class="xmlbar">
         <span class="hint" data-i18n>The Flux 10 report built from this invoice. The envelope values are placeholders.</span>
@@ -121,6 +131,7 @@
 <script src="rules/peppol.js"></script>
 <script src="rules/fr.js"></script>
 <script src="rules/ereport.js"></script>
+<script src="json-to-ubl.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

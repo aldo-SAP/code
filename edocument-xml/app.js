@@ -1243,6 +1243,7 @@
     renderAttachments();
     $("rawXml").innerHTML = xmlHtml(state.root.ownerDocument);
     renderEreport();
+    renderJson();
     $("showEmpty").checked = state.showEmpty;
     $("showTags").checked = state.showTags;
     $("showRaw").checked = state.raw;
@@ -1253,6 +1254,29 @@
     $("intro").hidden = true;
   }
 
+  // A JSON request converted to UBL: its own tab with the XML, the fields that found no place, and the readings the conversion assumed.
+  function renderJson() {
+    const j = state.json;
+    $("tab-json").hidden = !j;
+    if (!j) { $("jsonInfo").innerHTML = ""; $("jsonXml").textContent = ""; if (!$("pJson").hidden) showTab("fields"); return; }
+    const rows = j.notMapped.map((m) => "<tr><td><code>" + esc(m.path) + "</code></td><td>" + esc(m.value) + "</td></tr>").join("");
+    $("jsonInfo").innerHTML =
+      '<p class="json-sum">' + esc(T("Built from the JSON request")) + (j.total > 1 ? " · " + esc(T("first of {n} invoices", { n: j.total })) : "") + "</p>" +
+      "<h3>" + esc(T("Not placed in the XML")) + " · " + j.notMapped.length + "</h3>" +
+      (rows ? '<div class="tablewrap"><table class="ac"><thead><tr><th>' + esc(T("JSON field")) + "</th><th>" + esc(T("Value")) + "</th></tr></thead><tbody>" + rows + "</tbody></table></div>"
+        : '<p class="none">' + esc(T("Every field with a value was placed.")) + "</p>") +
+      "<h3>" + esc(T("Placed by reading the field name")) + " · " + j.assumptions.length + "</h3>" +
+      "<ul class=\"json-notes\">" + j.assumptions.map((a) => "<li>" + esc(a) + "</li>").join("") + "</ul>";
+    $("jsonXml").textContent = j.xml;
+  }
+  $("jsonCopy").addEventListener("click", () => { try { navigator.clipboard.writeText($("jsonXml").textContent); } catch (e) {} });
+  $("jsonDownload").addEventListener("click", () => {
+    const j = state.json; if (!j) return;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([j.xml], { type: "application/xml" }));
+    a.download = (state.name || "invoice").replace(/\.json$/i, "") + ".xml";
+    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  });
   // The Flux 10 report built from the invoice, shown on its own tab while the E-reporting rule set is on.
   function renderEreport() {
     const on = state.ruleSets.includes("ereport") && window.EReport;
@@ -1267,6 +1291,7 @@
     $("pAtts").hidden = name !== "atts";
     $("pRaw").hidden = name !== "raw";
     $("pEreport").hidden = name !== "ereport";
+    $("pJson").hidden = name !== "json";
     $("fieldTools").hidden = name !== "fields";
     $("filtersBtn").hidden = name !== "fields";
     syncIssueChrome();
@@ -1556,6 +1581,14 @@
   function load(text, name) {
     text = String(text || "").replace(/^﻿/, "").trim();
     if (!text) return false;
+    // A JSON request is converted to UBL first, then checked like any XML (France rules only).
+    let fromJson = null;
+    if (/^[\[{]/.test(text)) {
+      let parsed = null;
+      try { parsed = JSON.parse(text); } catch (e) { setMsg(() => "<b>" + esc(T("Not valid JSON.")) + "</b> " + esc(String(e.message || e)), true); return false; }
+      try { fromJson = JsonToUbl.convert(parsed); } catch (e) { setMsg(() => "<b>" + esc(String(e.message || e)) + "</b>", true); return false; }
+      text = fromJson.xml;
+    }
     // XML copied from a browser's tree view has a "-" before each expandable tag (-<cac:Party>); drop it.
     let dashes = 0;
     text = text.replace(/^([ \t]*)-[ \t]*(?=<)/gm, (m, indent) => { dashes++; return indent; });
@@ -1590,7 +1623,7 @@
       wrapped = root.localName; root = found;
     }
     // Extra rule sets (PEPPOL, France …) start from what the CustomizationID says; the Checks card can change them.
-    Object.assign(state, { root, kind: root.localName, name: name || "", size: text.length, wrapped, text, ruleSets: EN16931.detect(root) });
+    Object.assign(state, { root, kind: root.localName, name: name || "", size: text.length, wrapped, text, ruleSets: fromJson ? ["fr"] : EN16931.detect(root), json: fromJson });
     $("filter").value = "";
     render();
     showTab("fields");
@@ -1609,7 +1642,7 @@
   function clearAll() {
     closeViewer();
     state.cache.forEach((c) => c.url && URL.revokeObjectURL(c.url));
-    Object.assign(state, { root: null, kind: null, atts: [], attIndex: new Map(), cache: new Map() });
+    Object.assign(state, { root: null, kind: null, json: null, atts: [], attIndex: new Map(), cache: new Map() });
     $("out").hidden = true; $("intro").hidden = false;
     ["content", "hero", "verdict", "pAtts", "rawXml"].forEach((id) => { $(id).innerHTML = ""; });
     $("filter").value = "";
