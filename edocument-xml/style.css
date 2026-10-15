@@ -777,3 +777,14 @@ tr.flash > td:only-child { box-shadow: inset 0 0 0 2px var(--hl); border-radius:
 
 /* a column header's BT tag drops under its name when the table is tight, so a small table does not need to scroll */
 table.ac th .thc { flex-wrap: wrap; row-gap: 0; }
+
+/* an open line and its details read as one framed group, so it is clear where it starts and where it ends (wide screens; phones have cards) */
+@media (min-width: 721px) {
+  #sec-lines tr.line.open > td { background: var(--chip); border-top: 2px solid var(--line); }
+  #sec-lines tr.line.open > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+  #sec-lines tr.line.has-err.open > td { background: var(--err-bg); }
+  #sec-lines tr.line.has-err.open > td:first-child { box-shadow: inset 3px 0 0 var(--err); }
+  #sec-lines tr.detail:not([hidden]) > td { background: var(--bg); box-shadow: inset 3px 0 0 var(--accent); border-bottom: 2px solid var(--line); padding: 10px 14px 16px; }
+  #sec-lines tr.line.has-err.open + tr.line-err + tr.detail > td, #sec-lines tr.line.has-err.open + tr.detail > td { box-shadow: inset 3px 0 0 var(--err); }
+  #sec-lines tr.line.open + tr.line-err > td { border-top: 0; }
+}
