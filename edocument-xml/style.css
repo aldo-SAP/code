@@ -279,7 +279,7 @@ tr.line.flash > td { background: var(--hl-soft); }
 .fnav-side a { flex: none; background: var(--paper); border-radius: 999px; padding: 4px 12px; box-shadow: var(--shadow); }
 .fnav-side a.active { background: var(--ink); color: var(--paper); box-shadow: none; }
 /* on wide screens the chips wrap onto a second or third row instead of scrolling; phones keep the one scrolling row */
-@media (min-width: 901px) { .fnav-side { flex-wrap: wrap; overflow: visible; } }
+@media (min-width: 641px) { .fnav-side { flex-wrap: wrap; overflow: visible; } }
 .card.full { grid-column: 1 / -1; }
 .card[hidden], .sub[hidden] { display: none; }
 .card h2 { margin: 0 0 6px; font-size: 0.98rem; font-weight: 600; display: flex; gap: 8px; align-items: center; }
