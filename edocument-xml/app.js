@@ -479,7 +479,7 @@
     if (!acs.length) return "";
     const cur = (first(ln, "LineExtensionAmount") || { getAttribute: () => "" }).getAttribute("currencyID") || "";
     const sums = { A: 0, C: 0 };
-    const r = (label, amount, cls) => '<tr' + (cls ? ' class="' + cls + '"' : "") + '><td class="k">' + label + '</td><td class="r">' + amount + '</td><td class="cur">' + esc(cur) + "</td></tr>";
+    const r = (label, amount, cls, bt) => '<tr' + (cls ? ' class="' + cls + '"' : "") + '><td class="k">' + label + '</td><td class="bt-col">' + (bt ? '<span class="bt">' + esc(bt) + "</span>" : "") + '</td><td class="r">' + amount + '</td><td class="cur">' + esc(cur) + "</td></tr>";
     let more = "";
     // one row per charge or allowance: reason on top, the rest (code, percentage, base amount, VAT) small underneath
     const entry = (role) => acs.filter((ac) => (val(ac, "ChargeIndicator") === "true") === (role === "C")).map((ac, j) => {
@@ -498,7 +498,7 @@
       if (x) more += sub(T(role === "C" ? "Charge {n}" : "Allowance {n}", { n: j + 1 }), x);
       return r(btCell('<span class="ac-sign">' + (role === "C" ? "+" : "−") + "</span>" + esc(reason || T(role === "C" ? "Charge {n}" : "Allowance {n}", { n: j + 1 })), esc(btFor({ A: "BT-139", C: "BT-144" }, role))) +
         (bits.length ? '<span class="sub-d">' + bits.join("") + "</span>" : ""),
-        '<span class="bt">' + esc(btFor({ A: "BT-136", C: "BT-141" }, role)) + "</span> " + money(amt), "ac-row");
+        money(amt), "ac-row", btFor({ A: "BT-136", C: "BT-141" }, role));
     }).join("");
     const charges = entry("C"), allowances = entry("A");
     const rows = (charges ? charges + r(T("Total charges"), money(sums.C), "subtotal") : "") + (allowances ? allowances + r(T("Total allowances"), money(sums.A), "subtotal") : "");
@@ -511,8 +511,8 @@
       const ok = net !== null && Math.abs(calc - net) < 0.02;
       top = r(T(baseQty !== 1 ? "Quantity × net price / base quantity" : "Quantity × net price") + ' <span class="dec">(' + esc(String(qty)) + " × " + money(price) + (baseQty !== 1 ? " / " + baseQty : "") + ")</span>", money(gross));
       bottom = r(T("= Calculated"), money(calc), "key") +
-        r(btCell(T("Line net amount in the file"), "BT-131"), net === null ? "—" : money(net) +
-          (ok ? ' <span class="ac-ok">✓</span>' : ' <span class="ac-bad">✗ ' + T("off by {amount}", { amount: money(Math.abs(calc - net)) }) + "</span>"), ok ? "" : "bad");
+        r(T("Line net amount in the file"), net === null ? "—" : money(net) +
+          (ok ? ' <span class="ac-ok">✓</span>' : ' <span class="ac-bad">✗ ' + T("off by {amount}", { amount: money(Math.abs(calc - net)) }) + "</span>"), ok ? "" : "bad", "BT-131");
     }
     return '<div class="sub ac-block"><h3>' + T("Line net amount") + '</h3><table class="tot ac-calc"><tbody>' + top + rows + bottom + "</tbody></table>" + more + "</div>";
   }

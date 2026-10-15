@@ -785,19 +785,28 @@ tr.flash > td:only-child { box-shadow: inset 0 0 0 2px var(--hl); border-radius:
 /* a column header's BT tag drops under its name when the table is tight, so a small table does not need to scroll */
 table.ac th .thc { flex-wrap: wrap; row-gap: 0; }
 
-/* an open line and its details read as one framed group, so it is clear where it starts and where it ends (wide screens; phones have cards) */
+/* an open line and its details read as one framed group, so it is clear where it starts and where it ends (wide screens; phones have cards).
+   The frame is drawn with shadows, not borders, so opening a line does not move anything. */
 @media (min-width: 721px) {
-  #sec-lines tr.line.open > td { background: var(--chip); border-top: 2px solid var(--line); }
-  #sec-lines tr.line.open > td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+  #sec-lines tr.line.open > td { background: var(--chip); box-shadow: inset 0 2px 0 var(--line); }
+  #sec-lines tr.line.open > td:first-child { box-shadow: inset 3px 0 0 var(--accent), inset 0 2px 0 var(--line); }
   #sec-lines tr.line.has-err.open > td { background: var(--err-bg); }
-  #sec-lines tr.line.has-err.open > td:first-child { box-shadow: inset 3px 0 0 var(--err); }
-  #sec-lines tr.detail:not([hidden]) > td { background: var(--bg); box-shadow: inset 3px 0 0 var(--accent); border-bottom: 2px solid var(--line); padding: 10px 14px 16px; }
-  #sec-lines tr.line.has-err.open + tr.line-err + tr.detail > td, #sec-lines tr.line.has-err.open + tr.detail > td { box-shadow: inset 3px 0 0 var(--err); }
-  #sec-lines tr.line.open + tr.line-err > td { border-top: 0; }
+  #sec-lines tr.line.has-err.open > td:first-child { box-shadow: inset 3px 0 0 var(--err), inset 0 2px 0 var(--line); }
+  #sec-lines tr.detail:not([hidden]) > td { background: var(--bg); box-shadow: inset 3px 0 0 var(--accent), inset 0 -2px 0 var(--line); padding: 10px 14px 16px; }
+  #sec-lines tr.line.has-err.open + tr.line-err + tr.detail > td, #sec-lines tr.line.has-err.open + tr.detail > td { box-shadow: inset 3px 0 0 var(--err), inset 0 -2px 0 var(--line); }
+}
+/* phone cards: the open card keeps its border and the details continue it, so the card does not change shape when opened */
+@media (max-width: 720px) {
+  #sec-lines table.tc > tbody > tr.line.open { border-color: rgba(127, 127, 127, 0.3); border-bottom-width: 0; }
+  #sec-lines table.tc > tbody > tr.line.has-err.open { border-color: var(--err); border-bottom-width: 0; }
+  #sec-lines table.tc > tbody > tr.detail:not([hidden]) > td { border: 1px solid rgba(127, 127, 127, 0.3); border-top: 0; }
+  #sec-lines table.tc > tbody > tr.line.has-err.open + tr.line-err + tr.detail > td, #sec-lines table.tc > tbody > tr.line.has-err.open + tr.detail > td { border-color: var(--err); border-top: 0; }
+}
 }
 
 /* line calculation: the label takes the room, the amount and currency stay on one line */
 table.ac-calc td.k { width: 100%; }
 table.ac-calc td.r, table.ac-calc td.cur { white-space: nowrap; width: 1%; }
 table.ac-calc td.k .thc { flex-wrap: wrap; row-gap: 0; }
-table.ac-calc td.k .thl { flex: 1 1 8em; }
+table.ac-calc td.k .thl { flex: 0 1 auto; }
+table.ac-calc td.bt-col { width: 1%; white-space: nowrap; text-align: right; padding-left: 0; padding-right: 6px; }
