@@ -654,12 +654,12 @@
         const u = new Set();
         const amt = first(tt, "TaxAmount");
         let inner = "";
-        if (amt) {
-          u.add(amt);
-          const inTaxCur = taxCur && taxCur !== docCur && amt.getAttribute("currencyID") === taxCur;
-          inner += row(inTaxCur ? "VAT total in accounting currency" : "Invoice total VAT amount", inTaxCur ? "BT-111" : "BT-110", renderValue(amt), "", tagPath(amt));
-        }
         const subs = byPath(tt, "TaxSubtotal");
+        const inTaxCur = amt && taxCur && taxCur !== docCur && amt.getAttribute("currencyID") === taxCur;
+        const totalLabel = inTaxCur ? "VAT total in accounting currency" : "Invoice total VAT amount", totalBt = inTaxCur ? "BT-111" : "BT-110";
+        if (amt) u.add(amt);
+        // with a breakdown the total closes the table; without one it stands alone
+        if (amt && !subs.length) inner += row(totalLabel, totalBt, renderValue(amt), "", tagPath(amt));
         if (subs.length) {
           const th = (label, bt, tag, r) => "<th" + (r ? ' class="r"' : "") + ">" + btCell(T(label), bt) + xtag("cac:TaxSubtotal/" + tag) + "</th>";
           inner += '<div class="tablewrap"><table><thead><tr>' + th("Category", "BT-118", "cac:TaxCategory/cbc:ID") + th("Rate", "BT-119", "cac:TaxCategory/cbc:Percent", true) +
@@ -674,7 +674,13 @@
               '</td><td class="r">' + (tb ? renderValue(tb) : "—") + '</td><td class="r">' + (ta ? renderValue(ta) : "—") +
               "</td><td>" + [rc ? esc(txt(rc)) : "", rt ? esc(txt(rt)) : ""].filter(Boolean).join(" · ") + "</td></tr>";
           }
-          inner += "</tbody></table></div>";
+          inner += "</tbody>";
+          if (amt) {
+            const sumTaxable = subs.reduce((t, st) => t + (num(val(st, "TaxableAmount")) || 0), 0);
+            const curT = (first(subs[0], "TaxableAmount") || { getAttribute: () => "" }).getAttribute("currencyID") || "";
+            inner += '<tfoot><tr><td colspan="2">' + btCell(T(totalLabel), totalBt) + xtag(tagPath(amt)) + '</td><td class="r">' + money(sumTaxable) + ' <span class="unit">' + esc(curT) + '</span></td><td class="r">' + renderValue(amt) + "</td><td></td></tr></tfoot>";
+          }
+          inner += "</table></div>";
         }
         inner += extras([tt], u);
         body += tts.length > 1 ? sub(T("Tax total {n}", { n: tts.indexOf(tt) + 1 }), inner) : inner;
