@@ -1,0 +1,302 @@
+ibr-068	Il GLN DEVE avere un formato valido secondo le regole GS1 per gli indirizzi elettronici (ibt-034), (ibt-049), gli identificativi di parte (ibt-029), (ibt-046), (ibt-060) e le entità giuridiche (ibt-030), (ibt-047), (ibt-061).
+ibr-127	Il numero di organizzazione svedese DEVE essere indicato nel formato corretto per gli indirizzi elettronici (ibt-034), (ibt-049), gli identificativi di parte (ibt-029), (ibt-046), (ibt-060) e le entità giuridiche (ibt-030), (ibt-047), (ibt-061).
+ibr-069	Il numero di organizzazione norvegese DEVE essere indicato nel formato corretto per gli indirizzi elettronici (ibt-034), (ibt-049), gli identificativi di parte (ibt-029), (ibt-046), (ibt-060) e le entità giuridiche (ibt-030), (ibt-047), (ibt-061).
+ibr-070	Il numero di organizzazione danese (CVR) DEVE essere indicato nel formato corretto per gli indirizzi elettronici (ibt-034), (ibt-049), gli identificativi di parte (ibt-029), (ibt-046), (ibt-060) e le entità giuridiche (ibt-030), (ibt-047), (ibt-061).
+ibr-113	Il numero di impresa belga DEVE essere indicato nel formato corretto per gli indirizzi elettronici (ibt-034), (ibt-049), gli identificativi di parte (ibt-029), (ibt-046), (ibt-060) e le entità giuridiche (ibt-030), (ibt-047), (ibt-061).
+ibr-114	Il Codice Univoco Unità Organizzativa (codice IPA) deve essere indicato nel formato corretto per gli indirizzi elettronici (ibt-034), (ibt-049), gli identificativi di parte (ibt-029), (ibt-046), (ibt-060) e le entità giuridiche (ibt-030), (ibt-047), (ibt-061).
+ibr-115	Il Codice Fiscale deve essere indicato nel formato corretto per gli indirizzi elettronici (ibt-034), (ibt-049), gli identificativi di parte (ibt-029), (ibt-046), (ibt-060) e le entità giuridiche (ibt-030), (ibt-047), (ibt-061).
+ibr-116	La Partita IVA italiana deve essere indicata nel formato corretto per gli indirizzi elettronici (ibt-034), (ibt-049), gli identificativi di parte (ibt-029), (ibt-046), (ibt-060) e le entità giuridiche (ibt-030), (ibt-047), (ibt-061).
+ibr-120	L'Australian Business Number (ABN) deve essere indicato nel formato corretto per gli indirizzi elettronici (ibt-034), (ibt-049), gli identificativi di parte (ibt-029), (ibt-046), (ibt-060) e le entità giuridiche (ibt-030), (ibt-047), (ibt-061).
+ibr-083	L'addebito a livello di prezzo (ibt-147) NON è consentito. È ammesso solo il valore 'false'.
+ibr-sr-30	Il motivo dello sconto (ibt-097) DEVE ricorrere al massimo una volta
+ibr-031	Lo sconto (ibg-20) DEVE avere un importo dello sconto (ibt-092).
+ibr-033	Ogni sconto a livello di documento (ibg-20) DEVE avere un motivo dello sconto a livello di documento (ibt-097) o un codice del motivo dello sconto a livello di documento (ibt-098).
+ibr-041	Ogni sconto di riga (ibg-27) DEVE avere un importo dello sconto di riga (ibt-136).
+ibr-042	Ogni sconto di riga (ibg-27) DEVE avere un motivo dello sconto di riga (ibt-139) o un codice del motivo dello sconto di riga (ibt-140).
+ibr-036	La maggiorazione (ibg-21) DEVE avere un importo della maggiorazione (ibt-099).
+ibr-sr-31	Il motivo della maggiorazione (ibt-104) DEVE ricorrere al massimo una volta
+ibr-038	Ogni maggiorazione a livello di documento (ibg-21) DEVE avere un motivo della maggiorazione a livello di documento (ibt-104) o un codice del motivo della maggiorazione a livello di documento (ibt-105).
+ibr-043	Ogni maggiorazione di riga (ibg-28) DEVE avere un importo della maggiorazione di riga (ibt-141).
+ibr-044	Ogni maggiorazione di riga (ibg-28) DEVE avere un motivo della maggiorazione di riga (ibt-144) o un codice del motivo della maggiorazione di riga (ibt-145).
+ibr-082	Il valore dell'indicatore sconto/maggiorazione DEVE essere 'true' o 'false'.
+ibr-sr-61	Il motivo di esenzione fiscale dello sconto/maggiorazione (ibt-197) (ibt-199) DEVE ricorrere al massimo una volta.
+ibr-052	Ogni documento di supporto aggiuntivo (ibg-24) DEVE contenere un riferimento al documento di supporto (ibt-122).
+ibr-sr-33	La descrizione del documento di supporto (ibt-123) DEVE ricorrere al massimo una volta
+ibr-080	L'indirizzo elettronico dell'acquirente (ibt-049) DEVE essere indicato.
+ibr-063	L'indirizzo elettronico dell'acquirente (ibt-049) DEVE avere un identificativo dello schema.
+ibr-011	L'indirizzo postale dell'acquirente (ibg-08) DEVE contenere il codice paese dell'acquirente (ibt-055).
+ibr-sr-54	La riga di indirizzo postale dell'acquirente (ibt-163) DEVE ricorrere al massimo una volta
+ibr-057	Ogni indirizzo di consegna (ibg-15) DEVE contenere il codice paese di consegna (ibt-080).
+ibr-sr-56	La riga di indirizzo di consegna (ibt-165) DEVE ricorrere al massimo una volta
+ibr-012	Una fattura DEVE avere la somma degli importi netti delle righe (ibt-106).
+ibr-013	Una fattura DEVE avere l'importo totale della fattura senza imposta (ibt-109).
+ibr-014	Una fattura DEVE avere l'importo totale della fattura con imposta (ibt-112).
+ibr-015	Una fattura DEVE avere l'importo dovuto per il pagamento (ibt-115).
+ibr-091	L'importo dovuto per il pagamento della fattura (ibt-115) NON DEVE avere più di 2 decimali.
+ibr-121	L'importo dello sconto a livello di documento (ibt-107) NON DEVE avere più di 2 decimali.
+ibr-122	L'importo della maggiorazione a livello di documento (ibt-108) NON DEVE avere più di 2 decimali.
+ibr-123	L'importo totale della fattura senza imposta (ibt-109) NON DEVE avere più di 2 decimali.
+ibr-125	L'importo totale della fattura con imposta (ibt-112) NON DEVE avere più di 2 decimali.
+ibr-co-10	Somma degli importi netti delle righe (ibt-106) = Σ importi netti delle righe (ibt-131).
+ibr-co-11	Somma degli sconti a livello di documento (ibt-107) = Σ importi degli sconti a livello di documento (ibt-092).
+ibr-co-12	Somma delle maggiorazioni a livello di documento (ibt-108) = Σ importi delle maggiorazioni a livello di documento (ibt-099).
+ibr-co-13	Importo totale della fattura senza imposta (ibt-109) = Σ importi netti delle righe (ibt-131) - somma degli sconti a livello di documento (ibt-107) + somma delle maggiorazioni a livello di documento (ibt-108).
+ibr-co-16	Importo dovuto per il pagamento (ibt-115) = importo totale della fattura con imposta (ibt-112) - importo pagato (ibt-113) + importo di arrotondamento (ibt-114).
+ibr-001	Una fattura DEVE avere un identificativo della specifica (ibt-024).
+ibr-sr-63	[ibr-sr-63] - L'identificativo della specifica non deve contenere caratteri jolly come '*'. (ibt-024)
+ibr-002	Una fattura DEVE avere un numero di fattura (ibt-001).
+ibr-003	Una fattura DEVE avere una data di emissione (ibt-002).
+ibr-004	Una fattura DEVE avere un codice tipo fattura (ibt-003) / una nota di credito DEVE avere un codice tipo nota di credito (ibt-003).
+ibr-005	Una fattura DEVE avere un codice valuta della fattura (ibt-005).
+ibr-006	Una fattura DEVE contenere il nome del venditore (ibt-027).
+ibr-007	Una fattura DEVE contenere il nome dell'acquirente (ibt-044).
+ibr-008	Una fattura DEVE contenere l'indirizzo postale del venditore (ibg-05).
+ibr-010	Una fattura DEVE contenere l'indirizzo postale dell'acquirente (ibg-08).
+ibr-016	Una fattura DEVE avere almeno una riga (ibg-25)
+ibr-053	Se è presente il codice valuta di contabilizzazione dell'imposta (ibt-006), DEVE essere indicato l'importo totale dell'imposta nella valuta di contabilizzazione (ibt-111).
+ibr-066	Una fattura DEVE contenere al massimo una carta di pagamento (ibg-18).
+ibr-067	Una fattura DEVE contenere al massimo un mandato di pagamento (ibg-19).
+ibr-071	Una fattura non dovrebbe includere un AdditionalDocumentReference (ibg-24) che indichi contemporaneamente un identificativo di oggetto fatturato (ibt-018) e un allegato (ibt-125).
+ibr-072	Una fattura NON DEVE includere un AdditionalDocumentReference (ibg-24) che indichi contemporaneamente un identificativo di oggetto fatturato (ibt-018) e una descrizione del documento (ibt-123).
+ibr-076	Il processo di business (ibt-023) DEVE essere indicato.
+ibr-078	A livello di documento è ammesso un solo oggetto fatturato (ibt-018).
+ibr-084	L'importo totale dell'imposta della fattura (ibt-110) e l'importo totale dell'imposta nella valuta di contabilizzazione (ibt-111) DEVONO avere lo stesso segno.
+ibr-090	A livello di documento è ammesso un solo riferimento al progetto (ibt-011).
+ibr-094	Il riferimento al contratto (ibt-012) DEVE ricorrere al massimo una volta.
+ibr-095	Il riferimento all'avviso di ricevimento (ibt-015) DEVE ricorrere al massimo una volta.
+ibr-096	Il riferimento all'avviso di spedizione (ibt-016) DEVE ricorrere al massimo una volta.
+ibr-097	Il periodo di fatturazione (ibg-14) DEVE ricorrere al massimo una volta.
+ibr-098	Il nome del venditore (ibt-027) DEVE ricorrere al massimo una volta.
+ibr-099	La denominazione commerciale del venditore (ibt-028) DEVE ricorrere al massimo una volta.
+ibr-100	L'identificativo di registrazione legale del venditore (ibt-030) DEVE ricorrere al massimo una volta.
+ibr-101	Le informazioni legali aggiuntive del venditore (ibt-033) DEVONO ricorrere al massimo una volta.
+ibr-102	Il nome dell'acquirente (ibt-044) DEVE ricorrere al massimo una volta.
+ibr-103	L'identificativo di registrazione legale dell'acquirente (ibt-047) DEVE ricorrere al massimo una volta.
+ibr-104	L'identificativo fiscale dell'acquirente (ibt-048) DEVE ricorrere al massimo una volta.
+ibr-107	Le informazioni di consegna (ibg-13) DEVONO ricorrere al massimo una volta.
+ibr-112	La denominazione commerciale dell'acquirente (ibt-045) DEVE ricorrere al massimo una volta.
+ibr-co-15	Importo totale della fattura con imposta (ibt-112) = importo totale della fattura senza imposta (ibt-109) + importo totale dell'imposta della fattura (ibt-110).
+ibr-sr-16	L'identificativo dell'acquirente (ibt-046) DEVE ricorrere al massimo una volta
+ibr-sr-39	Il riferimento al progetto (ibt-011) DEVE ricorrere al massimo una volta.
+ibr-sr-49	La data di esigibilità dell'imposta (ibt-007) DEVE ricorrere al massimo una volta
+ibr-sr-51	La nota (ibt-022) DEVE ricorrere al massimo una volta
+ibr-sr-52	Il riferimento alla gara o al lotto (ibt-017) DEVE ricorrere al massimo una volta
+ibr-021	Ogni riga di fattura (ibg-25) DEVE avere un identificativo di riga (ibt-126).
+ibr-022	Ogni riga di fattura (ibg-25) DEVE avere una quantità fatturata (ibt-129).
+ibr-023	Una riga di fattura (ibg-25) DEVE avere un codice unità di misura della quantità fatturata (ibt-130).
+ibr-024	Ogni riga di fattura (ibg-25) DEVE avere un importo netto di riga (ibt-131).
+ibr-025	Ogni riga di fattura (ibg-25) DEVE contenere il nome dell'articolo (ibt-153).
+ibr-026	Ogni riga di fattura (ibg-25) DEVE contenere il prezzo netto dell'articolo (ibt-146).
+ibr-027	Il prezzo netto dell'articolo (ibt-146) NON DEVE essere negativo.
+ibr-028	Il prezzo lordo dell'articolo (ibt-148) NON DEVE essere negativo.
+ibr-087	La quantità base (ibt-149) DEVE essere un numero positivo maggiore di zero.
+ibr-089	Per ogni riga (ibg-25) è ammesso un solo oggetto fatturato (ibt-128).
+ibr-109	L'identificativo della riga dell'ordine d'acquisto di riferimento (ibt-132) DEVE ricorrere al massimo una volta.
+ibr-110	Il periodo della riga di fattura (ibg-26) DEVE ricorrere al massimo una volta.
+ibr-111	Lo sconto sul prezzo dell'articolo (ibt-147) DEVE ricorrere al massimo una volta.
+ibr-sr-34	La nota della riga di fattura (ibt-127) DEVE ricorrere al massimo una volta
+ibr-sr-38	Il testo del motivo di esenzione fiscale dell'articolo fatturato (ibt-185) DEVE ricorrere al massimo una volta
+ibr-sr-50	La descrizione dell'articolo (ibt-154) DEVE ricorrere al massimo una volta
+ibr-085	La data di inizio del periodo di riga (ibt-134) DEVE rientrare nel periodo di fatturazione (ibg-14).
+ibr-086	La data di fine del periodo di riga (ibt-135) DEVE rientrare nel periodo di fatturazione (ibg-14).
+ibr-030	Se sono indicate sia la data di inizio (ibt-134) sia la data di fine (ibt-135) del periodo di riga, la data di fine (ibt-135) DEVE essere successiva o uguale alla data di inizio (ibt-134).
+ibr-co-20	Se è usato il periodo della riga di fattura (ibg-26), la data di inizio (ibt-134) o la data di fine (ibt-135) del periodo DEVE essere valorizzata, o entrambe.
+ibr-029	Se sono indicate sia la data di inizio (ibt-073) sia la data di fine (ibt-074) del periodo di fatturazione, la data di fine (ibt-074) DEVE essere successiva o uguale alla data di inizio (ibt-073).
+ibr-co-19	Se è usato il periodo di fatturazione (ibg-14), la data di inizio (ibt-073) o la data di fine (ibt-074) del periodo DEVE essere valorizzata, o entrambe.
+ibr-054	Ogni attributo dell'articolo (ibg-32) DEVE contenere un nome (ibt-160) e un valore (ibt-161) dell'attributo.
+ibr-065	L'identificativo di classificazione dell'articolo (ibt-158) DEVE avere un identificativo dello schema.
+ibr-064	L'identificativo standard dell'articolo (ibt-157) DEVE avere un identificativo dello schema.
+ibr-sr-58	Il codice categoria fiscale dell'articolo fatturato (ibt-151) DEVE essere presente.
+ibr-017	Il nome del beneficiario (ibt-059) DEVE essere indicato nella fattura, se il beneficiario (ibg-10) è diverso dal venditore (ibg-04).
+ibr-105	L'identificativo del beneficiario (ibt-060) DEVE ricorrere al massimo una volta nella fattura, se il beneficiario (ibg-10) è diverso dal venditore (ibg-04).
+ibr-106	L'identificativo legale del beneficiario (ibt-061) DEVE ricorrere al massimo una volta nella fattura, se il beneficiario (ibg-10) è diverso dal venditore (ibg-04).
+ibr-sr-19	Il nome del beneficiario (ibt-059) DEVE ricorrere al massimo una volta, se il beneficiario è diverso dal venditore
+ibr-sr-59	La riga di indirizzo postale del beneficiario (ibt-174) DEVE ricorrere al massimo una volta
+ibr-049	Un'istruzione di pagamento (ibg-16) DEVE specificare il codice del tipo di mezzo di pagamento (ibt-081).
+ibr-sr-27	Il testo del mezzo di pagamento (ibt-081) DEVE ricorrere al massimo una volta
+ibr-sr-28	L'identificativo di riferimento del mandato (ibt-089) DEVE ricorrere al massimo una volta
+ibr-sr-46	Il testo del mezzo di pagamento (ibt-082) DEVE ricorrere al massimo una volta
+ibr-126	Tutti gli attributi currencyID devono avere lo stesso valore del codice valuta della fattura (ibt-005), tranne gli importi attesi nella valuta di contabilizzazione dell'imposta (ibt-006).
+ibr-sr-05	I termini di pagamento (ibt-020) DEVONO ricorrere al massimo una volta.
+ibr-sr-60	L'ID dell'istruzione di pagamento (ibt-187) DEVE ricorrere al massimo una volta.
+ibr-055	Ogni riferimento a fattura precedente (ibg-03) DEVE contenere un riferimento alla fattura precedente (ibt-025).
+ibr-sr-07	Se c'è un riferimento a fattura precedente (ibg-03), il numero della fattura precedente (ibt-025) DEVE essere presente
+ibr-sr-06	Il riferimento alla fattura precedente (ibt-025) DEVE ricorrere al massimo una volta
+ibr-co-26	Perché l'acquirente possa identificare automaticamente il fornitore, DEVONO essere presenti l'identificativo del venditore (ibt-029), l'identificativo di registrazione legale del venditore (ibt-030) e/o l'identificativo fiscale del venditore (ibt-031).
+ibr-081	L'indirizzo elettronico del venditore (ibt-049) DEVE essere indicato.
+ibr-sr-42	Il regime fiscale della parte (party tax scheme) DEVE ricorrere al massimo due volte nella parte venditore
+ibr-062	L'indirizzo elettronico del venditore (ibt-034) DEVE avere un identificativo dello schema.
+ibr-009	L'indirizzo postale del venditore (ibg-05) DEVE contenere il codice paese del venditore (ibt-040).
+ibr-sr-53	La riga di indirizzo postale del venditore (ibt-162) DEVE ricorrere al massimo una volta
+ibr-018	Il nome del rappresentante fiscale del venditore (ibt-062) DEVE essere indicato nella fattura, se il venditore (ibg-04) ha un rappresentante fiscale (ibg-11)
+ibr-019	L'indirizzo postale del rappresentante fiscale del venditore (ibg-12) DEVE essere indicato nella fattura, se il venditore (ibg-04) ha un rappresentante fiscale (ibg-11).
+ibr-056	Il rappresentante fiscale del venditore (ibg-11) DEVE avere un identificativo fiscale (ibt-063).
+ibr-sr-22	Il nome del rappresentante fiscale del venditore (ibt-062) DEVE ricorrere al massimo una volta, se il venditore ha un rappresentante fiscale
+ibr-sr-23	L'identificativo fiscale del rappresentante fiscale del venditore (ibt-063) DEVE ricorrere al massimo una volta, se il venditore ha un rappresentante fiscale
+ibr-020	L'indirizzo postale del rappresentante fiscale del venditore (ibg-12) DEVE contenere il codice paese del rappresentante fiscale (ibt-069), se il venditore (ibg-04) ha un rappresentante fiscale (ibg-11).
+ibr-sr-55	La riga di indirizzo postale del rappresentante fiscale (ibt-164) DEVE ricorrere al massimo una volta
+ibr-124	L'importo totale dell'IVA della fattura (ibt-110) NON DEVE avere più di 2 decimali.
+ibr-co-14	Importo totale dell'imposta della fattura (ibt-110) = Σ importi dell'imposta per categoria (ibt-117).
+ibr-sr-32	Il testo del motivo di esenzione IVA (ibt-120) DEVE ricorrere al massimo una volta.
+ibr-sr-57	L'identificativo della società DEVE esistere nella classe del regime fiscale della parte.
+ibr-073	Una data DEVE avere il formato AAAA-MM-GG in (ibt-002), (ibt-007), (ibt-009), (ibt-026), (ibt-072), (ibt-073), (ibt-074), (ibt-134), (ibt-135).
+ibr-119	Un'ora DEVE avere il formato hh:mm:ss con frazioni di secondo .sss e indicazione del fuso orario facoltative (ibt-168).
+ibr-074	Gli oggetti binari (ibt-125) DEVONO contenere l'attributo mime code (ibt-125-1).
+ibr-075	Gli oggetti binari (ibt-125) DEVONO contenere l'attributo filename (ibt-125-2).
+ibr-077	Il codice valuta di contabilizzazione dell'imposta (ibt-006), se indicato, DEVE essere diverso dal codice valuta della fattura (ibt-005).
+ibr-079	Il documento NON DEVE contenere elementi vuoti.
+ibr-088	Il codice unità della quantità base del prezzo (ibt-150) DEVE essere uguale a quello della quantità fatturata (ibt-130).
+ibr-092	Se esiste un riferimento all'avviso di spedizione a livello di riga (ibt-184), NON DEVE esserci un riferimento di spedizione a livello di documento (ibt-016).
+ibr-sr-62	Il riferimento di riga all'avviso di spedizione (ibt-184) DEVE ricorrere al massimo una volta.
+ibr-093	Se c'è un importo pagato (ibt-180), DEVE esistere l'importo totale pagato (ibt-113).
+ibr-108	Il nome della parte di consegna (ibt-070) DEVE ricorrere al massimo una volta.
+ibr-cl-01	Il codice del tipo di documento (ibt-003) DEVE essere codificato con le liste di codici UNTDID 1001 relative a fatture e note di credito.
+ibr-cl-03	currencyID DEVE essere codificato con la lista di codici ISO 4217 alpha-3.
+ibr-cl-04	Il codice valuta della fattura (ibt-005) DEVE essere codificato con la lista di codici ISO 4217 alpha-3
+ibr-cl-05	Il codice valuta fiscale (ibt-006) DEVE essere codificato con la lista di codici ISO 4217 alpha-3
+ibr-cl-07	Lo schema di identificazione dell'identificativo dell'oggetto (ibt-018-1) (ibt-128-1) DEVE essere codificato con un sottoinsieme di UNTDID 1153.
+ibr-cl-10	Lo schema di identificazione di qualsiasi identificativo (ibt-046-1), (ibt-060-1) DEVE essere codificato con la lista ISO 6523 ICD.
+ibr-cl-11	Lo schema di identificazione di qualsiasi identificativo di registrazione (ibt-030-1), (ibt-047-1), (ibt-061-1) DEVE essere codificato con la lista ISO 6523 ICD.
+ibr-cl-13	Lo schema dell'identificativo di classificazione dell'articolo (ibt-158-1) DEVE essere codificato con la lista UNTDID 7143.
+ibr-cl-14	I codici paese in una fattura (ibt-040), (ibt-055), (ibt-069), (ibt-080), (ibt-175) DEVONO essere codificati con la lista di codici ISO 3166-1
+ibr-cl-15	I codici paese di origine in una fattura (ibt-159) DEVONO essere codificati con la lista di codici ISO 3166-1
+ibr-cl-16	I mezzi di pagamento in una fattura (ibt-081) DEVONO essere codificati con la lista di codici UNCL4461
+ibr-cl-19	I motivi di sconto codificati (ibt-098), (ibt-140) DEVONO appartenere alla lista di codici UNCL 5189
+ibr-cl-20	I motivi di maggiorazione codificati (ibt-105), (ibt-145) DEVONO appartenere alla lista di codici UNCL 7161
+ibr-cl-21	Lo schema dell'identificativo standard dell'articolo (ibt-157) DEVE appartenere alla lista ISO 6523 ICD.
+ibr-cl-23	Il codice unità di misura (ibt-130), (ibt-150) DEVE essere codificato secondo la Raccomandazione UN/ECE 20 con l'estensione della Rec 21
+ibr-cl-24	Il mime code (ibt-125-1) DEVE appartenere al sottoinsieme della lista di codici IANA.
+ibr-cl-25	Lo schema dell'identificativo dell'indirizzo elettronico (ibt-034-1), (ibt-049-1) DEVE appartenere alla lista di codici CEF EAS
+ibr-cl-26	Lo schema dell'identificativo del luogo di consegna (ibt-071-1) DEVE appartenere alla lista di codici ISO 6523 ICD
+ibr-010-ae	Il codice del paese di rilascio del passaporto (BTAE-19) DEVE essere presente quando il tipo di identificativo di registrazione legale dell'acquirente (BTAE-16) è 'Passport'
+ibr-101-ae	Il nome dell'autorità (BTAE-11) DEVE essere presente quando il tipo di identificativo di registrazione legale dell'acquirente (BTAE-16) è Licenza commerciale/Trade license.
+ibr-149-ae	L'identificativo di registrazione legale dell'acquirente (IBT-047) DEVE essere indicato quando l'identificativo dello schema (IBT-049-1) è '0235' e l'indirizzo elettronico dell'acquirente (IBT-049) non è '1XXXXXXXXX' né '9XXXXXXXXX'
+ibr-179-ae	L'identificativo IVA dell'acquirente (IBT-048) DEVE ricorrere al massimo una volta
+ibr-135-ae	DEVE essere presente l'identificativo dell'acquirente (IBT-046) oppure l'identificativo IVA dell'acquirente (IBT-048) quando il codice del tipo di transazione della fattura [BTAE-02] è diverso da XXXXXXX1 (Esportazioni), l'identificativo dello schema (IBT-049-1) è '0235' e l'indirizzo elettronico dell'acquirente (IBT-049) non è '1XXXXXXXXX'
+ibr-180-ae	Quando l'identificativo dello schema (IBT-049-1) è '0235' e l'identificativo di registrazione legale dell'acquirente (ibt-047) è indicato, il tipo di identificativo di registrazione legale dell'acquirente (BTAE-16) DEVE essere presente
+ibr-183-ae	Il valore del tipo di identificativo di registrazione legale dell'acquirente [BTAE-16] dovrebbe essere 'Commercial/Trade license', 'Emirates ID', 'Passport' o 'Cabinet decision' quando l'identificativo di registrazione legale dell'acquirente (IBT-047) è indicato, l'identificativo dello schema (IBT-049-1) è '0235' e l'indirizzo elettronico dell'acquirente (IBT-049) non è '1XXXXXXXXX'.
+ibr-196-ae	I termini di resa Incoterms (BTAE-22) devono essere indicati.
+ibr-144-ae	Nell'indirizzo postale dell'acquirente (IBG-08) devono essere indicati la riga di indirizzo 1 (IBT-050), la città dell'acquirente (IBT-052) e la suddivisione del paese dell'acquirente (IBT-054)
+ibr-143-ae	Nell'indirizzo postale del venditore (IBG-05) devono essere indicati la riga di indirizzo 1 del venditore (IBT-035), la città del venditore (IBT-037) e la suddivisione del paese del venditore (IBT-039).
+ibr-012-ae	Il codice del paese di rilascio del passaporto (BTAE-18) DEVE essere presente quando il tipo di identificativo di registrazione legale del venditore (BTAE-15) è 'Passport'
+ibr-172-ae	Il nome dell'autorità (BTAE-12) DEVE essere presente quando il valore del tipo di identificativo di registrazione legale del venditore (BTAE-15) è Licenza commerciale/Trade license.
+ibr-177-ae	DEVE essere indicato l'identificativo di registrazione fiscale del venditore (IBT-032) oppure l'identificativo IVA del venditore (IBT-031)
+ibr-178-ae	Il codice del regime fiscale, se indicato in (IBT-031-1), non deve essere 'VAT' quando è indicato l'identificativo di registrazione fiscale del venditore (IBT-032)
+ibr-150-ae	L'identificativo di registrazione legale del venditore (IBT-030) DEVE essere indicato quando l'identificativo dello schema (IBT-034-1) è '0235'
+ibr-173-ae	Il valore del tipo di identificativo di registrazione legale del venditore [BTAE-15], identificativo dello schema [IBT-030-1], dovrebbe essere 'Commercial/Trade license', 'Emirates ID', 'Passport' o 'Cabinet decision' quando l'identificativo di registrazione legale del venditore (IBT-030) è indicato, l'identificativo dello schema (IBT-034-1) è '0235' e il codice paese del venditore (IBT-055) è AE.
+ibr-181-ae	Quando l'identificativo dello schema (IBT-034-1) è '0235' e l'identificativo di registrazione legale del venditore (ibt-030) è indicato, il tipo di identificativo di registrazione legale del venditore (BTAE-15) DEVE essere presente
+aligned-ibrp-004	Il prezzo netto dell'articolo (ibt-146) DEVE essere uguale a (prezzo lordo (ibt-148) - sconto sul prezzo (ibt-147)) quando è indicato il prezzo lordo.
+ibr-126-ae	Nei dettagli del prezzo (IBG-29) DEVONO esserci la quantità base del prezzo dell'articolo (IBT-149) e il prezzo lordo dell'articolo (IBT-148).
+ibr-192-ae	Quando il codice del tipo di mezzo di pagamento (ibt-081) è 'bonifico' (credit transfer), l'identificativo del conto di pagamento (ibt-084) deve essere indicato.
+ibr-128-ae	Quando il codice paese (IBT-040, IBT-055, IBT-069, IBT-080) è AE, la suddivisione del paese (IBT-039, IBT-054, IBT-068, IBT-079) deve essere una tra (AUH, DXB, SHJ, UAQ, FUJ, AJM, RAK).
+aligned-ibrp-032	Ogni sconto a livello di documento (ibg-20) DEVE avere un codice categoria IVA dello sconto a livello di documento (ibt-095).
+aligned-ibrp-057	DEVONO essere indicati entrambi o nessuno tra l'importo base dello sconto (ibt-093) e la percentuale (ibt-094).
+ibr-131-ae	L'importo dello sconto (IBT-092, IBT-136) deve essere uguale all'importo base (IBT-093, IBT-137) * percentuale (IBT-094, IBT-138) / 100 se esistono importo base e percentuale
+ibr-115-ae	Il codice categoria fiscale dello sconto a livello di documento (IBT-095) non può essere 'Standard rate additional VAT' (aliquota ordinaria con IVA aggiuntiva).
+ibr-168-ae	Gli sconti a livello di documento (IBG-20) con codice categoria IVA (IBT-095) 'Exempt from VAT' (esente IVA) DEVONO avere un codice del motivo di esenzione IVA dello sconto a livello di documento (IBT-196)
+aligned-ibrp-037	Ogni maggiorazione a livello di documento (ibg-21) DEVE avere un codice categoria IVA della maggiorazione a livello di documento (ibt-102).
+aligned-ibrp-058	DEVONO essere indicati entrambi o nessuno tra l'importo base della maggiorazione (ibt-100) e la percentuale (ibt-101).
+ibr-146-ae	L'importo della maggiorazione (IBT-099, IBT-141) deve essere uguale all'importo base (IBT-100, IBT-142) * percentuale (IBT-101, IBT-143) / 100 se esistono importo base e percentuale
+ibr-114-ae	Il codice categoria IVA della maggiorazione a livello di documento (IBT-102) non può essere 'Standard rate additional VAT' (aliquota ordinaria con IVA aggiuntiva).
+ibr-169-ae	Le maggiorazioni a livello di documento (IBG-21) con codice categoria IVA (IBT-102) 'Exempt from VAT' (esente IVA) DEVONO avere un codice del motivo di esenzione IVA della maggiorazione a livello di documento (IBT-198).
+ibr-002-ae	Il tasso di cambio [BTAE-04] dovrebbe contenere al massimo 6 cifre decimali.
+ibr-104-ae	In una riga di fattura (IBG-25) in cui sono presenti le informazioni IVA di riga (IBG-30), DEVONO essere indicati l'importo di riga in AED (BTAE-10) e l'importo IVA di riga in AED (BTAE-08).
+ibr-111-ae	In una riga di fattura (IBG-25) in cui il codice categoria IVA (IBT-151) è 'Standard rate additional VAT' (aliquota ordinaria con IVA aggiuntiva), l'aliquota IVA dell'articolo fatturato (IBT-152) non dovrebbe essere zero.
+ibr-145-ae	Ogni riga di fattura (IBG-25) DEVE essere classificata con un codice categoria IVA dell'articolo fatturato (IBT-151).
+ibr-147-ae	L'importo netto di riga (IBT-131) DEVE essere uguale a (quantità fatturata (IBT-129) * (prezzo netto dell'articolo (IBT-146) / quantità base del prezzo (IBT-149)) + somma delle maggiorazioni di riga (IBT-141) - somma degli sconti di riga (IBT-136).
+ibr-167-ae	Le informazioni IVA di riga (IBG-30) con codice categoria IVA dell'articolo fatturato (IBT-151) 'Exempt from VAT' (esente IVA) DEVONO avere un codice del motivo di esenzione IVA (IBT-186).
+ibr-123-ae	Le informazioni IVA di riga (IBG-30) DEVONO esserci e possono ricorrere al massimo una volta, tranne quando il codice tipo fattura è 'Out of scope of VAT' (fuori campo IVA) o 'Credit note related to goods or services' (nota di credito relativa a beni o servizi).
+ibr-194-ae	L'importo da pagare della riga di fattura (BTAE-10) deve essere indicato.
+aligned-ibrp-001-ae	L'identificativo della specifica (ibt-024) DEVE iniziare con il valore 'urn:peppol:pint:billing-1@ae-1' o 'urn:peppol:pint:selfbilling-1@ae-1'.
+aligned-ibrp-002-ae	Il processo di business (ibt-023) DEVE avere il formato 'urn:peppol:bis:billing' o 'urn:peppol:bis:selfbilling'.
+aligned-ibrp-e-01	Una fattura che contiene una riga (ibg-25), uno sconto a livello di documento (ibg-20) o una maggiorazione a livello di documento (ibg-21) con codice categoria IVA (ibt-151, ibt-95 o ibt-102) "Exempt from VAT" (esente IVA) DEVE contenere esattamente un riepilogo IVA (ibg-23) con codice categoria IVA (ibt-118) uguale a "Exempt from VAT".
+aligned-ibrp-o-01	Una fattura che contiene una riga (ibg-25), uno sconto a livello di documento (ibg-20) o una maggiorazione a livello di documento (ibg-21) con codice categoria IVA (ibt-151, ibt-95 o ibt-102) "Not subject to VAT" (non soggetto a IVA) DEVE contenere esattamente un riepilogo IVA (ibg-23) con codice categoria IVA (ibt-118) uguale a "Not subject to VAT".
+aligned-ibrp-s-01	Una fattura che contiene una riga (ibg-25), uno sconto a livello di documento (ibg-20) o una maggiorazione a livello di documento (ibg-21) con codice categoria IVA (ibt-151, ibt-95 o ibt-102) "Standard rated" (aliquota ordinaria) DEVE contenere nel riepilogo IVA (ibg-23) almeno un codice categoria IVA (ibt-118) uguale a "Standard rated".
+aligned-ibrp-z-01	Una fattura che contiene una riga (ibg-25), uno sconto a livello di documento (ibg-20) o una maggiorazione a livello di documento (ibg-21) con codice categoria IVA (ibt-151, ibt-95 o ibt-102) "Zero rated" (aliquota zero) DEVE contenere nel riepilogo IVA (ibg-23) esattamente un codice categoria IVA (ibt-118) uguale a "Zero rated".
+aligned-ibrp-ae-01-ae	Una fattura che contiene una riga (ibg-25), uno sconto a livello di documento (ibg-20) o una maggiorazione a livello di documento (ibg-21) con codice categoria IVA (ibt-151, ibt-095 o ibt-102) "Reverse charge" (inversione contabile) DEVE contenere nel riepilogo IVA (ibg-23) almeno un codice categoria IVA (ibt-118) uguale a "VAT reverse charge".
+aligned-ibrp-sr-12	L'identificativo fiscale del venditore (ibt-031) DEVE ricorrere al massimo una volta
+ibr-007-ae	Quando il codice del tipo di transazione della fattura (BTAE-02) ha valore 1XXXXXXX (zona franca), l'ID del beneficiario (BTAE-01) DEVE essere indicato.
+ibr-134-ae	L'identificativo IVA del venditore (IBT-031) DEVE esserci, tranne quando il codice tipo fattura (IBT-003) è 'Out of scope of VAT' (fuori campo IVA) o 'Credit note related to goods or services' (nota di credito relativa a beni o servizi).
+ibr-136-ae	L'identificativo di registrazione legale dell'acquirente (IBT-047) deve essere presente quando il codice tipo fattura [IBT-003] è 'Out of scope of VAT' (fuori campo IVA) o 'Credit note related to goods or services' (nota di credito relativa a beni o servizi)
+ibr-137-ae	L'ID del preponente (BTAE-14) è OBBLIGATORIO quando il codice del tipo di transazione della fattura [BTAE-02] è XXXXX1XX (fatturazione per conto di un agente dichiarato).
+ibr-138-ae	Il periodo di fatturazione [IBG-14] è OBBLIGATORIO quando il codice del tipo di transazione della fattura [BTAE-02] è XXX1XXXX (fattura riepilogativa).
+ibr-141-ae	Quando è presente la data di esigibilità dell'IVA [IBT-007], deve essere anteriore alla data di emissione della fattura [IBT-002].
+ibr-055-ae	Il riferimento alla fattura precedente (IBG-03) è obbligatorio quando il codice tipo fattura (IBT-003) è 381 (nota di credito) o 81 (nota di credito relativa a beni o servizi), tranne quando il codice del motivo della nota di credito [BTAE-03] è 'VD'.
+ibr-142-ae	Nelle informazioni di consegna (ibg-13) DEVONO esserci la riga di indirizzo 1 di consegna (IBT-075), la città di consegna (IBT-077) e la suddivisione del paese di consegna (IBT-079), se il codice del tipo di transazione della fattura [BTAE-02] è XXXXXX1X (cessioni via e-commerce).
+ibr-105-ae	Una fattura che contiene una riga (IBG-25) con codice categoria IVA (IBT-151) 'Standard rate additional VAT' (aliquota ordinaria con IVA aggiuntiva) deve contenere esattamente un riepilogo IVA (IBG-23) con codice categoria IVA (IBT-118) uguale a 'Standard rate additional VAT'.
+ibr-122-ae	Quando il codice tipo fattura (IBT-003) è 'Out of scope of VAT' (fuori campo IVA) o 'Credit note related to goods or services' (nota di credito relativa a beni o servizi), il codice categoria IVA dello sconto (IBT-095), della maggiorazione (IBT-102) e dell'articolo fatturato (IBT-151) DEVE essere 'Exempt from VAT' (esente) e/o 'Not subject to VAT' (non soggetto) e/o 'Zero rated' (aliquota zero).
+ibr-124-ae	La data di esigibilità dell'IVA [IBT-007] NON DEVE esserci quando il codice tipo fattura (IBT-003) è 'nota di credito' o 'Credit note related to goods or services' (nota di credito relativa a beni o servizi).
+ibr-127-ae	La data di scadenza del pagamento [IBT-009] DEVE essere presente quando l'importo dovuto per il pagamento (IBT-115) è maggiore di 0, tranne quando il codice tipo fattura (IBT-003) è 'Credit note' o 'Credit note related to goods or services', oppure il codice del tipo di transazione della fattura (BTAE-002) è X1XXXXXX (cessione assimilata, deemed supply).
+ibr-116-ae	Quando il codice del tipo di transazione della fattura (BTAE-02) ha valore XX1XXXXX (regime del margine), il codice categoria fiscale (IBT-151) dovrebbe essere 'Standard rate additional VAT' (aliquota ordinaria con IVA aggiuntiva).
+ibr-151-ae	Quando il codice tipo fattura (IBT-003) è 'Commercial invoice' (fattura commerciale) o 'Credit note', il codice categoria IVA dell'articolo fatturato (IBT-151) non dovrebbe contenere soltanto 'Exempt from VAT' (esente) e/o 'Not subject to VAT' (non soggetto).
+ibr-152-ae	Nelle informazioni di consegna (IBG-13) DEVONO esserci la riga di indirizzo 1 di consegna (IBT-075), la città di consegna (IBT-077) e la suddivisione del paese di consegna (IBT-079), se il codice del tipo di transazione della fattura [BTAE-02] è XXXXXXX1 (esportazioni) e il codice paese di consegna [IBT-080] non dovrebbe essere 'AE'.
+ibr-153-ae	Quando la valuta di contabilizzazione dell'IVA (IBT-006) è AED e il codice valuta della fattura (IBT-005) è diverso da AED, la valuta di origine deve essere il codice valuta della fattura (IBT-005) e la valuta di destinazione deve essere la valuta di contabilizzazione dell'IVA (IBT-006), purché sia disponibile il tasso di cambio (BTAE-04)
+ibr-157-ae	Il codice del tipo di transazione della fattura (BTAE-02) non può essere XXX1XXXX (fattura riepilogativa), X1XXXXXX (cessione assimilata) o XX1XXXXX (regime del margine) quando il codice tipo fattura (IBT-003) è 'Out of scope of VAT' (fuori campo IVA) o 'Credit note related to goods or services' (nota di credito relativa a beni o servizi).
+ibr-158-ae	Quando il codice tipo fattura [IBT-003] è 'Credit note' (nota di credito), il codice del motivo della nota di credito [BTAE-03] DEVE esserci.
+ibr-159-ae	Il tasso di cambio [BTAE-04] è OBBLIGATORIO quando il codice valuta della fattura [IBT-005] è diverso da 'AED'.
+ibr-160-ae	Quando la frequenza di fatturazione (BTAE-06) ha valore 'Others' (altro), il valore deve essere indicato nella nota della fattura (IBT-022).
+ibr-175-ae	Quando il codice valuta della fattura [IBT-005] è diverso da 'AED' e la valuta di contabilizzazione dell'imposta [IBT-006] è 'AED', DEVONO essere presenti l'importo totale IVA della fattura nella valuta di contabilizzazione [IBT-111] e l'importo totale della fattura (o nota di credito) con IVA in AED [BTAE-20].
+ibr-176-ae	Quando il codice del tipo di transazione della fattura [BTAE-02] è XXXXX1XX (fatturazione per conto di un agente dichiarato), l'identificativo IVA del venditore [IBT-031] e l'ID del preponente [BTAE-14] non dovrebbero essere uguali.
+ibr-190-ae	Quando il codice categoria IVA dell'articolo fatturato (ibt-151), dello sconto a livello di documento (ibt-095) o della maggiorazione a livello di documento (ibt-102) è 'Standard rated' (aliquota ordinaria), l'aliquota IVA dell'articolo fatturato (ibt-152), dello sconto (ibt-096) e della maggiorazione (ibt-103) deve essere 5.00.
+ibr-191-ae	Il codice del tipo di mezzo di pagamento (ibt-081) deve essere indicato, tranne quando il codice tipo fattura (ibt-003) è 'Credit note' o 'Credit note related to goods or services', oppure il codice del tipo di transazione della fattura (BTAE-002) è X1XXXXXX (cessione assimilata).
+ibr-154-ae	Il codice del tipo di transazione della fattura (BTAE-02) deve essere preso dalla lista dei codici dei tipi di transazione. Deve essere una stringa di al massimo 8 caratteri, composta esclusivamente da 0 e 1. Il valore di questo campo si basa sulla sequenza delle transazioni presenti nella fattura (nell'ordine della lista): '1' se applicabile, '0' se non applicabile.
+ibr-140-ae	Quando è presente la valuta di contabilizzazione dell'IVA (IBT-006), deve essere AED.
+ibr-193-ae	Il numero identificativo univoco (BTAE-07) deve essere indicato.
+ibr-125-ae	Nelle informazioni sull'articolo (IBG-31) la descrizione dell'articolo (IBT-154) DEVE esserci.
+ibr-166-ae	Nelle informazioni sull'articolo (IBG-31) in cui il codice categoria IVA fatturato (IBT-151) è 'Reverse charge' (inversione contabile), il tipo di beni o servizi (BTAE-09) DEVE esserci.
+ibr-184-ae	Quando il tipo di articolo [BTAE-13] è 'Goods' (beni), l'identificativo di classificazione dell'articolo (ibt-158) deve essere indicato.
+ibr-185-ae	Quando il tipo di articolo [BTAE-13] è 'Services' (servizi), il codice contabile del servizio (BTAE-17) deve essere indicato.
+ibr-186-ae	Quando il tipo di articolo [BTAE-13] è 'Both' (entrambi), devono essere indicati l'identificativo di classificazione dell'articolo (ibt-158) e il codice contabile del servizio (BTAE-17).
+ibr-187-ae	Il numero minimo di cifre da indicare dovrebbe essere 'X' nell'identificativo di classificazione dell'articolo (ibt-158) e nel codice contabile del servizio (BTAE-17).
+ibr-188-ae	L'identificativo dello schema (ibt-158-1) DEVE essere HS quando è indicato l'identificativo di classificazione dell'articolo (ibt-158).
+ibr-189-ae	L'identificativo dello schema (BTAE-17-1) DEVE essere SAC quando è indicato il codice contabile del servizio (BTAE-17).
+aligned-ibrp-045	Ogni riepilogo IVA (ibg-23) DEVE avere un imponibile della categoria IVA (ibt-116).
+aligned-ibrp-046	Ogni riepilogo IVA (ibg-23) DEVE avere un importo dell'imposta della categoria IVA (ibt-117).
+aligned-ibrp-047	Ogni riepilogo IVA (ibg-23) DEVE essere definito da un codice categoria IVA (ibt-118).
+aligned-ibrp-048	Ogni riepilogo IVA (ibg-23) DEVE avere un'aliquota della categoria IVA (ibt-119), tranne se la fattura è non soggetta a IVA o esente da imposta.
+ibr-119-ae	Ogni riepilogo IVA (IBG-23) deve avere un'aliquota della categoria IVA (IBT-119), tranne se la fattura è non soggetta a IVA o esente da imposta.
+aligned-ibrp-s-05	In una riga di fattura (ibg-25) in cui il codice categoria IVA dell'articolo fatturato (ibt-151) è "Standard rated" (aliquota ordinaria), l'aliquota IVA dell'articolo fatturato (ibt-152) DEVE essere maggiore di zero.
+aligned-ibrp-s-06	In uno sconto a livello di documento (ibg-20) in cui il codice categoria IVA dello sconto (ibt-95) è "Standard rated" (aliquota ordinaria), l'aliquota IVA dello sconto (ibt-96) DEVE essere maggiore di zero.
+aligned-ibrp-s-07	In una maggiorazione a livello di documento (ibg-21) in cui il codice categoria IVA della maggiorazione (ibt-102) è "Standard rated" (aliquota ordinaria), l'aliquota IVA della maggiorazione (ibt-103) DEVE essere maggiore di zero.
+aligned-ibrp-s-08	Per ogni diverso valore di aliquota della categoria IVA (ibt-119) con codice categoria IVA (ibt-118) "Standard rated" (aliquota ordinaria), l'imponibile della categoria IVA (ibt-116) in un riepilogo IVA (ibg-23) DEVE essere uguale alla somma degli importi netti di riga (ibt-131) più la somma delle maggiorazioni a livello di documento (ibt-99) meno la somma degli sconti a livello di documento (ibt-92), dove il codice categoria IVA (ibt-151, ibt-102, ibt-95) è "Standard rated" e l'aliquota IVA (ibt-152, ibt-103, ibt-96) è uguale all'aliquota della categoria IVA (ibt-119).
+aligned-ibrp-s-09	L'importo dell'imposta della categoria IVA (ibt-117) in un riepilogo IVA (ibg-23) con codice categoria IVA (ibt-118) "Standard rated" (aliquota ordinaria) DEVE essere uguale all'imponibile della categoria IVA (ibt-116) moltiplicato per l'aliquota della categoria IVA (ibt-119).
+aligned-ibrp-s-10	Un riepilogo IVA (ibg-23) con codice categoria IVA (ibt-118) "Standard rate" (aliquota ordinaria) NON DEVE avere un codice del motivo di esenzione IVA (IBT-186) né un testo del motivo di esenzione IVA (IBT-185).
+ibr-102-ae	In un riepilogo IVA (IBG-23) in cui il codice categoria IVA (IBT-118) è 'Standard rate additional VAT' (aliquota ordinaria con IVA aggiuntiva), per ogni diverso valore di aliquota della categoria IVA (IBT-119) l'imponibile della categoria IVA (IBT-116) deve essere uguale alla somma degli importi netti di riga (IBT-131) in cui il codice categoria IVA (IBT-151) è 'Standard rate additional VAT' e l'aliquota IVA (IBT-152) è uguale all'aliquota della categoria IVA (IBT-119).
+ibr-108-ae	In un riepilogo IVA (IBG-23) in cui il codice categoria IVA (IBT-118) è 'Standard rate additional VAT' (aliquota ordinaria con IVA aggiuntiva), l'importo dell'imposta della categoria IVA (IBT-117) DEVE essere uguale a 0 (zero).
+aligned-ibrp-e-08	In un riepilogo IVA (ibg-23) in cui il codice categoria IVA (ibt-118) è "Exempt from VAT" (esente IVA), l'imponibile della categoria IVA (ibt-116) DEVE essere uguale alla somma degli importi netti di riga (ibt-131) meno la somma degli sconti a livello di documento (ibt-92) più la somma delle maggiorazioni a livello di documento (ibt-99), dove i codici categoria IVA (ibt-151, ibt-95, ibt-102) sono "Exempt from VAT".
+aligned-ibrp-e-09	L'importo dell'imposta della categoria IVA (ibt-117) in un riepilogo IVA (ibg-23) in cui il codice categoria IVA (ibt-118) è "Exempt from VAT" (esente IVA) DEVE essere uguale a 0 (zero).
+ibr-121-ae	In un riepilogo IVA (IBG-23) in cui il codice categoria IVA (IBT-118) è 'Exempt from VAT' (esente IVA), l'aliquota della categoria IVA (IBT-119) non deve essere indicata.
+aligned-ibrp-e-05	In una riga di fattura (ibg-25) in cui il codice categoria IVA dell'articolo fatturato (ibt-151) è "Exempt from VAT" (esente IVA), l'aliquota IVA dell'articolo fatturato (ibt-152) non deve esserci.
+ibr-163-ae	Nelle informazioni IVA di riga (IBG-30) in cui il codice categoria IVA dell'articolo fatturato (IBT-151) è 'Exempt' (esente), l'importo IVA di riga [BTAE-08] non deve esserci.
+aligned-ibrp-e-06	In uno sconto a livello di documento (ibg-20) in cui il codice categoria IVA dello sconto (ibt-95) è "Exempt from VAT" (esente IVA), l'aliquota IVA dello sconto (ibt-96) DEVE essere 0 (zero).
+aligned-ibrp-e-07	In una maggiorazione a livello di documento (ibg-21) in cui il codice categoria IVA della maggiorazione (ibt-102) è "Exempt from VAT" (esente IVA), l'aliquota IVA della maggiorazione (ibt-103) DEVE essere 0 (zero).
+aligned-ibrp-z-05	In una riga di fattura (ibg-25) in cui il codice categoria IVA dell'articolo fatturato (ibt-151) è "Zero rated" (aliquota zero), l'aliquota IVA dell'articolo fatturato (ibt-152) DEVE essere 0 (zero).
+ibr-165-ae	Nelle informazioni IVA di riga (IBG-30) in cui il codice categoria IVA dell'articolo fatturato (IBT-151) è 'Zero Rated' (aliquota zero), l'importo IVA di riga [BTAE-08] DEVE essere zero.
+aligned-ibrp-z-06	In uno sconto a livello di documento (ibg-20) in cui il codice categoria IVA dello sconto (ibt-95) è "Zero rated" (aliquota zero), l'aliquota IVA dello sconto (ibt-96) DEVE essere 0 (zero).
+aligned-ibrp-z-07	In una maggiorazione a livello di documento (ibg-21) in cui il codice categoria IVA della maggiorazione (ibt-102) è "Zero rated" (aliquota zero), l'aliquota IVA della maggiorazione (ibt-103) DEVE essere 0 (zero).
+aligned-ibrp-z-08	In un riepilogo IVA (ibg-23) in cui il codice categoria IVA (ibt-118) è "Zero rated" (aliquota zero), l'imponibile della categoria IVA (ibt-116) DEVE essere uguale alla somma degli importi netti di riga (ibt-131) meno la somma degli sconti a livello di documento (ibt-92) più la somma delle maggiorazioni a livello di documento (ibt-99), dove i codici categoria IVA (ibt-151, ibt-95, ibt-102) sono "Zero rated".
+aligned-ibrp-z-09	L'importo dell'imposta della categoria IVA (ibt-117) in un riepilogo IVA (ibg-23) in cui il codice categoria IVA (ibt-118) è "Zero rated" (aliquota zero) DEVE essere uguale a 0 (zero).
+ibr-120-ae	In un riepilogo IVA (IBG-23) in cui il codice categoria IVA (IBT-118) è 'Zero Rated' (aliquota zero), l'aliquota della categoria IVA (IBT-119) deve essere uguale a 0.
+aligned-ibrp-o-05	Una riga di fattura (ibg-25) in cui il codice categoria IVA (ibt-151) è "Not subject to VAT" (non soggetto a IVA) NON DEVE contenere un'aliquota IVA dell'articolo fatturato (ibt-152).
+aligned-ibrp-o-06	Uno sconto a livello di documento (ibg-20) in cui il codice categoria IVA (ibt-95) è "Not subject to VAT" (non soggetto a IVA) NON DEVE contenere un'aliquota IVA dello sconto (ibt-96).
+aligned-ibrp-o-07	Una maggiorazione a livello di documento (ibg-21) in cui il codice categoria IVA (ibt-102) è "Not subject to VAT" (non soggetto a IVA) NON DEVE contenere un'aliquota IVA della maggiorazione (ibt-103).
+aligned-ibrp-o-08	In un riepilogo IVA (ibg-23) in cui il codice categoria IVA (ibt-118) è "Not subject to VAT" (non soggetto a IVA), l'imponibile della categoria IVA (ibt-116) DEVE essere uguale alla somma degli importi netti di riga (ibt-131) meno la somma degli sconti a livello di documento (ibt-92) più la somma delle maggiorazioni a livello di documento (ibt-99), dove i codici categoria IVA (ibt-151, ibt-95, ibt-102) sono "Not subject to VAT".
+aligned-ibrp-o-09	L'importo dell'imposta della categoria IVA (ibt-117) in un riepilogo IVA (ibg-23) in cui il codice categoria IVA (ibt-118) è "Not subject to VAT" (non soggetto a IVA) DEVE essere 0 (zero).
+aligned-ibrp-o-11-ae	In un riepilogo IVA (IBG-23) in cui il codice categoria IVA (IBT-118) è 'Not Subject to VAT' (non soggetto a IVA), l'aliquota della categoria IVA (IBT-119) non deve essere indicata.
+aligned-ibrp-ae-05-ae	In una riga di fattura (ibg-25) in cui il codice categoria IVA dell'articolo fatturato (ibt-151) è "Reverse charge" (inversione contabile), l'aliquota IVA dell'articolo fatturato (ibt-152) DEVE esserci.
+ibr-103-ae	Quando il codice categoria IVA dell'articolo fatturato (ibt-151) è inversione contabile (VAT reverse charge), l'identificativo IVA dell'acquirente (ibt-048) DEVE essere indicato.
+ibr-162-ae	Nelle informazioni IVA di riga (IBG-30) in cui il codice categoria IVA dell'articolo fatturato (IBT-151) è 'Reverse charge' (inversione contabile), l'importo IVA di riga [BTAE-08] DEVE essere 'zero'.
+ibr-174-ae	Nelle informazioni sull'articolo (IBG-31) in cui il codice categoria IVA fatturato (IBT-151) è 'Reverse charge' (inversione contabile), l'identificativo standard dell'articolo corrispondente (IBT-157) DEVE esserci e l'identificativo dello schema (IBT-157-1) dovrebbe avere il codice 0160.
+aligned-ibrp-ae-06	In uno sconto a livello di documento (ibg-20) in cui il codice categoria IVA dello sconto (ibt-95) è "Reverse charge" (inversione contabile), l'aliquota IVA dello sconto (ibt-96) DEVE essere zero.
+aligned-ibrp-ae-07	In una maggiorazione a livello di documento (ibg-21) in cui il codice categoria IVA della maggiorazione (ibt-102) è "Reverse charge" (inversione contabile), l'aliquota IVA della maggiorazione (ibt-103) DEVE essere zero.
+aligned-ibrp-ae-08-ae	In un riepilogo IVA (IBG-23) in cui il codice categoria IVA (IBT-118) è 'Reverse Charge' (inversione contabile), per ogni diverso valore di aliquota della categoria IVA (IBT-119) l'imponibile della categoria IVA (IBT-116) deve essere uguale alla somma degli importi netti di riga (IBT-131) più la somma delle maggiorazioni a livello di documento (IBT-99) meno la somma degli sconti a livello di documento (IBT-92), dove il codice categoria IVA (IBT-151, IBT-102, IBT-095) è 'Reverse Charge' e l'aliquota IVA (IBT-152, IBT-103, IBT-096) è uguale all'aliquota della categoria IVA (IBT-119).
+aligned-ibrp-ae-09-ae	In un riepilogo IVA (IBG-23) in cui il codice categoria IVA (IBT-118) è 'Reverse charge' (inversione contabile), l'importo dell'imposta della categoria IVA (IBT-117) DEVE essere uguale a 0 (zero).
+ibr-132-ae	L'identificativo IVA [IBT-031, IBT-048, IBT-063, BTAE-14] dovrebbe essere il TRN [numero di registrazione IVA] e deve essere di 15 cifre, iniziare con 1 e terminare con 03.
+ibr-148-ae	L'identificativo di registrazione IVA del venditore (IBT-032) dovrebbe essere il TIN (numero di identificazione fiscale) e deve essere di 10 cifre numeriche nel formato 1XXXXXXXXX.
+ibr-133-ae	Il codice del regime IVA, se indicato in (IBT-095-1) o (IBT-031-1) o (IBT-048-1) o (IBT-063-1) o (IBT-102-1) o (IBT-118-1), deve essere 'VAT', tranne quando è indicato l'identificativo di registrazione fiscale del venditore (IBT-032).
+ibr-001-ae	Il valore del codice del motivo della nota di credito [BTAE-03] deve essere preso dalla lista dei motivi della nota di credito.
+ibr-011-ae	Il codice del paese di rilascio del passaporto (BTAE-19) DEVE essere codificato con la lista di codici ISO 3166-1.
+ibr-013-ae	Il codice del paese di rilascio del passaporto (BTAE-18) DEVE essere codificato con la lista di codici ISO 3166-1.
+ibr-005-ae	La frequenza di fatturazione (BTAE-06) dovrebbe essere presa dalla lista dei codici di frequenza di fatturazione.
+ibr-139-ae	Il codice categoria fiscale dello sconto a livello di documento [IBT-095], della maggiorazione a livello di documento [IBT-102], il codice categoria fiscale [IBT-118] e il codice categoria fiscale dell'articolo fatturato [IBT-151] dovrebbero essere scelti tra i codici di categoria fiscale allineati.
+ibr-006-ae	Nelle informazioni sull'articolo (IBG-31) in cui il codice categoria fiscale fatturato (ibt-151) è 'VAT Reverse charge' (inversione contabile), il tipo di beni o servizi (BTAE-09) DEVE essere scelto dalla lista dei codici dei beni o servizi soggetti a RCM.

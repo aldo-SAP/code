@@ -25,6 +25,7 @@
     "Choose file": "Scegli file",
     "Paste text": "Incolla testo",
     "Clear": "Svuota",
+    "Try a UAE sample": "Prova un esempio UAE",
     "XML input": "XML in ingresso",
     "Paste the XML here; it is read as soon as it's complete.": "Incolla qui l'XML; viene letto appena è completo.",
     "Overview": "Panoramica",
@@ -967,6 +968,20 @@
     "Identifier schemes (BT-29, BT-46, BT-60, BT-71) must be ISO 6523 ICD codes (SEPA for the seller or payee)": "Gli schemi degli identificativi (BT-29, BT-46, BT-60, BT-71) devono essere codici ISO 6523 ICD (SEPA per venditore o beneficiario)"
   });
 
+  // Details the PINT AE engine builds
+  IT_PATTERNS.push(...[
+    ["{_n} places", "{_n} punti"],
+    ["could not be evaluated: {_e}", "non valutabile: {_e}"]
+  ].map(([en, it]) => {
+    const names = [];
+    const re = new RegExp("^" + en.split(/(\{\w+\})/).map((part) => {
+      const m = /^\{(\w+)\}$/.exec(part);
+      if (m) { names.push(m[1]); return "(.+?)"; }
+      return part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }).join("") + "$");
+    return { re, names, it };
+  }));
+
   const DICTS = { it: { exact: IT, patterns: IT_PATTERNS, words: IT_WORDS } };
 
   const fill = (s, vars) => (vars ? String(s).replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m)) : String(s));
@@ -1021,6 +1036,7 @@
       listeners.forEach((f) => f(l));
     },
     onChange: (f) => listeners.push(f),
+    addItalian: (map) => Object.assign(IT, map),   // exact texts from other files (the PINT AE messages)
     T, tr, applyStatic
   };
   window.T = T;

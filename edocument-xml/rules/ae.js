@@ -165,7 +165,7 @@
           r.a.forEach((a0) => {
             const a = selfBilling && DATA.selfBilling[a0[0]] ? DATA.selfBilling[a0[0]] : a0;
             let res = results.get(a[0]);
-            if (!res) { res = { text: a[2], warn: a[3] !== "fatal", failed: [], detail: "", seen: 0 }; results.set(a[0], res); order.push(a[0]); }
+            if (!res) { res = { text: a[2].replace(/\s+/g, " ").trim(), warn: a[3] !== "fatal", failed: [], detail: "", seen: 0 }; results.set(a[0], res); order.push(a[0]); }
             res.seen++;
             let ok;
             try { ok = evalTest(a[1], node); } catch (e) { ok = false; res.detail = "could not be evaluated: " + String(e.message || e).split("\n")[0]; }

@@ -1655,7 +1655,7 @@
       (dashes ? " · " + T("removed {n} leading “-” from tags", { n: dashes }) : "") +
       (amps ? " · " + esc(T("escaped {n} bare “&”", { n: amps })) : ""));
     $("clearBtn").hidden = false;
-    $("sampleBtn").hidden = true;
+    $("sampleBtn").hidden = true; $("aeSampleBtn").hidden = true;
     pasteArea.hidden = true; pasteArea.value = ""; pasteBtn.setAttribute("aria-expanded", "false");
     return true;
   }
@@ -1670,13 +1670,16 @@
     pasteArea.value = "";
     drop.classList.remove("loaded");
     $("clearBtn").hidden = true;
-    $("sampleBtn").hidden = false;
+    $("sampleBtn").hidden = false; $("aeSampleBtn").hidden = false;
     setMsg(() => T(window.matchMedia("(hover: none)").matches ? "Open an XML file or paste it. Nothing leaves your browser." : "Drop a UBL invoice or credit note XML here, or paste it anywhere with Ctrl+V."));
   }
 
   // A small invoice that follows the EN 16931 rules, so a first visit shows a green verdict.
   const SAMPLE_XML = `<?xml version="1.0" encoding="UTF-8"?><Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"><cbc:CustomizationID>urn:cen.eu:en16931:2017</cbc:CustomizationID><cbc:ProfileID>urn:fdc:peppol.eu:2017:poacc:billing:01:1.0</cbc:ProfileID><cbc:ID>INV-2026-0042</cbc:ID><cbc:IssueDate>2026-10-01</cbc:IssueDate><cbc:DueDate>2026-10-31</cbc:DueDate><cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode><cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode><cbc:BuyerReference>PO-7781</cbc:BuyerReference><cac:AccountingSupplierParty><cac:Party><cbc:EndpointID schemeID="EM">billing@example-supplies.test</cbc:EndpointID><cac:PartyName><cbc:Name>Example Supplies GmbH</cbc:Name></cac:PartyName><cac:PostalAddress><cbc:StreetName>Hauptstrasse 12</cbc:StreetName><cbc:CityName>Berlin</cbc:CityName><cbc:PostalZone>10115</cbc:PostalZone><cac:Country><cbc:IdentificationCode>DE</cbc:IdentificationCode></cac:Country></cac:PostalAddress><cac:PartyTaxScheme><cbc:CompanyID>DE123456789</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme><cac:PartyLegalEntity><cbc:RegistrationName>Example Supplies GmbH</cbc:RegistrationName></cac:PartyLegalEntity></cac:Party></cac:AccountingSupplierParty><cac:AccountingCustomerParty><cac:Party><cbc:EndpointID schemeID="EM">accounts@sample-buyer.test</cbc:EndpointID><cac:PartyName><cbc:Name>Sample Buyer SRL</cbc:Name></cac:PartyName><cac:PostalAddress><cbc:StreetName>Via Roma 5</cbc:StreetName><cbc:CityName>Milano</cbc:CityName><cbc:PostalZone>20121</cbc:PostalZone><cac:Country><cbc:IdentificationCode>IT</cbc:IdentificationCode></cac:Country></cac:PostalAddress><cac:PartyLegalEntity><cbc:RegistrationName>Sample Buyer SRL</cbc:RegistrationName></cac:PartyLegalEntity></cac:Party></cac:AccountingCustomerParty><cac:PaymentMeans><cbc:PaymentMeansCode>58</cbc:PaymentMeansCode><cac:PayeeFinancialAccount><cbc:ID>DE89370400440532013000</cbc:ID></cac:PayeeFinancialAccount></cac:PaymentMeans><cac:TaxTotal><cbc:TaxAmount currencyID="EUR">38.00</cbc:TaxAmount><cac:TaxSubtotal><cbc:TaxableAmount currencyID="EUR">200.00</cbc:TaxableAmount><cbc:TaxAmount currencyID="EUR">38.00</cbc:TaxAmount><cac:TaxCategory><cbc:ID>S</cbc:ID><cbc:Percent>19</cbc:Percent><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:TaxCategory></cac:TaxSubtotal></cac:TaxTotal><cac:LegalMonetaryTotal><cbc:LineExtensionAmount currencyID="EUR">200.00</cbc:LineExtensionAmount><cbc:TaxExclusiveAmount currencyID="EUR">200.00</cbc:TaxExclusiveAmount><cbc:TaxInclusiveAmount currencyID="EUR">238.00</cbc:TaxInclusiveAmount><cbc:PayableAmount currencyID="EUR">238.00</cbc:PayableAmount></cac:LegalMonetaryTotal><cac:InvoiceLine><cbc:ID>1</cbc:ID><cbc:InvoicedQuantity unitCode="C62">4</cbc:InvoicedQuantity><cbc:LineExtensionAmount currencyID="EUR">200.00</cbc:LineExtensionAmount><cac:Item><cbc:Name>Office chair, ergonomic</cbc:Name><cac:SellersItemIdentification><cbc:ID>CH-100</cbc:ID></cac:SellersItemIdentification><cac:ClassifiedTaxCategory><cbc:ID>S</cbc:ID><cbc:Percent>19</cbc:Percent><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:ClassifiedTaxCategory></cac:Item><cac:Price><cbc:PriceAmount currencyID="EUR">50.00</cbc:PriceAmount></cac:Price></cac:InvoiceLine></Invoice>`;
   $("sampleBtn").addEventListener("click", () => load(SAMPLE_XML, "sample-invoice.xml"));
+  // A UAE (PINT AE) invoice, so the UAE rules can be seen at once (rules/ae-sample.js)
+  if (window.AE_SAMPLE_XML) $("aeSampleBtn").addEventListener("click", () => load(window.AE_SAMPLE_XML, "sample-uae-invoice.xml"));
+  else $("aeSampleBtn").hidden = true;
 
   function loadFile(f) {
     if (!f) return;

@@ -96,6 +96,8 @@ run node ereport-differential.js "$F" "$W/er-examples-sv"
 # PINT AE (UAE)
 step "PINT AE rules: the viewer carries every official assert"
 run node check-ae-rules.js "$W/ae.ids"
+step "PINT AE: every message has its Italian text (rules/ae-it.js is rebuilt from ae-it.tsv)"
+run node gen-ae-it.js
 for v in billing selfbilling; do
   AD="$W/ae-examples-$v"; mkdir -p "$AD"; n=0
   for f in "$AEC/$v"/trn-invoice/example/*.xml "$AEC/$v"/trn-creditnote/example/*.xml; do
