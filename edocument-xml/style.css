@@ -269,16 +269,15 @@ tr.line.flash > td { background: var(--hl-soft); }
 .fnav a[hidden] { display: none; }
 .fnav a .n { margin-left: auto; color: var(--muted); font-size: 0.76rem; font-weight: 400; }
 .lines-zone { margin-top: 18px; }
-@media (max-width: 900px) {
-  .fields-layout { grid-template-columns: minmax(0, 1fr); }
-  .fnav-side {
-    top: var(--stick, 48px); z-index: 4; max-height: none; display: flex; gap: 6px; overflow-x: auto;
-    background: var(--bg); box-shadow: none; border-radius: 0; padding: 8px 0; border-bottom: 1px solid var(--line-soft);
-  }
-  .fnav-side .glabel { display: none; }
-  .fnav-side a { background: var(--paper); border-radius: 999px; padding: 4px 12px; box-shadow: var(--shadow); }
-  .fnav-side a.active { background: var(--ink); color: var(--paper); box-shadow: none; }
+/* the section menu is a row of chips above the blocks at every width, so the blocks keep the full width */
+.fields-layout { grid-template-columns: minmax(0, 1fr); }
+.fnav-side {
+  top: var(--stick, 48px); z-index: 4; max-height: none; display: flex; gap: 6px; overflow-x: auto; overflow-y: hidden;
+  background: var(--bg); box-shadow: none; border-radius: 0; padding: 8px 0; border-bottom: 1px solid var(--line-soft);
 }
+.fnav-side .glabel { display: none; }
+.fnav-side a { flex: none; background: var(--paper); border-radius: 999px; padding: 4px 12px; box-shadow: var(--shadow); }
+.fnav-side a.active { background: var(--ink); color: var(--paper); box-shadow: none; }
 .card.full { grid-column: 1 / -1; }
 .card[hidden], .sub[hidden] { display: none; }
 .card h2 { margin: 0 0 6px; font-size: 0.98rem; font-weight: 600; display: flex; gap: 8px; align-items: center; }

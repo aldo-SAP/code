@@ -1319,7 +1319,7 @@
   };
   function issueLabel(el) {
     if (el.matches(".row, .frow")) {
-      const l = el.querySelector(".kl, .thl, td:first-child"), b = el.querySelector(".bt");
+      const l = el.querySelector(".kl, .thl") || el.querySelector("td:first-child"), b = el.querySelector(".bt");
       return { label: l ? l.textContent.trim() : "", bt: b ? b.textContent.trim() : "" };
     }
     if (el.matches("tr.line")) { const c = el.querySelector("td"); return { label: T("Line") + " " + (c ? c.textContent.trim().split(/\s+/)[0] : ""), bt: "" }; }
