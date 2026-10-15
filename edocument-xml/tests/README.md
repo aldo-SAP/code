@@ -11,6 +11,7 @@ something shows up before it reaches the page. Nothing here is needed to use the
 | PEPPOL unit tests | `OpenPEPPOL/peppol-bis-invoice-3` `rules/unit-UBL-PEPPOL` | the same for PEPPOL BIS Billing 3.0 |
 | Example invoices | the three repositories' own examples | the engine and the official stylesheet must report the same rules |
 | French examples | `fnfempe/France_RFE` (XP Z12-012 / Z12-014 annex examples) | same, with the French (`BR-FR-`) schematron |
+| E-reporting (Flux 10) | `fnfempe/France_RFE` `Flux10/Flux10.xslt` and `Flux10/xsd` | the UBL is turned into a Flux 10 report (`ereport-gen.js`); the official schematron checks that report and must report the same rules as the engine, on the examples and on mutants |
 | Mutated invoices | the example invoices, randomly broken (`mutate.py`) | same, on documents with missing or wrong data |
 
 The official stylesheets are run with Saxon (Java); the engine runs in headless Chromium (Playwright), loading the page
@@ -31,7 +32,7 @@ Output ends with `ALL CONFORMANT` (exit code 0) or `DIFFERENCES FOUND`. A differ
 *official only* (the engine misses a rule) or *engine only* (the engine reports a rule the official one does not), with the
 changes made to the mutant that caused it.
 
-`run-unit.js` and `differential.js` can also be run alone; their headers say how.
+`run-unit.js`, `differential.js`, `ereport-gen.js` and `ereport-differential.js` can also be run alone; their headers say how.
 
 ## Known differences
 

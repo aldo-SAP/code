@@ -1213,6 +1213,7 @@
     renderVerdict();
     renderAttachments();
     $("rawXml").innerHTML = xmlHtml(state.root.ownerDocument);
+    renderEreport();
     $("showEmpty").checked = state.showEmpty;
     $("showTags").checked = state.showTags;
     $("showRaw").checked = state.raw;
@@ -1223,11 +1224,20 @@
     $("intro").hidden = true;
   }
 
+  // The Flux 10 report built from the invoice, shown on its own tab while the E-reporting rule set is on.
+  function renderEreport() {
+    const on = state.ruleSets.includes("ereport") && window.EReport;
+    $("tab-ereport").hidden = !on;
+    if (!on) { $("ereportXml").textContent = ""; if (!$("pEreport").hidden) showTab("fields"); return; }
+    try { $("ereportXml").textContent = EReport.build(state.root, state.kind).xml; } catch (e) { $("ereportXml").textContent = String(e.message || e); }
+  }
+  $("ereportCopy").addEventListener("click", () => { try { navigator.clipboard.writeText($("ereportXml").textContent); } catch (e) {} });
   function showTab(name) {
     document.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", t.dataset.tab === name ? "true" : "false"));
     $("pFields").hidden = name !== "fields";
     $("pAtts").hidden = name !== "atts";
     $("pRaw").hidden = name !== "raw";
+    $("pEreport").hidden = name !== "ereport";
     $("fieldTools").hidden = name !== "fields";
     $("filtersBtn").hidden = name !== "fields";
     syncIssueChrome();

@@ -50,6 +50,7 @@
     "A field in this block is flagged": "Un campo di questo blocco è segnalato",
     "Fold passing blocks": "Comprimi i blocchi senza problemi",
     "Next issue": "Prossimo problema",
+    "E-report": "E-reporting", "The Flux 10 report built from this invoice. The envelope values are placeholders.": "Il report Flux 10 costruito da questa fattura. I valori della busta sono segnaposto.",
     "Issues": "Problemi", "Hide issues": "Nascondi i problemi", "Show all rules": "Mostra tutte le regole", "Show all {n} rules": "Mostra tutte le {n} regole",
     "+{n} more": "+{n} altri", "{n} errors": "{n} errori", "{n} error": "{n} errore",
     "Show BT numbers and XML paths": "Mostra numeri BT e percorsi XML", "Raw values (as in XML)": "Valori grezzi (come nell'XML)",

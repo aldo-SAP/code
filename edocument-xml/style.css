@@ -723,3 +723,5 @@ td > .dl .xtag { display: none; }
 .v-issues .iss-fld { order: -1; color: var(--ink); font-weight: 600; font-size: 0.88rem; }
 .v-issues .iss-top { order: 0; }
 .v-issues .iss-msg { order: 1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 0.84rem; color: var(--muted); }
+.tab[hidden] { display: none; }
+#ereportXml { margin: 0; white-space: pre; overflow: auto; font: 0.82rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--paper); border-radius: 12px; padding: 14px 16px; }

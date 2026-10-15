@@ -50,6 +50,7 @@
         <button class="tab" role="tab" id="tab-fields" data-tab="fields" aria-selected="true" aria-controls="pFields" data-i18n>Invoice</button>
         <button class="tab" role="tab" id="tab-atts" data-tab="atts" aria-selected="false" aria-controls="pAtts"><span data-i18n>Attachments</span><span class="n" id="attCount">0</span></button>
         <button class="tab" role="tab" id="tab-raw" data-tab="raw" aria-selected="false" aria-controls="pRaw" data-i18n>Raw XML</button>
+        <button class="tab" role="tab" id="tab-ereport" data-tab="ereport" aria-selected="false" aria-controls="pEreport" hidden data-i18n>E-report</button>
       </div>
       <button type="button" class="filters-btn" id="filtersBtn" aria-expanded="false" aria-controls="fieldTools" aria-label="Filters" data-i18n-aria="Filters" title="Filters" hidden>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16l-6 7.5V19l-4-2v-4.5z"/></svg>
@@ -83,6 +84,13 @@
       <div id="content"></div>
     </div>
     <div class="tabpanel" id="pAtts" role="tabpanel" aria-labelledby="tab-atts" hidden></div>
+    <div class="tabpanel" id="pEreport" role="tabpanel" aria-labelledby="tab-ereport" hidden>
+      <div class="xmlbar">
+        <span class="hint" data-i18n>The Flux 10 report built from this invoice. The envelope values are placeholders.</span>
+        <button type="button" id="ereportCopy" data-i18n>Copy XML</button>
+      </div>
+      <pre class="xml" id="ereportXml"></pre>
+    </div>
     <div class="tabpanel" id="pRaw" role="tabpanel" aria-labelledby="tab-raw" hidden>
       <div class="xmlbar">
         <span class="hint" data-i18n>Click ▾ to fold an element. Attachment data is shortened.</span>
@@ -112,6 +120,7 @@
 <script src="rules/en16931.js"></script>
 <script src="rules/peppol.js"></script>
 <script src="rules/fr.js"></script>
+<script src="rules/ereport.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

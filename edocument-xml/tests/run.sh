@@ -55,6 +55,12 @@ for x in BR-FR-Flux2-Schematron-UBL BR-FR-Flux2-Schematron-UBL_WARNING EN16931-U
 step "France (XP Z12-012, UBL) on $n official example invoices"
 run node differential.js --docs="$F" --svrl="$W/fr-BR-FR-Flux2-Schematron-UBL,$W/fr-BR-FR-Flux2-Schematron-UBL_WARNING,$W/fr-EN16931-UBL-validation" --ids="$W/en-fr.ids" --sets=fr --ignore="$IGNORE_FR"
 
+# E-reporting: the UBL is turned into a Flux 10 report; the official Flux 10 schematron checks that report
+FX="$C/france/FNFE_RFE_INVOICE/Flux10/Flux10.xslt"
+node ereport-gen.js "$F" "$W/er-examples" > /dev/null; saxon "$FX" "$W/er-examples" "$W/er-examples-sv"
+step "E-reporting (Flux 10) on $n official example invoices"
+run node ereport-differential.js "$F" "$W/er-examples-sv"
+
 if [ "$1" != "quick" ]; then
   N=${MUTANTS:-600}
   python3 mutate.py "$W/mut-en" "$N" "${SEED:-1}" "$D" > /dev/null
@@ -65,6 +71,9 @@ if [ "$1" != "quick" ]; then
   for x in BR-FR-Flux2-Schematron-UBL BR-FR-Flux2-Schematron-UBL_WARNING EN16931-UBL-validation; do saxon "$FR/$x.xslt" "$W/mut-fr" "$W/mut-fr-$x"; done
   step "France on $N mutated example invoices"
   run node differential.js --docs="$W/mut-fr" --svrl="$W/mut-fr-BR-FR-Flux2-Schematron-UBL,$W/mut-fr-BR-FR-Flux2-Schematron-UBL_WARNING,$W/mut-fr-EN16931-UBL-validation" --ids="$W/en-fr.ids" --sets=fr --ignore="$IGNORE_FR,$IGNORE_MUT" --log="$W/mut-fr.log.json"
+  node ereport-gen.js "$W/mut-fr" "$W/er-mut" > /dev/null; saxon "$FX" "$W/er-mut" "$W/er-mut-sv"
+  step "E-reporting (Flux 10) on $N mutated example invoices"
+  run node ereport-differential.js "$W/mut-fr" "$W/er-mut-sv"
 fi
 echo; [ $fail = 0 ] && echo "ALL CONFORMANT" || echo "DIFFERENCES FOUND"
 exit $fail
