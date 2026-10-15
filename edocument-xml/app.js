@@ -488,16 +488,17 @@
       const uu = new Set(byPath(ac, "ChargeIndicator"));
       ["AllowanceChargeReasonCode", "AllowanceChargeReason", "MultiplierFactorNumeric", "Amount", "BaseAmount", "TaxCategory/ID", "TaxCategory/Percent", "TaxCategory/TaxScheme/ID"].forEach((pth) => { const e = first(ac, pth); if (e) uu.add(e); });
       const reason = val(ac, "AllowanceChargeReason"), codeEl = first(ac, "AllowanceChargeReasonCode");
+      // each detail keeps its own BT number, so it can still be matched to the field it came from
+      const tag = (v, bt) => '<span class="dtl">' + esc(v) + (bt ? ' <span class="bt">' + esc(btFor(bt, role)) + "</span>" : "") + "</span>";
       const bits = [];
-      if (codeEl) bits.push(txt(codeEl) + (AC_REASON[txt(codeEl)] ? " · " + T(AC_REASON[txt(codeEl)]) : ""));
-      if (has(ac, "MultiplierFactorNumeric")) bits.push(val(ac, "MultiplierFactorNumeric") + " %");
-      if (has(ac, "BaseAmount")) bits.push(T("of {amount}", { amount: money(num(val(ac, "BaseAmount")) || 0) }));
-      if (has(ac, "TaxCategory/ID")) bits.push(T("VAT") + " " + val(ac, "TaxCategory/ID") + (has(ac, "TaxCategory/Percent") ? " " + val(ac, "TaxCategory/Percent") + " %" : ""));
+      if (codeEl) bits.push(tag(txt(codeEl) + (AC_REASON[txt(codeEl)] ? " · " + T(AC_REASON[txt(codeEl)]) : ""), { A: "BT-140", C: "BT-145" }));
+      if (has(ac, "MultiplierFactorNumeric")) bits.push(tag(val(ac, "MultiplierFactorNumeric") + " %", { A: "BT-138", C: "BT-143" }));
+      if (has(ac, "BaseAmount")) bits.push(tag(T("of {amount}", { amount: money(num(val(ac, "BaseAmount")) || 0) }), { A: "BT-137", C: "BT-142" }));
       const x = extras([ac], uu);
       if (x) more += sub(T(role === "C" ? "Charge {n}" : "Allowance {n}", { n: j + 1 }), x);
-      const amtBt = btFor({ A: "BT-136", C: "BT-141" }, role);
-      return r(btCell('<span class="ac-sign">' + (role === "C" ? "+" : "−") + "</span>" + esc(reason || T(role === "C" ? "Charge {n}" : "Allowance {n}", { n: j + 1 })), esc(amtBt)) +
-        (bits.length ? '<span class="sub-d">' + esc(bits.join(" · ")) + "</span>" : ""), money(amt), "ac-row");
+      return r(btCell('<span class="ac-sign">' + (role === "C" ? "+" : "−") + "</span>" + esc(reason || T(role === "C" ? "Charge {n}" : "Allowance {n}", { n: j + 1 })), esc(btFor({ A: "BT-139", C: "BT-144" }, role))) +
+        (bits.length ? '<span class="sub-d">' + bits.join("") + "</span>" : ""),
+        '<span class="bt">' + esc(btFor({ A: "BT-136", C: "BT-141" }, role)) + "</span> " + money(amt), "ac-row");
     }).join("");
     const charges = entry("C"), allowances = entry("A");
     const rows = (charges ? charges + r(T("Total charges"), money(sums.C), "subtotal") : "") + (allowances ? allowances + r(T("Total allowances"), money(sums.A), "subtotal") : "");

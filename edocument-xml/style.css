@@ -369,7 +369,10 @@ table.ac td:first-child { color: var(--faint); width: 2.5em; }
 table.ac tfoot td { font-weight: 600; border-top: 2px solid var(--line); border-bottom: 0; color: var(--ink); }
 table.ac-calc { max-width: 640px; }
 table.ac-calc .ac-sign { display: inline-block; width: 1em; color: var(--muted); }
-table.ac-calc .sub-d { display: block; margin: 1px 0 0 1.25em; font-size: 0.76rem; color: var(--muted); }
+table.ac-calc .sub-d { display: flex; flex-wrap: wrap; gap: 0 14px; margin: 1px 0 0 1.25em; font-size: 0.76rem; color: var(--muted); }
+table.ac-calc .dtl { white-space: nowrap; }
+table.ac-calc .dtl .bt, table.ac-calc td.r .bt { margin-left: 4px; }
+table.ac-calc td.r .bt { margin: 0 6px 0 0; }
 table.ac-calc tr.subtotal td { color: var(--muted); font-size: 0.84rem; border-top: 1px solid var(--line); }
 table.ac-calc tr.subtotal td.k { padding-left: 1.25em; }
 table.ac-calc tr.bad td { color: var(--err); font-weight: 600; }
