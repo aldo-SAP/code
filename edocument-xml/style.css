@@ -102,7 +102,7 @@ input[type="file"] { display: none; }
 .who.to { background: var(--to-soft); color: var(--to); }
 .who span { color: var(--ink); }
 .arrow { color: var(--faint); font-size: 1.2rem; }
-.hero-bar { flex: 0 0 auto; align-self: center; padding: 0 28px; }
+.hero-bar { flex: 0 0 auto; align-self: flex-start; padding: 0 24px 0 12px; }
 .hero-bar span { display: inline-block; font-size: 1.35rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 6px 18px; border-radius: 999px; color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
 .hero-amount { flex: 0 1 320px; min-width: 250px; align-self: center; padding-left: 28px; border-left: 1px solid var(--line-soft);
   display: grid; grid-template-columns: 1fr; justify-items: end; text-align: right; gap: 2px; }
