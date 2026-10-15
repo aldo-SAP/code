@@ -625,12 +625,12 @@ td > .dl .xtag { display: none; }
 /* Blocks without a problem fold to one line; the reason for a failure sits under its field. */
 .card.collapsible > h2 { cursor: pointer; user-select: none; }
 .card .chev { display: inline-block; width: 0.9em; margin-left: auto; color: var(--muted); font-size: 0.8rem; text-align: right; }
-.card.collapsed h2 .sum ~ .chev { margin-left: 8px; }
+.card.collapsed h2 .sum ~ .chev, .card h2 .act ~ .chev { margin-left: 8px; }
 .card.collapsible .chev::before { content: "▾"; }
 .card.collapsed .chev::before { content: "▸"; }
 .card.collapsed > .card-body { display: none; }
 .card h2 .sum { margin-left: auto; color: var(--muted); font-size: 0.78rem; font-weight: 400; }
-.card h2 .sum + .act { margin-left: 8px; }
+.card.collapsed h2 .sum + .act { margin-left: 8px; }
 #content.filtering .card.collapsed > .card-body { display: block; }
 .why { margin-top: 3px; font-size: 0.78rem; font-weight: 400; line-height: 1.35; color: var(--muted); }
 .flag-bad .why { color: var(--err); }
