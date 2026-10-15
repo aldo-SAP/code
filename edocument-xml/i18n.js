@@ -103,6 +103,7 @@
     "Unknown seller": "Venditore sconosciuto",
     "Unknown buyer": "Acquirente sconosciuto",
     "Amount credited": "Importo accreditato",
+    "Transaction category (note #BAR#)": "Categoria della transazione (nota #BAR#)",
     "Amount due": "Importo dovuto",
     "Due": "Scadenza",
     "{n} days after issue": "{n} giorni dopo l'emissione",

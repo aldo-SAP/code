@@ -1046,9 +1046,13 @@
     const net = first(R, "LegalMonetaryTotal/TaxExclusiveAmount") || first(R, "LegalMonetaryTotal/LineExtensionAmount"), vat = first(R, "TaxTotal/TaxAmount");
     const issue = val(R, "IssueDate"), due = val(R, "DueDate") || val(R, "PaymentMeans/PaymentDueDate");
     const di = parseDate(issue), dd = parseDate(due);
+    // the #BAR# note says what kind of transaction this is (B2B, B2C, B2BINT …)
+    const barNote = byPath(R, "Note").map(txt).map((t) => /^#BAR#\s*([\s\S]*)$/.exec(t.trim())).find(Boolean);
+    const bar = barNote ? barNote[1].trim() : "";
     const days = di && dd ? Math.round((dd - di) / 86400000) : null;
     $("hero").innerHTML =
       '<div class="hero-main"><div class="eyebrow"><span class="badge' + (kind === "CreditNote" ? " cn" : "") + '">' + T(kind === "CreditNote" ? "Credit note" : "Invoice") + "</span>" +
+      (bar ? '<span class="badge bar" title="' + esc(T("Transaction category (note #BAR#)")) + '">' + esc(bar) + "</span>" : "") +
       (code ? "<span>" + esc(code) + (DOC_TYPES[code] ? " · " + esc(T(DOC_TYPES[code])) : "") + "</span>" : "") +
       (state.wrapped ? "<span>" + esc(T("inside <{name}>", { name: state.wrapped })) + "</span>" : "") + "</div>" +
       '<div class="docno">' + esc(val(R, "ID") || T("(no number)")) + "</div>" +

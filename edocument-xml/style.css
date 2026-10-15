@@ -94,6 +94,7 @@ input[type="file"] { display: none; }
   padding: 2px 8px; border-radius: 999px; background: var(--ink); color: var(--paper);
 }
 .badge.cn { background: var(--to); }
+.badge.bar { background: none; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); }
 .docno { font-size: 1.7rem; font-weight: 600; letter-spacing: -0.01em; overflow-wrap: anywhere; line-height: 1.2; }
 .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 4px; }
 .who { font-weight: 600; padding: 4px 10px; border-radius: 8px; overflow-wrap: anywhere; }
