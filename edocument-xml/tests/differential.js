@@ -17,16 +17,14 @@ if (!docsDir || !svrls.length || !idsFile) { console.error("usage: see the heade
 const universe = new Set(fs.readFileSync(idsFile, "utf8").split(/\s+/).filter(Boolean));
 const ignored = (id) => ignore.some((p) => id.startsWith(p));
 
-// failed-assert ids of one SVRL file; France's schematron groups its asserts in patterns named after the rule (BR-FR-05_BT-22-1 → pattern BR-FR-05)
+// failed-assert ids of one SVRL file
 function official(file) {
   const text = fs.readFileSync(file, "utf8");
   if (!text.includes("</svrl:schematron-output>")) return null;
   const out = new Set();
-  let pattern = null;
-  for (const m of text.matchAll(/<svrl:(active-pattern|failed-assert)\b([^>]*)>/g)) {
-    const id = (/\bid="([^"]*)"/.exec(m[2]) || [])[1];
-    if (m[1] === "active-pattern") pattern = id;
-    else if (id) out.add(id.startsWith("BR-FR") && !id.startsWith("BR-FREXT") && pattern ? pattern : id);
+  for (const m of text.matchAll(/<svrl:failed-assert\b([^>]*)>/g)) {
+    const id = (/\bid="([^"]*)"/.exec(m[1]) || [])[1];
+    if (id) out.add(id);
   }
   return out;
 }

@@ -14,6 +14,7 @@ ids() { grep -ho 'name="id">[A-Za-z0-9-]*<' "$@" | sed 's/name="id">//;s/<//' | 
 EN="$C/en16931/ubl/xslt/EN16931-UBL-validation.xslt"
 FR="$C/france/FNFE_RFE_INVOICE/UBL/EN16931/2xslt"
 FX2="$C/france/FNFE_RFE_INVOICE/UBL/EXTENDED-CTC-FR/2xslt"
+FRS="$C/france/FNFE_RFE_INVOICE/UBL/EN16931/schematron"; FXS="$C/france/FNFE_RFE_INVOICE/UBL/EXTENDED-CTC-FR/schematron"
 PP="$C/peppol-ubl.xslt"
 ids "$EN" "$PP" > "$W/en-pp.ids"
 ids "$FR"/*.xslt > "$W/en-fr.ids"
@@ -27,11 +28,10 @@ ids "$FX2"/*.xslt > "$W/en-fx.ids"
 #  - PEPPOL-EN16931-R007: the official stylesheet also reports it for documents without a ProfileID, which R001 already covers
 IGNORE_EN="DE-R,DK-R,GR-,IS-R,IT-R,SE-R,NL-R,NO-R,PEPPOL-EN16931-R007,BR-CO-09"
 #  - France: extended-profile (multi-vendor, sub-line) rules; the FR copy of the EN schematron is older (UBL-SR-25/58/59 differ)
-IGNORE_FR="BR-CO-09,BR-FR-MV,BR-FR-BD,UBL-SR-25,UBL-SR-58,UBL-SR-59"
-#  - EXTENDED-CTC-FR documents (compared with that profile's own schematron): its replacement rules BR-FREXT-/UBL-FREXT- are not implemented, and
-#    the engine only applies the line-reference relaxation (UBL-CR-528..531); the other rules that profile switches off stay on, on purpose
-#    (UBL-SR-04/16/20/34/52 and the other UBL-CR extension rules), so it reports them where the official extended schematron does not
-IGNORE_FX="BR-CO-09,BR-FR-MV,BR-FR-BD,BR-FREXT,UBL-FREXT"
+IGNORE_FR="BR-CO-09,UBL-SR-25,UBL-SR-58,UBL-SR-59"
+#  - EXTENDED-CTC-FR documents are compared with that profile's own schematron: the BR-FREXT-/UBL-FREXT- rules are the official ones and the EN 16931 rules it
+#    leaves out are switched off (FR_EXT_OFF), so only the known EN 16931 difference remains
+IGNORE_FX="BR-CO-09"
 #  - only in mutants: a VAT tax category written without the VAT scheme, which the official S/B/O/IG/IP rules treat differently
 #    (the primary rules BR-CO-04, BR-32, BR-37, BR-47, BR-48 do match)
 IGNORE_MUT="BR-S-01,BR-S-02,BR-S-04,BR-O-01,BR-O-11,BR-O-12,BR-IG-01,BR-IP-08,UBL-SR-13,BR-CO-11,BR-S-08"
@@ -86,6 +86,13 @@ while IFS= read -r f; do
   n=$((n+1)); cp "$f" "$F/$(printf %03d $n)_$(basename "$f" | tr ' ' '_')"
 done < <(find "$C/france-examples" "$C/france/FNFE_RFE_INVOICE/Z.example/TEST/UBL" -name "*.xml" -not -path "*__MACOSX*" 2>/dev/null)
 fr_run "France (XP Z12-012, UBL) on $n official example invoices" "$F" "" ""
+step "France: the viewer carries every official assert (BR-FR- and, for EXTENDED-CTC-FR, BR-FREXT-/UBL-FREXT-)"
+{ python3 assert-ids.py "$FRS/BR-FR-Flux2-Schematron-UBL.sch"; python3 assert-ids.py "$FXS/EXTENDED-CTC-FR-UBL.sch" --minus "$FRS/EN16931-UBL-validation-preprocessed.sch"; } > "$W/fr.ids"
+run node check-rules.js FranceRules "$W/fr.ids"
+step "France: every message has its English and Italian text (countries/fr/messages.js is rebuilt from fr-en.tsv and fr-it.tsv)"
+run node gen-fr-messages.js
+step "France: the failed rules of the example invoices and mutants show in English and Italian"
+run node check-translations.js fr "$F.cius" "$F.ext"
 
 # E-reporting: the UBL is turned into a Flux 10 report; the official Flux 10 schematron checks that report
 FX="$C/france/FNFE_RFE_INVOICE/Flux10/Flux10.xslt"
@@ -107,6 +114,8 @@ for v in billing selfbilling; do
   ae_run "PINT AE ($v) on the official example invoices and credit notes" "$AD" "$v" ""
   mkdir -p "$W/ae-targeted-$v"; python3 -I targeted-ae.py "$W/ae-targeted-$v" "$AD" --log="$W/ae-targeted-$v.log.json" > /dev/null
   ae_run "PINT AE ($v) on documents aimed at single rules" "$W/ae-targeted-$v" "$v" "$W/ae-targeted-$v.log.json" "$([ "$v" = selfbilling ] && echo ibr-cl-01)"
+  step "PINT AE ($v): the failed rules of these documents show in Italian"
+  run node check-translations.js ae "$AD" "$W/ae-targeted-$v"
 done
 
 # XRechnung (Germany): the official KoSIT validation is the EN 16931 schematron plus the XRechnung one (which carries the Peppol rules it integrates).
@@ -132,6 +141,8 @@ done < <({ find "$XRC/testsuite/src/test" -name "*.xml" | grep -iv "uncefact\|ci
 de_run "XRechnung on the official test suite and rule test documents" "$DD" ""
 mkdir -p "$W/de-targeted"; python3 -I targeted-de.py "$W/de-targeted" "$DD" --log="$W/de-targeted.log.json" > /dev/null
 de_run "XRechnung on documents aimed at single rules" "$W/de-targeted" "$W/de-targeted.log.json"
+step "XRechnung: the failed rules of these documents show in English and Italian"
+run node check-translations.js de "$DD" "$W/de-targeted"
 if [ "$1" != "quick" ]; then
   N=${MUTANTS:-600}
   python3 mutate.py "$W/mut-en" "$N" "${SEED:-1}" "$D" > /dev/null
@@ -140,6 +151,8 @@ if [ "$1" != "quick" ]; then
   run node differential.js --docs="$W/mut-en" --svrl="$W/mut-en-en,$W/mut-en-pp" --ids="$W/en-pp.ids" --sets=peppol --ignore="$IGNORE_EN,$IGNORE_MUT" --log="$W/mut-en.log.json"
   python3 mutate.py "$W/mut-fr" "$N" "$(( ${SEED:-1} + 1 ))" "$F" > /dev/null
   fr_run "France on $N mutated example invoices" "$W/mut-fr" ",$IGNORE_MUT" log
+  step "France: the failed rules of the mutants show in English and Italian"
+  run node check-translations.js fr "$W/mut-fr.cius" "$W/mut-fr.ext"
   node ereport-gen.js "$W/mut-fr" "$W/er-mut" > /dev/null; saxon "$FX" "$W/er-mut" "$W/er-mut-sv"
   step "E-reporting (Flux 10) on $N mutated example invoices"
   run node ereport-differential.js "$W/mut-fr" "$W/er-mut-sv"

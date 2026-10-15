@@ -30,7 +30,9 @@
     xr: "xrechnung",
     xs: "http://www.w3.org/2001/XMLSchema"
   };
-  const OPTIONS = { namespaceResolver: (p) => (Object.prototype.hasOwnProperty.call(NS, p) ? NS[p] : null) };
+  const resolverFor = (extra) => ({ namespaceResolver: (p) => (extra && Object.prototype.hasOwnProperty.call(extra, p) ? extra[p] : Object.prototype.hasOwnProperty.call(NS, p) ? NS[p] : null) });
+
+  const declared = new Set();   // functions already registered ("namespace name")
 
   // ---------- The helper functions the Peppol-based schematrons declare themselves (namespace "utils") ----------
   const codes = (s) => Array.from(String(s || ""), (ch) => ch.codePointAt(0));
@@ -111,7 +113,9 @@
     fx.registerCustomXPathFunction({ namespaceURI: NS.u, localName: name }, params, ret, (_c, ...args) => fn(...args));
   });
   // functions a country's schematron declares itself: EdocSchematron.registerFunction("xr", "checkIBAN", ["xs:string"], "xs:boolean", fn)
+  // (it takes the place of the schematron's own xsl:function of that name, which fontoxpath could not evaluate exactly, e.g. big integers)
   function registerFunction(prefix, localName, params, ret, fn) {
+    declared.add(NS[prefix] + " " + localName);
     fx.registerCustomXPathFunction({ namespaceURI: NS[prefix], localName }, params, ret, (_c, ...args) => fn(...args));
   }
   const fixTest = (t) => t.replace(/\(string\(\.\) castable as xs:date\)/g, "(string(.) castable as xs:date and u:realDate(string(.)))")
@@ -150,14 +154,38 @@
   const nameOf = (n) => (n.nodeType === 2 || n.nodeType === 1 ? n.nodeName : "");
   const elementOf = (n) => (n.nodeType === 2 ? n.ownerElement : n.nodeType === 1 ? n : n.parentNode);
 
+  // The functions a schematron declares itself with xsl:function (a few parameters, variables and one expression): registered under their namespace,
+  // each call evaluates the body with the arguments as variables.
+  // The global variables a function body uses must be constants (the function has no document to look at).
+  function declareFunctions(DATA, OPTIONS) {
+    const consts = new Map((DATA.lets || []).map((l) => [l[0], l[1]]));
+    (DATA.fns || []).forEach((f) => {
+      const [prefix, localName] = f.name.split(":"), uri = (DATA.ns && DATA.ns[prefix]) || NS[prefix];
+      if (!uri || declared.has(uri + " " + localName)) return;
+      declared.add(uri + " " + localName);
+      const need = new Set(), stack = [f.body].concat(f.vars.map((v) => v[1])).flatMap((x) => Array.from(refs(x)));
+      while (stack.length) { const n = stack.pop(); if (need.has(n) || !consts.has(n)) continue; need.add(n); refs(consts.get(n)).forEach((r) => stack.push(r)); }
+      const lets = Array.from(need).map((n) => [n, consts.get(n)]).concat(f.vars);
+      const body = (lets.length ? "let " + lets.map((v) => "$" + v[0] + " := (" + v[1] + ")").join(", ") + " return " : "") + "(" + f.body + ")";
+      const types = f.params.map((p) => p[1]);
+      if ((f.ret || "xs:boolean") !== "xs:boolean") throw new Error("only boolean functions are supported: " + f.name);
+      fx.registerCustomXPathFunction({ namespaceURI: uri, localName }, types, "xs:boolean", (_c, ...args) => {
+        const vars = {}; f.params.forEach((p, i) => { vars[p[0]] = args[i]; });
+        return fx.evaluateXPathToBoolean(body, null, null, vars, OPTIONS);
+      });
+    });
+  }
+
   function runner(DATA, opts) {
     opts = opts || {};
+    const OPTIONS = resolverFor(DATA.ns);
+    declareFunctions(DATA, OPTIONS);
     const globals = (DATA.lets || []).map((l) => ({ name: l[0], expr: l[1], global: true }));
     // Wraps an expression in `let $a := …, $b := … return (expr)` for the variables it needs: the global ones evaluate on the document
     // (as XSLT global variables do), the ones of a rule on the node being checked.
-    function withLets(expr, locals) {
+    function withLets(expr, locals, onDocument) {
       const list = [], at = new Map();
-      globals.concat((locals || []).map((l) => ({ name: l[0], expr: l[1], global: false }))).forEach((v) => {
+      globals.concat((locals || []).map((l) => ({ name: l[0], expr: l[1], global: !!onDocument || l[2] === "doc" }))).forEach((v) => {
         if (at.has(v.name)) list[at.get(v.name)] = v; else { at.set(v.name, list.length); list.push(v); }
       });
       const need = new Set(), stack = Array.from(refs(expr));
@@ -169,15 +197,16 @@
       if (!need.size) return expr;
       return "let " + list.filter((v) => need.has(v.name)).map((v) => "$" + v.name + " := " + (v.global ? "root(.)/(" + v.expr + ")" : "(" + v.expr + ")")).join(", ") + " return (" + expr + ")";
     }
-    const contextNodes = (doc, context, cache) => {
-      if (cache.has(context)) return cache.get(context);
+    const contextNodes = (doc, context, cache, plets) => {
+      const key = context + "\u0000" + (plets && plets.length ? plets.map((l) => l[0]).join(",") : "");
+      if (cache.has(key)) return cache.get(key);
       const set = new Set();
       splitTop(context, "|").forEach((alt) => {
         const path = alt.startsWith("/") ? alt : "//" + alt;
-        fx.evaluateXPathToNodes(withLets(path, null), doc, null, null, OPTIONS).forEach((n) => set.add(n));
+        fx.evaluateXPathToNodes(withLets(path, plets, true), doc, null, null, OPTIONS).forEach((n) => set.add(n));
       });
       const nodes = Array.from(set).sort((a, b) => (a === b ? 0 : a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
-      cache.set(context, nodes);
+      cache.set(key, nodes);
       return nodes;
     };
     // XPath lets "A or B" be true when one operand is true even if the other raises an error (Saxon evaluates in either order):
@@ -190,12 +219,13 @@
         throw e;
       }
     }
-    // the message of an assert, with <name/> and <value-of/> filled in for a node
+    // the message of an assert, with <name/> and <value-of/> filled in for a node (the text of the message was normalized when the data was made;
+    // the values are kept as they are, with runs of white space made one space, so an empty value leaves the spaces around it)
     function message(template, locals, node) {
       return template.replace(/\u0001|\u0002([^\u0003]*)\u0003/g, (m, x) => {
         if (m === "\u0001") return nameOf(node);
-        try { return String(fx.evaluateXPathToString(withLets(x, locals), node, null, null, OPTIONS)); } catch (e) { return ""; }
-      }).replace(/\s+/g, " ").trim();
+        try { return String(fx.evaluateXPathToString(withLets(x, locals), node, null, null, OPTIONS)).replace(/\s+/g, " ").trim(); } catch (e) { return ""; }
+      }).trim();
     }
 
     const ids = [];
@@ -210,16 +240,17 @@
       DATA.patterns.forEach((pattern) => {
         const done = new Set();    // a node is checked by the first rule of a pattern that matches it
         pattern.r.forEach((r) => {
-          contextNodes(doc, r.c, cache).forEach((node) => {
+          contextNodes(doc, r.c, cache, pattern.l).forEach((node) => {
             if (done.has(node)) return;
             done.add(node);
             r.a.forEach((a0) => {
               const a = alt && alt[a0[0]] ? alt[a0[0]] : a0;
               if (opts.skip && opts.skip(a[0], ctx)) return;
+              const locals = (pattern.l || []).map((l) => [l[0], l[1], "doc"]).concat(r.l || []);   // the lets of a pattern evaluate on the document, the ones of a rule on the node
               let res = results.get(a[0]);
-              if (!res) { res = { template: a[2], locals: r.l, warn: a[3] !== "fatal", failed: [], detail: "", first: node, failNode: null }; results.set(a[0], res); order.push(a[0]); }
+              if (!res) { res = { template: a[2], locals, warn: a[3] !== "fatal", failed: [], detail: "", first: node, failNode: null }; results.set(a[0], res); order.push(a[0]); }
               let ok;
-              try { ok = evalTest(a[1], r.l, node); } catch (e) { ok = false; res.detail = "could not be evaluated: " + String(e.message || e).split("\n")[0]; }
+              try { ok = evalTest(a[1], locals, node); } catch (e) { ok = false; res.detail = "could not be evaluated: " + String(e.message || e).split("\n")[0]; }
               if (!ok) { if (!res.failed.length) res.failNode = node; res.failed.push(elementOf(node)); }
             });
           });

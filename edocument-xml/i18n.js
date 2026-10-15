@@ -727,49 +727,6 @@
 
     // ---------- Check messages: France (official BR-FR) ----------
     "Invoice numbers (BT-1, BT-25) must have at most 35 characters": "I numeri di fattura (BT-1, BT-25) devono avere al massimo 35 caratteri",
-    "Invoice numbers (BT-1, BT-25) may only use letters, digits and + - _ / (no spaces)": "I numeri di fattura (BT-1, BT-25) possono usare solo lettere, cifre e + - _ / (senza spazi)",
-    "Dates must be real dates from 2000 to 2099 written as YYYY-MM-DD": "Le date devono essere date reali dal 2000 al 2099 nel formato AAAA-MM-GG",
-    "Document type codes (BT-3) must be one the French reform accepts": "I codici tipo documento (BT-3) devono essere tra quelli accettati dalla riforma francese",
-    "Notes #PMT#, #PMD#, #AAB# and #TXD# may each appear only once": "Le note #PMT#, #PMD#, #AAB# e #TXD# possono comparire una sola volta ciascuna",
-    "Note #BAR# must be B2B, B2BINT, B2C, B2CINT, OUTOFSCOPE or ARCHIVEONLY": "La nota #BAR# deve essere B2B, B2BINT, B2C, B2CINT, OUTOFSCOPE o ARCHIVEONLY",
-    "Only one #BAR# operation type may be given": "Si può indicare un solo tipo di operazione #BAR#",
-    "Billing framework (BT-23) must be a French code (B1, S1, M1, B2 … M9)": "Il quadro di fatturazione (BT-23) deve essere un codice francese (B1, S1, M1, B2 … M9)",
-    "A global discount credit note (262) must give the contract (BT-12) and the invoicing period start and end (BG-14)": "Una nota di credito per sconto globale (262) deve indicare il contratto (BT-12) e inizio e fine del periodo di fatturazione (BG-14)",
-    "A corrective invoice must reference exactly one preceding invoice (BT-25)": "Una fattura rettificativa deve indicare esattamente una fattura precedente (BT-25)",
-    "A credit note must reference the credited invoice with its date (BT-25, BT-26), in the header or on every line": "Una nota di credito deve indicare la fattura stornata con la sua data (BT-25, BT-26), in testata o su ogni riga",
-    "The due date (BT-9) must not be before the issue date (BT-2)": "La data di scadenza (BT-9) non deve essere precedente alla data di emissione (BT-2)",
-    "With framework B4, S4 or M4 (final invoice after advances) the document must not be an advance invoice (386, 500, 503)": "Con il quadro B4, S4 o M4 (fattura finale dopo acconti) il documento non deve essere una fattura di acconto (386, 500, 503)",
-    "With framework B2, S2 or M2 (already paid) the paid amount (BT-113) must equal the total with VAT (BT-112)": "Con il quadro B2, S2 o M2 (già pagata) l'importo pagato (BT-113) deve essere uguale al totale con IVA (BT-112)",
-    "With framework B2, S2 or M2 the amount due (BT-115) must be 0": "Con il quadro B2, S2 o M2 l'importo dovuto (BT-115) deve essere 0",
-    "With framework B2, S2 or M2 the due date (BT-9) must give the payment date": "Con il quadro B2, S2 o M2 la data di scadenza (BT-9) deve indicare la data di pagamento",
-    "SIRET numbers (scheme 0009) must have 14 digits and start with the party's SIREN": "I numeri SIRET (schema 0009) devono avere 14 cifre e iniziare con il SIREN del soggetto",
-    "Seller legal registration (BT-30) must be a 9-digit SIREN with scheme 0002": "La registrazione legale del venditore (BT-30) deve essere un SIREN di 9 cifre con schema 0002",
-    "With #BAR# B2B the buyer legal registration (BT-47) must be a 9-digit SIREN with scheme 0002": "Con #BAR# B2B la registrazione legale dell'acquirente (BT-47) deve essere un SIREN di 9 cifre con schema 0002",
-    "Buyer electronic address (BT-49) must be given": "L'indirizzo elettronico dell'acquirente (BT-49) deve essere indicato",
-    "Seller electronic address (BT-34) must be given": "L'indirizzo elettronico del venditore (BT-34) deve essere indicato",
-    "With #BAR# B2B the buyer electronic address (BT-49) must use address scheme 0225 and start with the buyer SIREN": "Con #BAR# B2B l'indirizzo elettronico dell'acquirente (BT-49) deve usare lo schema di indirizzo 0225 e iniziare con il SIREN dell'acquirente",
-    "With #BAR# B2B on a self-billing document the seller electronic address (BT-34) must use address scheme 0225 and start with the seller SIREN": "Con #BAR# B2B su un'autofattura l'indirizzo elettronico del venditore (BT-34) deve usare lo schema di indirizzo 0225 e iniziare con il SIREN del venditore",
-    "Electronic addresses with scheme 0225 may only use letters, digits and - _ .": "Gli indirizzi elettronici con schema 0225 possono usare solo lettere, cifre e - _ .",
-    "Electronic addresses (BT-34, BT-49 …) must have at most 125 characters": "Gli indirizzi elettronici (BT-34, BT-49 …) devono avere al massimo 125 caratteri",
-    "Private identifiers (BT-29, BT-46, scheme 0224) may only use letters, digits and - _ .": "Gli identificativi privati (BT-29, BT-46, schema 0224) possono usare solo lettere, cifre e - _ .",
-    "Private identifiers (BT-29, BT-46, scheme 0224) must have at most 100 characters": "Gli identificativi privati (BT-29, BT-46, schema 0224) devono avere al massimo 100 caratteri",
-    "SIREN numbers (scheme 0002 or 0231) must have 9 digits": "I numeri SIREN (schema 0002 o 0231) devono avere 9 cifre",
-    "Party identifiers (BT-29, BT-46, BT-60, BT-71 …) must each give a scheme (schemeID)": "Gli identificativi dei soggetti (BT-29, BT-46, BT-60, BT-71 …) devono indicare ciascuno uno schema (schemeID)",
-    "A party must not repeat an identifier scheme": "Un soggetto non deve ripetere uno schema di identificativo",
-    "A member of a single taxable person (seller scheme 0231) must add the note #TXD#MEMBRE_ASSUJETTI_UNIQUE": "Un membro di un soggetto passivo unico (schema venditore 0231) deve aggiungere la nota #TXD#MEMBRE_ASSUJETTI_UNIQUE",
-    "A member of a single taxable person (seller scheme 0231) must give the single taxable person's VAT ID as tax representative (BT-63)": "Un membro di un soggetto passivo unico (schema venditore 0231) deve indicare la partita IVA del soggetto passivo unico come rappresentante fiscale (BT-63)",
-    "VAT category codes must be S, E, AE, K, G, O or Z (L and M do not apply in France)": "I codici categoria IVA devono essere S, E, AE, K, G, O o Z (L e M non si applicano in Francia)",
-    "VAT rates must be French rates (20, 10, 5.5, 2.1 … with no % sign)": "Le aliquote IVA devono essere aliquote francesi (20, 10, 5.5, 2.1 … senza il segno %)",
-    "An invoice not in EUR must give EUR as VAT accounting currency (BT-6) and the VAT total in EUR (BT-111)": "Una fattura non in EUR deve indicare EUR come valuta di contabilizzazione IVA (BT-6) e il totale IVA in EUR (BT-111)",
-    "Attachment descriptions (BT-123) must be a French attachment code (RIB, LISIBLE, PJA …)": "Le descrizioni degli allegati (BT-123) devono essere un codice allegato francese (RIB, LISIBLE, PJA …)",
-    "Only one attachment may be described as LISIBLE": "Un solo allegato può essere descritto come LISIBLE",
-    "Item attributes must give either a value (BT-161) or a quantity with a unit, not both": "Gli attributi articolo devono indicare un valore (BT-161) oppure una quantità con unità, non entrambi",
-    "Object identifiers with scheme AFL or AVV must appear at most once each and not be empty": "Gli identificativi di oggetto con schema AFL o AVV devono comparire al massimo una volta ciascuno e non essere vuoti",
-    "Amounts must have at most 2 decimals and 19 digits": "Gli importi devono avere al massimo 2 decimali e 19 cifre",
-    "Quantities (BT-129, BT-149) must have at most 4 decimals and 19 digits": "Le quantità (BT-129, BT-149) devono avere al massimo 4 decimali e 19 cifre",
-    "Prices (BT-146 … BT-148) must have at most 6 decimals and 19 digits": "I prezzi (BT-146 … BT-148) devono avere al massimo 6 decimali e 19 cifre",
-    "Prices (BT-146 … BT-148) must be positive with at most 6 decimals and 19 digits": "I prezzi (BT-146 … BT-148) devono essere positivi con al massimo 6 decimali e 19 cifre",
-    "VAT rates must be positive with at most 2 decimals and 4 digits": "Le aliquote IVA devono essere positive con al massimo 2 decimali e 4 cifre",
 
     // ---------- Check messages: France (this tool's own warnings) ----------
     "SIREN numbers should have a valid check digit": "I numeri SIREN dovrebbero avere una cifra di controllo valida",
@@ -780,9 +737,6 @@
     "Buyer address should have street, city and post code (legal mention)": "L'indirizzo dell'acquirente dovrebbe avere via, città e CAP (menzione obbligatoria)",
     "Seller VAT ID should contain the seller SIREN": "La partita IVA del venditore dovrebbe contenere il SIREN del venditore",
     "Delivery date (BT-72) or invoicing period (BG-14) should be given (date of the sale or service)": "Dovrebbe essere indicata la data di consegna (BT-72) o il periodo di fatturazione (BG-14) (data della vendita o del servizio)",
-    "fixed recovery fee of 40 € (indemnité forfaitaire)": "l'indennità forfettaria di recupero di 40 € (indemnité forfaitaire)",
-    "late payment penalties": "le penali per ritardato pagamento",
-    "early payment discount (escompte)": "lo sconto per pagamento anticipato (escompte)"
   };
 
   // ---------- Italian: patterns for messages built from data ----------
@@ -792,7 +746,7 @@
     const names = [];
     const re = new RegExp("^" + en.split(/(\{\w+\})/).map((part) => {
       const m = /^\{(\w+)\}$/.exec(part);
-      if (m) { names.push(m[1]); return "(.+?)"; }
+      if (m) { names.push(m[1]); return m[1][0] === "_" ? "(.*?)" : "(.+?)"; }   // {_x}: a value left as written, it may be empty
       return part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     }).join("") + "$");
     return { re, names, it };
@@ -909,7 +863,6 @@
     "Unit codes (BT-130, BT-150) must be UN/ECE Recommendation 20 or 21 codes": "I codici unità (BT-130, BT-150) devono essere codici UN/ECE Recommendation 20 o 21",
     "A date must be written YYYY-MM-DD": "Una data deve essere scritta AAAA-MM-GG",
     "Amount currencies must be ISO 4217 codes": "Le valute degli importi devono essere codici ISO 4217",
-    "Invoice numbers (BT-1, BT-25) must have at most 35 characters and may only use letters, digits and + - _ /": "I numeri di fattura (BT-1, BT-25) devono avere al massimo 35 caratteri e usare solo lettere, cifre e + - _ /",
     "Item country of origin codes (BT-159) must be ISO 3166-1 alpha-2 codes": "I codici del paese di origine dell'articolo (BT-159) devono essere codici ISO 3166-1 alpha-2",
     "Item standard identifier schemes (BT-157) must be ISO 6523 ICD codes": "Gli schemi degli identificativi standard dell'articolo (BT-157) devono essere codici ISO 6523 ICD",
     "Electronic address schemes (BT-34, BT-49) must be CEF EAS codes": "Gli schemi degli indirizzi elettronici (BT-34, BT-49) devono essere codici CEF EAS",
