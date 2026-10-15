@@ -438,6 +438,37 @@
   }
   function sub(title, body) { return '<div class="sub"><h3>' + esc(T(title)) + "</h3>" + body + "</div>"; }
 
+  // Document-level allowances or charges: one table, a row per entry and their total underneath.
+  function docAcTable(els, role, single) {
+    const spec = AC_SPEC.filter((f) => f[0] !== "ChargeIndicator");
+    // columns with nothing in them are left out (unless empty fields are shown)
+    const cols = spec.filter(([path]) => state.showEmpty || path === "Amount" || els.some((e) => has(e, path)));
+    const isNum = (path) => path === "Amount" || path === "BaseAmount" || path === "MultiplierFactorNumeric";
+    const cur = (first(els[0], "Amount") || { getAttribute: () => "" }).getAttribute("currencyID") || "";
+    let sum = 0, more = "";
+    const rows = els.map((el, j) => {
+      const u = new Set(byPath(el, "ChargeIndicator"));
+      sum += num(val(el, "Amount")) || 0;
+      const tds = cols.map(([path, , bt0]) => {
+        const e = first(el, path), bt = btFor(bt0, role);
+        if (e) u.add(e);
+        const f = bt ? (fieldFlag(el, bt, e ? [e] : []) || (e ? null : requiredFlag(el, bt))) : null;
+        const cls = (isNum(path) ? "r" : "") + (f ? (isNum(path) ? " " : "") + "flag-" + f.lvl : "");
+        const inner = e ? (path === "Amount" || path === "BaseAmount" ? fmtAmount(txt(e), "") : renderValue(e)) : f ? missing() : "—";
+        return "<td" + (cls ? ' class="' + cls + '"' : "") + (f ? ' title="' + esc(flagTitle(f)) + '"' + dataRules(f) : "") + ">" + inner + "</td>";
+      }).join("");
+      const x = extras([el], u);
+      if (x) more += sub(T(single + " {n}", { n: j + 1 }), x);
+      return '<tr class="frow"><td>' + (j + 1) + "</td>" + tds + "</tr>";
+    }).join("");
+    const amtCol = cols.findIndex(([path]) => path === "Amount");
+    const foot = "<tr><td" + (amtCol ? ' colspan="' + (amtCol + 1) + '"' : "") + ">" + T(role === "C" ? "Total charges" : "Total allowances") + "</td>" +
+      '<td class="r">' + money(sum) + ' <span class="unit">' + esc(cur) + "</span></td>" +
+      (cols.length - amtCol - 1 > 0 ? '<td colspan="' + (cols.length - amtCol - 1) + '"></td>' : "") + "</tr>";
+    const head = "<tr><th>#</th>" + cols.map(([path, label, bt]) => "<th" + (isNum(path) ? ' class="r"' : "") + ">" + btCell(esc(T(label)), esc(btFor(bt, role))) + xtag("cac:AllowanceCharge/" + guessTag(null, path)) + "</th>").join("") + "</tr>";
+    return '<div class="tablewrap"><table class="ac"><thead>' + head + "</thead><tbody>" + rows + "</tbody><tfoot>" + foot + "</tfoot></table></div>" + more;
+  }
+
   // A line's allowances and charges: one table each, a row per entry and their total underneath,
   // then quantity × price + charges − allowances worked out against the line net amount.
   const money = (n) => (state.raw ? n.toFixed(2) : n.toLocaleString(I18N.locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
@@ -613,13 +644,8 @@
       ];
       for (const [id, title, single, role, els] of kinds) {
         if (!els.length && !state.showEmpty) continue;
-        let body = els.length ? "" : renderFields(null, spec, role, new Set());
-        els.forEach((el, i) => {
-          const u = new Set([first(el, "ChargeIndicator")]);
-          const inner = renderFields(el, spec, role, u) + extras([el], u);
-          body += els.length > 1 ? sub(T(single + " {n}", { n: i + 1 }), inner) : inner;
-        });
-        out.push({ id, title, html: card(id, title, body) });
+        const body = els.length ? docAcTable(els, role, single) : renderFields(null, spec, role, new Set());
+        out.push({ id, title, html: card(id, title, body, { full: true }) });
       }
     }
 

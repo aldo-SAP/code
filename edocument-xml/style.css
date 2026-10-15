@@ -329,7 +329,7 @@ table.tot tr.flag-bad td.k { color: var(--err); }
 table.tot tr.flag-warn td.k { color: var(--to); }
 .chip {
   display: inline-block; font-size: 0.75rem; padding: 0 7px; border-radius: 999px; background: var(--chip);
-  color: var(--muted); margin-left: 6px; white-space: nowrap; vertical-align: 1px;
+  color: var(--muted); margin-left: 6px; white-space: normal; max-width: 100%; overflow-wrap: anywhere; vertical-align: 1px; line-height: 1.35;
 }
 .dec { color: var(--muted); }
 .amt { font-variant-numeric: tabular-nums; }
@@ -485,10 +485,11 @@ button, a, summary, label, .tab { touch-action: manipulation; -webkit-tap-highli
 .bts { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
 .row > .k .bt { flex: none; margin: 1px 0 0 auto; }
 .show-tags .row > .k .xtag { flex: 1 1 100%; }
-.thc { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.thc { display: flex; justify-content: flex-start; align-items: baseline; gap: 8px; }
 .thc .bt { flex: none; margin: 0; }
 .thl { white-space: nowrap; }
 th.r .thc { justify-content: flex-end; }
+th .thc .bt { opacity: 0.85; }
 td.k .thl, #sec-vat th .thl { white-space: normal; flex: 1 1 0; min-width: 0; }
 
 /* XML viewer parts of the phone table cards (shared/table-cards.css does the rest). */
