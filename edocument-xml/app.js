@@ -470,57 +470,50 @@
     return '<div class="tablewrap"><table class="ac"><thead>' + head + "</thead><tbody>" + rows + "</tbody><tfoot>" + foot + "</tfoot></table></div>" + more;
   }
 
-  // A line's allowances and charges: one table each, a row per entry and their total underneath,
-  // then quantity × price + charges − allowances worked out against the line net amount.
+  // A line's allowances and charges, folded into the calculation of the line net amount (BT-131):
+  // quantity × net price, + each charge, − each allowance, = calculated, against the amount in the file.
   const money = (n) => (state.raw ? n.toFixed(2) : n.toLocaleString(I18N.locale(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   function lineAcTables(ln, used) {
     const acs = byPath(ln, "AllowanceCharge");
     acs.forEach((ac) => markDeep(ac, used));
+    if (!acs.length) return "";
     const cur = (first(ln, "LineExtensionAmount") || { getAttribute: () => "" }).getAttribute("currencyID") || "";
-    const sums = {};
-    const table = (role) => {
-      const list = acs.filter((ac) => (val(ac, "ChargeIndicator") === "true") === (role === "C"));
-      sums[role] = list.reduce((s, ac) => s + (num(val(ac, "Amount")) || 0), 0);
-      if (!list.length) return "";
-      // Columns with nothing in them are left out (unless empty fields are shown).
-      const cols = LINE_AC_SPEC.filter(([path]) => path !== "ChargeIndicator" && (state.showEmpty || path === "Amount" || list.some((ac) => has(ac, path))));
-      const isNum = (path) => path === "Amount" || path === "BaseAmount" || path === "MultiplierFactorNumeric";
-      let more = "";
-      const rows = list.map((ac, j) => {
-        const uu = new Set(byPath(ac, "ChargeIndicator"));
-        const tds = cols.map(([path]) => {
-          const el = first(ac, path);
-          if (el) uu.add(el);
-          return '<td' + (isNum(path) ? ' class="r"' : "") + ">" + (!el ? "—" : path === "Amount" || path === "BaseAmount" ? fmtAmount(txt(el), "") : renderValue(el)) + "</td>";
-        }).join("");
-        const x = extras([ac], uu);
-        if (x) more += sub(T(role === "C" ? "Charge {n}" : "Allowance {n}", { n: j + 1 }), x);
-        return "<tr><td>" + (j + 1) + "</td>" + tds + "</tr>";
-      }).join("");
-      const amtCol = cols.findIndex(([path]) => path === "Amount");
-      const foot = "<tr><td" + (amtCol ? ' colspan="' + (amtCol + 1) + '"' : "") + ">" + T(role === "C" ? "Total charges" : "Total allowances") + "</td>" +
-        '<td class="r">' + money(sums[role]) + ' <span class="unit">' + esc(cur) + "</span></td>" +
-        (cols.length - amtCol - 1 > 0 ? '<td colspan="' + (cols.length - amtCol - 1) + '"></td>' : "") + "</tr>";
-      const head = "<tr><th>#</th>" + cols.map(([path, label, bt]) => "<th" + (isNum(path) ? ' class="r"' : "") + ">" + btCell(esc(T(label)), esc(btFor(bt, role))) + xtag("cac:AllowanceCharge/" + guessTag(null, path)) + "</th>").join("") + "</tr>";
-      return '<div class="sub ac-block"><h3>' + T(role === "C" ? "Line charges" : "Line allowances") + " · " + list.length + "</h3>" +
-        '<div class="tablewrap"><table class="ac"><thead>' + head + "</thead><tbody>" + rows + "</tbody><tfoot>" + foot + "</tfoot></table></div>" + more + "</div>";
-    };
-    const html = table("A") + table("C");
-    if (!acs.length) return html;
+    const sums = { A: 0, C: 0 };
+    const r = (label, amount, cls) => '<tr' + (cls ? ' class="' + cls + '"' : "") + '><td class="k">' + label + '</td><td class="r">' + amount + '</td><td class="cur">' + esc(cur) + "</td></tr>";
+    let more = "";
+    // one row per charge or allowance: reason on top, the rest (code, percentage, base amount, VAT) small underneath
+    const entry = (role) => acs.filter((ac) => (val(ac, "ChargeIndicator") === "true") === (role === "C")).map((ac, j) => {
+      const amt = num(val(ac, "Amount")) || 0;
+      sums[role] += amt;
+      const uu = new Set(byPath(ac, "ChargeIndicator"));
+      ["AllowanceChargeReasonCode", "AllowanceChargeReason", "MultiplierFactorNumeric", "Amount", "BaseAmount", "TaxCategory/ID", "TaxCategory/Percent", "TaxCategory/TaxScheme/ID"].forEach((pth) => { const e = first(ac, pth); if (e) uu.add(e); });
+      const reason = val(ac, "AllowanceChargeReason"), codeEl = first(ac, "AllowanceChargeReasonCode");
+      const bits = [];
+      if (codeEl) bits.push(txt(codeEl) + (AC_REASON[txt(codeEl)] ? " · " + T(AC_REASON[txt(codeEl)]) : ""));
+      if (has(ac, "MultiplierFactorNumeric")) bits.push(val(ac, "MultiplierFactorNumeric") + " %");
+      if (has(ac, "BaseAmount")) bits.push(T("of {amount}", { amount: money(num(val(ac, "BaseAmount")) || 0) }));
+      if (has(ac, "TaxCategory/ID")) bits.push(T("VAT") + " " + val(ac, "TaxCategory/ID") + (has(ac, "TaxCategory/Percent") ? " " + val(ac, "TaxCategory/Percent") + " %" : ""));
+      const x = extras([ac], uu);
+      if (x) more += sub(T(role === "C" ? "Charge {n}" : "Allowance {n}", { n: j + 1 }), x);
+      const amtBt = btFor({ A: "BT-136", C: "BT-141" }, role);
+      return r(btCell('<span class="ac-sign">' + (role === "C" ? "+" : "−") + "</span>" + esc(reason || T(role === "C" ? "Charge {n}" : "Allowance {n}", { n: j + 1 })), esc(amtBt)) +
+        (bits.length ? '<span class="sub-d">' + esc(bits.join(" · ")) + "</span>" : ""), money(amt), "ac-row");
+    }).join("");
+    const charges = entry("C"), allowances = entry("A");
+    const rows = (charges ? charges + r(T("Total charges"), money(sums.C), "subtotal") : "") + (allowances ? allowances + r(T("Total allowances"), money(sums.A), "subtotal") : "");
     // Quantity × net price / base quantity + charges − allowances = line net amount (BT-131).
     const qty = num(val(ln, "InvoicedQuantity") || val(ln, "CreditedQuantity")), price = num(val(ln, "Price/PriceAmount"));
     const baseQty = has(ln, "Price/BaseQuantity") ? num(val(ln, "Price/BaseQuantity")) : 1, net = num(val(ln, "LineExtensionAmount"));
-    if (qty === null || price === null || !baseQty) return html;
-    const gross = Math.round(qty * price / baseQty * 100) / 100, calc = Math.round((gross + sums.C - sums.A) * 100) / 100;
-    const ok = net !== null && Math.abs(calc - net) < 0.02;
-    const r = (label, amount, cls) => '<tr' + (cls ? ' class="' + cls + '"' : "") + '><td class="k">' + label + '</td><td class="r">' + amount + '</td><td class="cur">' + esc(cur) + "</td></tr>";
-    return html + '<div class="sub ac-block"><h3>' + T("Line net amount") + '</h3><table class="tot ac-calc"><tbody>' +
-      r(T(baseQty !== 1 ? "Quantity × net price / base quantity" : "Quantity × net price") + ' <span class="dec">(' + esc(String(qty)) + " × " + money(price) + (baseQty !== 1 ? " / " + baseQty : "") + ")</span>", money(gross)) +
-      r(T("+ Total charges"), money(sums.C)) + r(T("− Total allowances"), money(sums.A)) +
-      r(T("= Calculated"), money(calc), "key") +
-      r(btCell(T("Line net amount in the file"), "BT-131"), net === null ? "—" : money(net) +
-        (ok ? ' <span class="ac-ok">✓</span>' : ' <span class="ac-bad">✗ ' + T("off by {amount}", { amount: money(Math.abs(calc - net)) }) + "</span>"), ok ? "" : "bad") +
-      "</tbody></table></div>";
+    let top = "", bottom = "";
+    if (qty !== null && price !== null && baseQty) {
+      const gross = Math.round(qty * price / baseQty * 100) / 100, calc = Math.round((gross + sums.C - sums.A) * 100) / 100;
+      const ok = net !== null && Math.abs(calc - net) < 0.02;
+      top = r(T(baseQty !== 1 ? "Quantity × net price / base quantity" : "Quantity × net price") + ' <span class="dec">(' + esc(String(qty)) + " × " + money(price) + (baseQty !== 1 ? " / " + baseQty : "") + ")</span>", money(gross));
+      bottom = r(T("= Calculated"), money(calc), "key") +
+        r(btCell(T("Line net amount in the file"), "BT-131"), net === null ? "—" : money(net) +
+          (ok ? ' <span class="ac-ok">✓</span>' : ' <span class="ac-bad">✗ ' + T("off by {amount}", { amount: money(Math.abs(calc - net)) }) + "</span>"), ok ? "" : "bad");
+    }
+    return '<div class="sub ac-block"><h3>' + T("Line net amount") + '</h3><table class="tot ac-calc"><tbody>' + top + rows + bottom + "</tbody></table>" + more + "</div>";
   }
 
   function buildSections() {

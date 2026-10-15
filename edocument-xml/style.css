@@ -367,7 +367,11 @@ table.ac { font-size: 0.86rem; background: var(--paper); }
 table.ac th, table.ac td { padding: 5px 8px; }
 table.ac td:first-child { color: var(--faint); width: 2.5em; }
 table.ac tfoot td { font-weight: 600; border-top: 2px solid var(--line); border-bottom: 0; color: var(--ink); }
-table.ac-calc { max-width: 560px; }
+table.ac-calc { max-width: 640px; }
+table.ac-calc .ac-sign { display: inline-block; width: 1em; color: var(--muted); }
+table.ac-calc .sub-d { display: block; margin: 1px 0 0 1.25em; font-size: 0.76rem; color: var(--muted); }
+table.ac-calc tr.subtotal td { color: var(--muted); font-size: 0.84rem; border-top: 1px solid var(--line); }
+table.ac-calc tr.subtotal td.k { padding-left: 1.25em; }
 table.ac-calc tr.bad td { color: var(--err); font-weight: 600; }
 .ac-ok { color: var(--ok); }
 .ac-bad { color: var(--err); font-size: 0.82rem; }
@@ -788,3 +792,9 @@ table.ac th .thc { flex-wrap: wrap; row-gap: 0; }
   #sec-lines tr.line.has-err.open + tr.line-err + tr.detail > td, #sec-lines tr.line.has-err.open + tr.detail > td { box-shadow: inset 3px 0 0 var(--err); }
   #sec-lines tr.line.open + tr.line-err > td { border-top: 0; }
 }
+
+/* line calculation: the label takes the room, the amount and currency stay on one line */
+table.ac-calc td.k { width: 100%; }
+table.ac-calc td.r, table.ac-calc td.cur { white-space: nowrap; width: 1%; }
+table.ac-calc td.k .thc { flex-wrap: wrap; row-gap: 0; }
+table.ac-calc td.k .thl { flex: 1 1 8em; }

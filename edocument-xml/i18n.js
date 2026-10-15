@@ -224,6 +224,7 @@
     "Prepaid payment {n}": "Pagamento anticipato {n}",
     "Allowance {n}": "Sconto {n}",
     "Charge {n}": "Maggiorazione {n}",
+    "of {amount}": "di {amount}",
     "{title} {n}": "{title} {n}",
     "VAT total in accounting currency": "Totale IVA nella valuta di contabilizzazione",
     "Invoice total VAT amount": "Importo totale IVA della fattura",
