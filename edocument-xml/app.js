@@ -80,10 +80,21 @@
     ["AccountingCost", "Buyer accounting reference", "BT-19"],
     ["ProfileID", "Business process type", "BT-23"],
     ["CustomizationID", "Specification identifier", "BT-24"],
-    ["UBLVersionID", "UBL version"]
+    ["UBLVersionID", "UBL version"],
+    ["ProfileExecutionID", "Transaction type", "BTAE-02", { fmt: (el) => txnType(txt(el)) }]
   ];
+  // PINT AE (UAE): the 8 digits of the transaction type (BTAE-02) are flags, from the left: free trade zone, deemed supply, margin scheme,
+  // summary invoice, continuous supply, disclosed agent billing, supply through e-commerce, exports
+  const TXN_FLAGS = ["Free trade zone", "Deemed supply", "Margin scheme", "Summary invoice", "Continuous supply", "Disclosed agent billing", "Supply through e-commerce", "Exports"];
+  const txnType = (v) => {
+    if (!/^[01]{8}$/.test(v)) return esc(v);
+    const on = TXN_FLAGS.filter((_, i) => v[i] === "1");
+    return '<code class="txn">' + esc(v) + "</code> " + (on.length ? on.map((f) => '<span class="chip">' + esc(T(f)) + "</span>").join(" ") : '<span class="dec">' + esc(T("none of the special supplies")) + "</span>");
+  };
+  const ITEM_TYPES = { G: "Goods", S: "Service", B: "Goods and service" };
+  const isAE = (R) => /urn:peppol:pint:(?:self)?billing-1@ae-1/i.test(val(R, "CustomizationID"));
   const DOC_CLAIMS = ["ID", "IssueDate", "IssueTime", "InvoiceTypeCode", "CreditNoteTypeCode", "DueDate", "TaxPointDate",
-    "DocumentCurrencyCode", "TaxCurrencyCode", "BuyerReference", "AccountingCost", "Note", "ProfileID", "CustomizationID", "UBLVersionID"];
+    "DocumentCurrencyCode", "TaxCurrencyCode", "BuyerReference", "AccountingCost", "Note", "ProfileID", "CustomizationID", "UBLVersionID", "ProfileExecutionID"];
 
   const REF_SPEC = [
     ["ProjectReference/ID", "Project reference", "BT-11"],
@@ -221,6 +232,9 @@
     ["Item/BuyersItemIdentification/ID", "Buyer's item identifier", "BT-156"],
     ["Item/StandardItemIdentification/ID", "Item standard identifier", "BT-157"],
     ["Item/CommodityClassification/ItemClassificationCode", "Item classification", "BT-158"],
+    ["Item/CommodityClassification/CommodityCode", "Item type", "BTAE-13", { fmt: (el) => esc(txt(el)) + (ITEM_TYPES[txt(el)] ? ' <span class="chip">' + esc(T(ITEM_TYPES[txt(el)])) + "</span>" : "") }],
+    ["Item/CommodityClassification/NatureCode", "Type of goods or services", "BTAE-09"],
+    ["Item/AdditionalItemIdentification/ID", "Service accounting code", "BTAE-17"],
     ["Item/OriginCountry/IdentificationCode", "Item country of origin", "BT-159"],
     ["Item/AdditionalItemProperty", "Item attribute", "BT-160 / BT-161", { fmt: itemProperty }]
   ];
@@ -535,7 +549,7 @@
     {
       claim(...REF_CLAIMS);
       const used = new Set();
-      let body = renderFields(R, REF_SPEC, null, used);
+      let body = renderFields(R, isAE(R) ? REF_SPEC.map((f) => (f[0] === "InvoicePeriod/DescriptionCode" ? [f[0], "Frequency of billing", "BTAE-06"] : f)) : REF_SPEC, null, used);
       body += extras(REF_CLAIMS.filter((n) => n !== "BillingReference").flatMap((n) => byPath(R, n)), used, true);
       out.push({ id: "refs", title: "References", html: card("refs", "References", body) });
     }
@@ -1032,7 +1046,8 @@
     const li = (x) => checkLi(x, true);
     const bad = c.filter((x) => !x.ok && !x.warn), warn = c.filter((x) => !x.ok && x.warn), ok = c.filter((x) => x.ok);
     const detected = EN16931.detect(state.root);
-    let h = '<div class="rulesets"><span>' + T("Rule sets") + '</span><label class="on"><input type="checkbox" checked disabled> EN 16931</label>' +
+    const alone = state.ruleSets.some((id) => EN16931.sets[id] && EN16931.sets[id].standalone);
+    let h = '<div class="rulesets"><span>' + T("Rule sets") + '</span><label' + (alone ? ' title="' + esc(T("Not applied: the selected rule set has its own model and rules")) + '"' : ' class="on"') + '><input type="checkbox"' + (alone ? "" : " checked") + " disabled> EN 16931</label>" +
       Object.keys(EN16931.sets).map((id) => '<label' + (state.ruleSets.includes(id) ? ' class="on"' : "") + '><input type="checkbox" data-ruleset="' + id + '"' +
         (state.ruleSets.includes(id) ? " checked" : "") + "> " + esc(T(EN16931.sets[id].name)) + (detected.includes(id) ? " <small>" + T("detected") + "</small>" : "") + "</label>").join("") + "</div>";
     if (bad.length || warn.length) h += '<ul class="checks">' + bad.concat(warn).map(li).join("") + "</ul>";
@@ -1058,8 +1073,8 @@
     el.innerHTML = '<div class="v-main"><span class="v-icon" aria-hidden="true">' + (bad ? "✗" : "✓") + "</span><div><div class=\"v-text\">" +
       (bad ? T("✗ {bad} of {n} rules fail", { bad, n: checks.length }).replace(/^✗\s*/, "") : T("✓ {n} rules pass", { n: checks.length }).replace(/^✓\s*/, "")) + "</div>" +
       (warn ? '<div class="v-sub">' + T(warn > 1 ? "{n} warnings" : "{n} warning", { n: warn }) + "</div>" : "") +
-      '<button type="button" class="v-sets" data-act="checks" title="' + esc(T("Change the rule sets")) + '">' + esc(T("Rule sets")) + ": EN 16931" +
-      state.ruleSets.map((id) => " · " + esc(T(EN16931.sets[id].name))).join("") + "</button></div></div>" +
+      '<button type="button" class="v-sets" data-act="checks" title="' + esc(T("Change the rule sets")) + '">' + esc(T("Rule sets")) + ": " + (state.ruleSets.some((id) => EN16931.sets[id] && EN16931.sets[id].standalone)
+        ? state.ruleSets.map((id) => esc(T(EN16931.sets[id].name))).join(" · ") : "EN 16931" + state.ruleSets.map((id) => " · " + esc(T(EN16931.sets[id].name))).join("")) + "</button></div></div>" +
       '<div class="v-issues" id="vIssues"></div>' +
       (chips ? '<div class="v-chips">' + chips + "</div>" : "") +
       (bad || warn ? '<button type="button" class="v-btn" data-act="checks">' + T("Show all {n} rules", { n: checks.length }) + "</button>" : "");
@@ -1560,7 +1575,10 @@
     const box = e.target.closest && e.target.closest("input[data-ruleset]");
     if (!box) return;
     const id = box.dataset.ruleset;
-    state.ruleSets = box.checked ? state.ruleSets.concat(id) : state.ruleSets.filter((x) => x !== id);
+    // a standalone set (PINT AE) replaces EN 16931 and the others; choosing any of the others switches it off
+    const standalone = (x) => EN16931.sets[x] && EN16931.sets[x].standalone;
+    if (box.checked) state.ruleSets = standalone(id) ? [id] : state.ruleSets.filter((x) => !standalone(x)).concat(id);
+    else state.ruleSets = state.ruleSets.filter((x) => x !== id);
     render();
     goTo($("sec-checks"));
   });

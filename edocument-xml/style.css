@@ -858,3 +858,6 @@ table.ac-calc td.bt-col { width: 1%; white-space: nowrap; text-align: right; pad
   .v-issues .iss-top, .v-issues .iss-fld, .v-issues .iss-msg { flex: none; min-width: 0; }
   .v-issues .iss-msg { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
 }
+
+/* PINT AE transaction type: the 8 flags */
+code.txn { font: 0.85em/1 "JetBrains Mono", ui-monospace, Consolas, monospace; letter-spacing: 0.08em; margin-right: 4px; }
