@@ -186,7 +186,7 @@
       const gross = known ? qtyN * priceN / baseN : null;
       const alreadyInPrice = known && (allowN || chargeN) && near(gross, netN) && !near(gross + chargeN - allowN, netN);
       if (alreadyInPrice) {
-        rows.forEach((r) => reasonFor.set(r, "already in the net price: quantity × net price equals the line net amount, so writing it as a line allowance would count it twice"));
+        rows.forEach((r) => reasonFor.set(r, "already in the net price (quantity × net price = line net amount)"));
         assume("A line allowance or charge is not written to the line when quantity × net price already equals the line net amount (it is already in the net price).");
       }
       rows.forEach((r) => {

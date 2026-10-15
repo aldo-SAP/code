@@ -813,7 +813,7 @@ table.ac-calc td.bt-col { width: 1%; white-space: nowrap; text-align: right; pad
 
 /* JSON request converted to XML */
 #jsonInfo { padding: 4px 2px 10px; }
-#jsonInfo .json-sum { margin: 6px 0 10px; font-weight: 600; }
+#jsonInfo .json-sum { margin: 6px 0 10px; font-weight: 600; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 #jsonInfo h3 { margin: 14px 0 6px; font-size: 0.86rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
 #jsonInfo table { width: 100%; font-size: 0.86rem; }
 #jsonInfo td code { font-size: 0.8rem; overflow-wrap: anywhere; }

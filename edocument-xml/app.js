@@ -1264,25 +1264,22 @@
   function renderJson() {
     const j = state.json;
     $("tab-json").hidden = !j;
-    if (!j) { $("jsonInfo").innerHTML = ""; $("jsonXml").textContent = ""; if (!$("pJson").hidden) showTab("fields"); return; }
+    if (!j) { $("jsonInfo").innerHTML = ""; if (!$("pJson").hidden) showTab("fields"); return; }
     const rows = j.notMapped.map((m) => "<tr><td><code>" + esc(m.path) + "</code></td><td>" + esc(m.value) + "</td><td>" + esc(m.reason || "") + "</td></tr>").join("");
     $("jsonInfo").innerHTML =
-      '<p class="json-sum">' + esc(T("Built from the JSON request")) + (j.total > 1 ? " · " + esc(T("first of {n} invoices", { n: j.total })) : "") + "</p>" +
+      '<p class="json-sum"><span>' + esc(T("Built from the JSON request")) + (j.total > 1 ? " · " + esc(T("first of {n} invoices", { n: j.total })) : "") + '</span><button type="button" id="jsonDownload">' + esc(T("Download XML")) + "</button></p>" +
       "<h3>" + esc(T("Not placed in the XML")) + " · " + j.notMapped.length + "</h3>" +
       (rows ? '<div class="tablewrap"><table class="ac"><thead><tr><th>' + esc(T("JSON field")) + "</th><th>" + esc(T("Value")) + "</th><th>" + esc(T("Why")) + "</th></tr></thead><tbody>" + rows + "</tbody></table></div>"
         : '<p class="none">' + esc(T("Every field with a value was placed.")) + "</p>") +
       "<h3>" + esc(T("Placed by reading the field name")) + " · " + j.assumptions.length + "</h3>" +
       "<ul class=\"json-notes\">" + j.assumptions.map((a) => "<li>" + esc(a) + "</li>").join("") + "</ul>";
-    $("jsonXml").textContent = j.xml;
+    $("jsonDownload").addEventListener("click", () => {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([j.xml], { type: "application/xml" }));
+      a.download = (state.name || "invoice").replace(/\.json$/i, "") + ".xml";
+      a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
   }
-  $("jsonCopy").addEventListener("click", () => { try { navigator.clipboard.writeText($("jsonXml").textContent); } catch (e) {} });
-  $("jsonDownload").addEventListener("click", () => {
-    const j = state.json; if (!j) return;
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([j.xml], { type: "application/xml" }));
-    a.download = (state.name || "invoice").replace(/\.json$/i, "") + ".xml";
-    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-  });
   // The Flux 10 report built from the invoice, shown on its own tab while the E-reporting rule set is on.
   function renderEreport() {
     const on = state.ruleSets.includes("ereport") && window.EReport;
