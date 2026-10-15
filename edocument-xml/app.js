@@ -1040,6 +1040,7 @@
     const code = val(R, kind === "CreditNote" ? "CreditNoteTypeCode" : "InvoiceTypeCode");
     const partyName = (tag) => val(R, tag + "/Party/PartyLegalEntity/RegistrationName") || val(R, tag + "/Party/PartyName/Name");
     const pay = first(R, "LegalMonetaryTotal/PayableAmount");
+    const net = first(R, "LegalMonetaryTotal/TaxExclusiveAmount") || first(R, "LegalMonetaryTotal/LineExtensionAmount"), vat = first(R, "TaxTotal/TaxAmount");
     const issue = val(R, "IssueDate"), due = val(R, "DueDate") || val(R, "PaymentMeans/PaymentDueDate");
     const di = parseDate(issue), dd = parseDate(due);
     const days = di && dd ? Math.round((dd - di) / 86400000) : null;
@@ -1053,6 +1054,8 @@
       '<div class="hero-amount">' +
       (pay ? '<div class="lbl">' + T(kind === "CreditNote" ? "Amount credited" : "Amount due") + '</div><div class="big">' + fmtMoney(txt(pay)) + '<span class="cur">' + esc(pay.getAttribute("currencyID") || "") + "</span></div>" : "") +
       (due ? '<div class="due">' + T("Due") + " <b>" + fmtDate(due) + "</b>" + (days !== null ? " · " + T("{n} days after issue", { n: days }) : "") + "</div>" : "") +
+      (net || vat ? '<div class="sums">' + (net ? '<div><span>' + T("Net amount") + "</span><b>" + fmtMoney(txt(net)) + "</b></div>" : "") +
+        (vat ? '<div><span>' + T("VAT") + "</span><b>" + fmtMoney(txt(vat)) + "</b></div>" : "") + "</div>" : "") +
       "</div>";
 
   }
