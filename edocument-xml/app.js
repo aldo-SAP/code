@@ -728,7 +728,7 @@
         const th = (label, tag, r) => "<th" + (r ? ' class="r"' : "") + ">" + T(label) + xtag(lt + tag) + "</th>";
         body = '<div class="tablewrap"><table><thead><tr>' + th("Line", "cbc:ID") + th("Item", "cac:Item/cbc:Name") +
           th("Quantity", kind === "CreditNote" ? "cbc:CreditedQuantity" : "cbc:InvoicedQuantity", true) + th("Net price", "cac:Price/cbc:PriceAmount", true) +
-          th("VAT", "cac:Item/cac:ClassifiedTaxCategory") + th("Net amount", "cbc:LineExtensionAmount", true) + "</tr></thead><tbody>";
+          th("VAT", "cac:Item/cac:ClassifiedTaxCategory") + th("Net amount", "cbc:LineExtensionAmount", true) + '<th class="go"></th></tr></thead><tbody>';
         lines.forEach((ln, i) => {
           const q = first(ln, "InvoicedQuantity") || first(ln, "CreditedQuantity");
           const unit = q ? q.getAttribute("unitCode") || "" : "";
@@ -749,8 +749,8 @@
             esc(val(ln, "Item/Name") || "—") + (sid ? '<div class="small">' + esc(sid) + "</div>" : "") + '</td><td class="r">' +
             (q ? esc(txt(q)) + (unit ? ' <span class="unit" title="' + esc(UNITS[unit] || unit) + '">' + esc(unit) + "</span>" : "") : "—") +
             '</td><td class="r">' + (price ? fmtAmount(txt(price), "") : "—") + "</td><td><span class=\"vatc\" data-cat=\"" + esc(cat) + "\">" + esc(cat) + (pct ? " " + esc(pct) + " %" : "") + "</span>" +
-            '</td><td class="r">' + (net ? renderValue(net) : "—") + "</td></tr>" + lineErrRow(i, 6) +
-            '<tr class="detail" data-detail="' + i + '" hidden><td colspan="6"><div class="detail-grid">' + detail + "</div></td></tr>";
+            '</td><td class="r">' + (net ? renderValue(net) : "—") + '</td><td class="go" aria-hidden="true"></td></tr>' + lineErrRow(i, 7) +
+            '<tr class="detail" data-detail="' + i + '" hidden><td colspan="7"><div class="detail-grid">' + detail + "</div></td></tr>";
         });
         body += "</tbody></table></div>";
       }
