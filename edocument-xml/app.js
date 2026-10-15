@@ -1079,11 +1079,12 @@
     const days = di && dd ? Math.round((dd - di) / 86400000) : null;
     $("hero").innerHTML =
       '<div class="hero-main"><div class="eyebrow"><span class="badge' + (kind === "CreditNote" ? " cn" : "") + '">' + T(kind === "CreditNote" ? "Credit note" : "Invoice") + "</span>" +
+      (bar ? '<span class="badge bar-in" title="' + esc(T("Transaction category (note #BAR#)")) + '">' + esc(bar) + "</span>" : "") +
       (code ? "<span>" + esc(code) + (DOC_TYPES[code] ? " · " + esc(T(DOC_TYPES[code])) : "") + "</span>" : "") +
       (state.wrapped ? "<span>" + esc(T("inside <{name}>", { name: state.wrapped })) + "</span>" : "") + "</div>" +
       '<div class="docno">' + esc(val(R, "ID") || T("(no number)")) + "</div>" +
-      '<div class="flow"><div class="who from"><small>' + T("From") + "</small><span>" + esc(partyName("AccountingSupplierParty") || T("Unknown seller")) + "</span></div>" +
-      '<span class="arrow" aria-hidden="true">→</span><div class="who to"><small>' + T("To") + "</small><span>" + esc(partyName("AccountingCustomerParty") || T("Unknown buyer")) + "</span></div></div></div>" +
+      '<div class="flow"><div class="who from"><small>' + T("From") + "</small><span title=\"" + esc(partyName("AccountingSupplierParty")) + "\">" + esc(partyName("AccountingSupplierParty") || T("Unknown seller")) + "</span></div>" +
+      '<span class="arrow" aria-hidden="true">→</span><div class="who to"><small>' + T("To") + "</small><span title=\"" + esc(partyName("AccountingCustomerParty")) + "\">" + esc(partyName("AccountingCustomerParty") || T("Unknown buyer")) + "</span></div></div></div>" +
       (bar ? '<div class="hero-bar" title="' + esc(T("Transaction category (note #BAR#)")) + '"><span>' + esc(bar) + "</span></div>" : "") +
       '<div class="hero-amount">' +
       (pay ? '<div class="lbl">' + T(kind === "CreditNote" ? "Amount credited" : "Amount due") + '</div><div class="big">' + fmtMoney(txt(pay)) + '<span class="cur">' + esc(pay.getAttribute("currencyID") || "") + "</span></div>" : "") +
