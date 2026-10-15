@@ -39,7 +39,7 @@
     const parties = [first(R, "ID")].filter(Boolean);
     void parties;
 
-    // identifier of a party: legal registration first, then the other identifiers, as the annex lists them (BT-30, BT-29, BT-31 / BT-47, BT-46, BT-48)
+    // identifier of a party: its electronic address (BT-34 seller, BT-49 buyer) with its scheme
     const company = (party, name, sources) => {
       for (const s of sources) {
         const e = s === "vat" ? vatId(party) : first(party, s);
@@ -65,11 +65,11 @@
       if (d) add(inv, [add(el("ReferencedDocument"), [leaf("ID", first(d, "ID")), leafDate("IssueDate", first(d, "IssueDate"))])]);
     });
     add(inv, [add(el("Seller"), [
-      company(seller, "CompanyId", ["PartyLegalEntity/CompanyID", "PartyIdentification/ID", "vat"]), taxId(seller, "TaxRegistrationId"),
+      company(seller, "CompanyId", ["EndpointID"]), taxId(seller, "TaxRegistrationId"),
       add(el("PostalAddress"), [leaf("CountryId", first(seller, "PostalAddress/Country/IdentificationCode"))])
     ], true)]);
     if (buyer) add(inv, [add(el("Buyer"), [
-      company(buyer, "CompanyId", ["PartyLegalEntity/CompanyID", "PartyIdentification/ID", "vat"]), taxId(buyer, "TaxRegistrationId"),
+      company(buyer, "CompanyId", ["EndpointID"]), taxId(buyer, "TaxRegistrationId"),
       add(el("PostalAddress"), [leaf("CountryId", first(buyer, "PostalAddress/Country/IdentificationCode"))])
     ])]);
     const repVat = rep ? vatId(rep) : null;
