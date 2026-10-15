@@ -1642,24 +1642,28 @@
   const markLang = () => langBtns.forEach((b) => b.setAttribute("aria-pressed", b.dataset.lang === I18N.lang ? "true" : "false"));
   langBtns.forEach((b) => b.addEventListener("click", () => I18N.set(b.dataset.lang)));
   markLang();
-  // Light / dark: follow the device by default; one tap cycles device → light → dark and the choice is remembered.
-  const THEMES = ["system", "light", "dark"];
-  const THEME_LABEL = { system: "Theme: follow the device", light: "Theme: light", dark: "Theme: dark" };
+  // Light / dark: follows the device until the button is used. One tap switches to the other theme; the choice is remembered,
+  // and choosing the device's own theme again goes back to following it.
+  const THEME_LABEL = { light: "Theme: light", dark: "Theme: dark" };
+  const deviceDark = window.matchMedia("(prefers-color-scheme: dark)");
   let themePref = "system";
   try { const t = localStorage.getItem("tools.theme"); if (t === "light" || t === "dark") themePref = t; } catch (err) {}
+  const effectiveTheme = () => (themePref === "system" ? (deviceDark.matches ? "dark" : "light") : themePref);
   function applyTheme() {
     const root = document.documentElement;
     if (themePref === "system") root.removeAttribute("data-theme"); else root.setAttribute("data-theme", themePref);
-    const b = $("themeBtn");
-    b.dataset.pref = themePref;
-    b.setAttribute("aria-label", T(THEME_LABEL[themePref]));
-    b.title = T(THEME_LABEL[themePref]);
+    const b = $("themeBtn"), t = effectiveTheme();
+    b.dataset.pref = t;
+    b.setAttribute("aria-label", T(THEME_LABEL[t]));
+    b.title = T(THEME_LABEL[t]);
   }
   $("themeBtn").addEventListener("click", () => {
-    themePref = THEMES[(THEMES.indexOf(themePref) + 1) % THEMES.length];
+    const next = effectiveTheme() === "dark" ? "light" : "dark";
+    themePref = next === (deviceDark.matches ? "dark" : "light") ? "system" : next;
     try { if (themePref === "system") localStorage.removeItem("tools.theme"); else localStorage.setItem("tools.theme", themePref); } catch (err) {}
     applyTheme();
   });
+  if (deviceDark.addEventListener) deviceDark.addEventListener("change", applyTheme);
   applyTheme();
 
   I18N.onChange(() => {
