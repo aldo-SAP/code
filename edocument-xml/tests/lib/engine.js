@@ -6,14 +6,18 @@ const { chromium } = require("playwright");
 
 const PAGE = "file://" + path.resolve(__dirname, "..", "..", "index.html");
 
-async function open() {
+async function open(workers) {
   const browser = await chromium.launch();
-  const page = await browser.newPage();
   const errors = [];
-  page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto(PAGE);
-  await page.waitForFunction(() => window.EN16931 && window.EN16931.sets);
-  return { browser, page, errors, close: () => browser.close() };
+  const pages = [];
+  for (let i = 0; i < (workers || 1); i++) {
+    const page = await browser.newPage();
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.goto(PAGE);
+    await page.waitForFunction(() => window.EN16931 && window.EN16931.sets);
+    pages.push(page);
+  }
+  return { browser, page: pages[0], pages, errors, close: () => browser.close() };
 }
 
 // Runs the rules on one document. sets: null = the sets the document asks for, or an array of rule-set ids.

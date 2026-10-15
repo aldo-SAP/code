@@ -3,6 +3,8 @@
 #   EN 16931 (CEN TC434) UBL schematron + unit tests ... github.com/ConnectingEurope/eInvoicing-EN16931
 #   PEPPOL BIS Billing 3.0 schematron + unit tests ..... github.com/OpenPEPPOL/peppol-bis-invoice-3
 #   France (FNFE-MPE, XP Z12-012) schematron + examples . github.com/fnfempe/France_RFE
+#   PINT AE (UAE) official release 1.0.4 (schematron, XSLT, code lists, examples), billing and self-billing: the zips Peppol publishes, as
+#     collected in ................................... github.com/phax/phive-rules (only the phive-rules-peppol-pint folder is fetched)
 #   ISO Schematron skeleton (compiles .sch to XSLT) .... github.com/Schematron/schematron
 #   Saxon-HE 12 + xmlresolver (XSLT 3 processor) ....... repo1.maven.org
 # Needs: git, java, curl, unzip.
@@ -14,6 +16,14 @@ clone ConnectingEurope/eInvoicing-EN16931 en16931
 clone OpenPEPPOL/peppol-bis-invoice-3 peppol
 clone fnfempe/France_RFE france
 clone Schematron/schematron schematron
+# PINT AE: sparse, blob-less clone of the one folder that holds the release zips
+if [ ! -d phive-rules/.git ]; then
+  GIT_LFS_SKIP_SMUDGE=1 git clone -q --depth 1 --filter=blob:none --sparse https://github.com/phax/phive-rules.git phive-rules
+  (cd phive-rules && git sparse-checkout set --skip-checks phive-rules-peppol-pint)
+fi
+for v in billing:pint-ae-resources-dev-1.0.4 selfbilling:pint-ae-sb-resources-dev-1.0.4; do
+  d="pint-ae/${v%%:*}"; [ -d "$d" ] || { mkdir -p "$d"; unzip -q -o "phive-rules/phive-rules-peppol-pint/docs/PINT AE/${v##*:}.zip" -d "$d"; }
+done
 [ -f saxon12.jar ] || curl -sSf -o saxon12.jar https://repo1.maven.org/maven2/net/sf/saxon/Saxon-HE/12.4/Saxon-HE-12.4.jar
 [ -f xmlresolver.jar ] || curl -sSf -o xmlresolver.jar https://repo1.maven.org/maven2/org/xmlresolver/xmlresolver/5.2.2/xmlresolver-5.2.2.jar
 # PEPPOL publishes its rules as .sch only: compile them

@@ -8,7 +8,7 @@ cd "$(dirname "$0")"; T="$PWD"; C="$T/.cache"; W="$C/work"
 mkdir -p "$W"; rm -rf "$W"/*
 fail=0
 saxon() { # xslt srcdir outdir
-  mkdir -p "$3"; java -cp "$C/saxon12.jar:$C/xmlresolver.jar" net.sf.saxon.Transform -xsl:"$1" -s:"$2" -o:"$3" 2>&1 | grep -v JAVA_TOOL | head -3 >/dev/null; }
+  mkdir -p "$3"; java -cp "$C/saxon12.jar:$C/xmlresolver.jar" net.sf.saxon.Transform -quit:off -xsl:"$1" -s:"$2" -o:"$3" 2>&1 | grep -v JAVA_TOOL | head -3 >/dev/null; }
 ids() { grep -ho 'name="id">[A-Za-z0-9-]*<' "$@" | sed 's/name="id">//;s/<//' | sort -u; }
 
 EN="$C/en16931/ubl/xslt/EN16931-UBL-validation.xslt"
@@ -17,6 +17,8 @@ FX2="$C/france/FNFE_RFE_INVOICE/UBL/EXTENDED-CTC-FR/2xslt"
 PP="$C/peppol-ubl.xslt"
 ids "$EN" "$PP" > "$W/en-pp.ids"
 ids "$FR"/*.xslt > "$W/en-fr.ids"
+AEC="$C/pint-ae"
+ids "$AEC"/billing/trn-invoice/schematron/*.xslt > "$W/ae.ids"
 ids "$FX2"/*.xslt > "$W/en-fx.ids"
 
 # Differences that are intended or come from the official artefacts, not from mistakes:
@@ -50,6 +52,16 @@ fr_run() { # label docdir extra-ignore log
   run node differential.js --docs="$d.ext" --svrl="$W/$tag-ext-BR-FR-Flux2-Schematron-UBL,$W/$tag-ext-BR-FR-Flux2-Schematron-UBL_WARNING,$W/$tag-ext-EXTENDED-CTC-FR-UBL" --ids="$W/en-fx.ids" --sets=fr --ignore="$IGNORE_FX$ign" ${lg:+--log="$W/$tag-ext.log.json"}
 }
 
+# PINT AE (UAE): the official stylesheets of the PINT layer and of the UAE layer, run on the same documents as the viewer's engine
+# ibr-011-ae and ibr-013-ae have an attribute as context, which the compiled official stylesheets never visit (they are not ignored in the viewer)
+ae_run() { # label docdir billing|selfbilling [mutation log]
+  local d="$2" tag; tag=$(basename "$2")
+  for x in PINT-UBL-validation-preprocessed PINT-jurisdiction-aligned-rules; do saxon "$AEC/$3/trn-invoice/schematron/$x.xslt" "$d" "$W/$tag-$x"; done
+  step "$1 ($(ls "$d" | wc -l) documents)"
+  run node differential.js --docs="$d" --svrl="$W/$tag-PINT-UBL-validation-preprocessed,$W/$tag-PINT-jurisdiction-aligned-rules" --ids="$W/ae.ids" --sets=ae --workers=4 --ignore=ibr-011-ae,ibr-013-ae${5:+,$5} ${4:+--log="$4"}
+  AE_GROUPS="$AE_GROUPS $W/$tag-PINT-UBL-validation-preprocessed,$W/$tag-PINT-jurisdiction-aligned-rules"
+}
+AE_GROUPS=""
 step() { echo; echo "== $1"; }
 run() { "$@" || fail=1; }
 
@@ -81,6 +93,19 @@ node ereport-gen.js "$F" "$W/er-examples" > /dev/null; saxon "$FX" "$W/er-exampl
 step "E-reporting (Flux 10) on $n official example invoices"
 run node ereport-differential.js "$F" "$W/er-examples-sv"
 
+# PINT AE (UAE)
+step "PINT AE rules: the viewer carries every official assert"
+run node check-ae-rules.js "$W/ae.ids"
+for v in billing selfbilling; do
+  AD="$W/ae-examples-$v"; mkdir -p "$AD"; n=0
+  for f in "$AEC/$v"/trn-invoice/example/*.xml "$AEC/$v"/trn-creditnote/example/*.xml; do
+    n=$((n+1)); cp "$f" "$AD/$(printf %03d $n)_$(basename "$f" | tr ' ' '_')"
+  done
+  [ "$v" = billing ] && run node check-ae-viewer.js "$AD"
+  ae_run "PINT AE ($v) on the official example invoices and credit notes" "$AD" "$v" ""
+  mkdir -p "$W/ae-targeted-$v"; python3 -I mutate-ae-targeted.py "$W/ae-targeted-$v" "$AD" --log="$W/ae-targeted-$v.log.json" > /dev/null
+  ae_run "PINT AE ($v) on documents aimed at single rules" "$W/ae-targeted-$v" "$v" "$W/ae-targeted-$v.log.json" "$([ "$v" = selfbilling ] && echo ibr-cl-01)"
+done
 if [ "$1" != "quick" ]; then
   N=${MUTANTS:-600}
   python3 mutate.py "$W/mut-en" "$N" "${SEED:-1}" "$D" > /dev/null
@@ -92,6 +117,19 @@ if [ "$1" != "quick" ]; then
   node ereport-gen.js "$W/mut-fr" "$W/er-mut" > /dev/null; saxon "$FX" "$W/er-mut" "$W/er-mut-sv"
   step "E-reporting (Flux 10) on $N mutated example invoices"
   run node ereport-differential.js "$W/mut-fr" "$W/er-mut-sv"
+  # PINT AE: every element and attribute of the examples changed one at a time (a share of them), and random breaks
+  for v in billing selfbilling; do
+    # a changed CustomizationID turns a self-billing document into a billing one for the viewer (it picks the type codes from it) but not for the
+    # official stylesheet of the variant that was run: only ibr-cl-01 can differ, and the targeted documents cover it
+    CL=""; [ "$v" = selfbilling ] && CL="ibr-cl-01"
+    python3 -I mutate-ae.py "$W/ae-single-$v" "$W/ae-examples-$v" --rate="${AE_RATE:-0.12}" --seed="${SEED:-1}" --log="$W/ae-single-$v.log.json" > /dev/null
+    ae_run "PINT AE ($v) on documents with one change each" "$W/ae-single-$v" "$v" "$W/ae-single-$v.log.json" "$CL"
+    python3 mutate.py "$W/ae-random-$v" "${AE_RANDOM:-400}" "$(( ${SEED:-1} + 2 ))" "$W/ae-examples-$v" > /dev/null
+    ae_run "PINT AE ($v) on randomly broken documents" "$W/ae-random-$v" "$v" "$W/ae-random-$v.log.json" "$CL"
+  done
+  step "PINT AE: how many official asserts the test documents reach"
+  # shellcheck disable=SC2086
+  run python3 -I coverage-ae.py "$W/ae.ids" $AE_GROUPS
 fi
 echo; [ $fail = 0 ] && echo "ALL CONFORMANT" || echo "DIFFERENCES FOUND"
 exit $fail
