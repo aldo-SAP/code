@@ -631,6 +631,12 @@ td > .dl .xtag { display: none; }
 .issue-nav b { font-variant-numeric: tabular-nums; margin-left: 4px; }
 .row, tr.line, .card-errs li { scroll-margin-top: calc(var(--stick, 48px) + var(--navh, 0px) + 24px); }
 .flash { box-shadow: inset 0 0 0 2px var(--hl); background-color: var(--hl-soft); border-radius: 6px; }
+/* a table row can't carry a border of its own, so the highlight is drawn on its cells */
+tr.flash { box-shadow: none; background: none; }
+tr.flash > td { background: var(--hl-soft); box-shadow: inset 0 2px 0 var(--hl), inset 0 -2px 0 var(--hl); }
+tr.flash > td:first-child { box-shadow: inset 2px 0 0 var(--hl), inset 0 2px 0 var(--hl), inset 0 -2px 0 var(--hl); border-radius: 6px 0 0 6px; }
+tr.flash > td:last-child { box-shadow: inset -2px 0 0 var(--hl), inset 0 2px 0 var(--hl), inset 0 -2px 0 var(--hl); border-radius: 0 6px 6px 0; }
+tr.flash > td:only-child { box-shadow: inset 0 0 0 2px var(--hl); border-radius: 6px; }
 /* a flagged field keeps its red edge while it is highlighted */
 .row.flag-bad.flash, td.flag-bad.flash, tr.flag-bad.flash > td:first-child { box-shadow: inset 0 0 0 2px var(--hl), inset 5px 0 0 var(--err); }
 .row.flag-warn.flash { box-shadow: inset 0 0 0 2px var(--hl), inset 5px 0 0 var(--to); }
