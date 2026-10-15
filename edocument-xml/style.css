@@ -747,3 +747,9 @@ tr.flash > td:only-child { box-shadow: inset 0 0 0 2px var(--hl); border-radius:
 .v-issues .iss-msg { order: 1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-size: 0.84rem; color: var(--muted); }
 .tab[hidden] { display: none; }
 #ereportXml { margin: 0; white-space: pre; overflow: auto; font: 0.82rem/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: var(--paper); border-radius: 12px; padding: 14px 16px; }
+
+/* Notes: the value is all there is, so the label column goes; the BT tag stays at the end of the row */
+#sec-notes .row { display: flex; flex-direction: row-reverse; justify-content: space-between; align-items: baseline; gap: 12px; }
+#sec-notes .row > .k { flex: none; }
+#sec-notes .row > .k .kl { display: none; }
+#sec-notes .row > .v { flex: 1 1 0; min-width: 0; }
