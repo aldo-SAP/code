@@ -110,10 +110,10 @@ input[type="file"] { display: none; }
 .hero-amount .big .cur { font-size: 0.95rem; color: var(--muted); font-weight: 500; margin-left: 5px; letter-spacing: 0; }
 .hero-amount .due { color: var(--muted); font-size: 0.86rem; }
 .hero-amount .due b { color: var(--ink); font-weight: 600; }
-.hero-amount .sums { justify-self: stretch; display: flex; gap: 6px 18px; justify-content: space-between; flex-wrap: wrap; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-soft); font-size: 0.88rem; }
-.hero-amount .sums div { display: flex; gap: 8px; align-items: baseline; }
+.hero-amount .sums { justify-self: stretch; display: flex; flex-direction: column; gap: 4px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-soft); font-size: 0.88rem; }
+.hero-amount .sums div { display: flex; gap: 8px; align-items: baseline; justify-content: space-between; }
 .hero-amount .sums span { color: var(--muted); }
-.hero-amount .sums b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.hero-amount .sums b { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
 .pill {
   margin-top: 8px; display: inline-flex; gap: 6px; align-items: center; font-size: 0.82rem; font-weight: 600;
   border: 0; border-radius: 999px; padding: 4px 12px;
