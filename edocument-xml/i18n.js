@@ -233,6 +233,7 @@
     "Not placed in the XML": "Non inseriti nell'XML",
     "JSON field": "Campo JSON",
     "Value": "Valore",
+    "Why": "Motivo",
     "Every field with a value was placed.": "Ogni campo con un valore è stato inserito.",
     "Placed by reading the field name": "Inseriti in base al nome del campo",
     "Not valid JSON.": "JSON non valido.",

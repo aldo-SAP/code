@@ -8,7 +8,7 @@
  *  - Every field that has a value but no place in the XML is listed in `notMapped`, so nothing disappears silently.
  *  - `assumptions` lists the placements that are a reading of the field name rather than something the JSON states.
  *
- * JsonToUbl.convert(parsedJson) → { xml, kind, notMapped: [{ path, value }], assumptions: [string], total, used }
+ * JsonToUbl.convert(parsedJson) → { xml, kind, notMapped: [{ path, value, reason }], assumptions: [string], total, used }
  */
 (function () {
   "use strict";
@@ -52,6 +52,8 @@
       return x === undefined || x === null ? "" : String(x);
     };
     const has = (o, k) => o && o[k] !== undefined && o[k] !== null && String(o[k]) !== "";
+    const num = (x) => { const n = parseFloat(String(x === undefined || x === null ? "" : x).replace(/,/g, "")); return isNaN(n) ? null : n; };
+    const reasonFor = new WeakMap();   // object → why some of its fields are not written
 
     const typeCode = v(inv, "InvoiceType");
     const credit = CREDIT_CODES.has(typeCode);
@@ -155,13 +157,40 @@
       }
     });
 
+    // The price discount (BT-147) is per unit; LineItemDiscount is the discount of the whole line. It is divided by the quantity when that matches
+    // gross price − net price, otherwise it is written as it is.
+    const trimNum = (x) => { let t = (Math.round(x * 1e6) / 1e6).toFixed(6).replace(/0+$/, ""); if (/\.\d$/.test(t)) t += "0"; if (t.endsWith(".")) t += "00"; return t; };
+    const priceDiscount = (L) => {
+      const d = num(L.LineItemDiscount), q = num(L.LineQuantity), g = num(L.LineItemGrossPrice), n = num(L.LineItemNetPrice);
+      if (d !== null && q && g !== null && n !== null && Math.abs((g - n) - d / q) <= 0.01) {
+        assume("LineItemDiscount is the discount of the whole line, so the price discount (BT-147) is written per unit: LineItemDiscount ÷ LineQuantity (it equals gross price − net price).");
+        v(L, "LineItemDiscount");
+        return trimNum(d / q);
+      }
+      return v(L, "LineItemDiscount");
+    };
+
     // ---------- lines ----------
     const lineTag = credit ? "CreditNoteLine" : "InvoiceLine", qtyTag = credit ? "CreditedQuantity" : "InvoicedQuantity";
     const lines = (Array.isArray(inv.InvoiceLineList) ? inv.InvoiceLineList : []).map((L) => {
       const rows = Array.isArray(L.InvoiceLineItemList) ? L.InvoiceLineItemList : [];
       const lineNotes = rows.filter((r) => has(r, "LineNote")).map((r) => B("Note", v(r, "LineNote")));
       const acs = [];
+      // Quantity × net price already gives the line net amount: the line allowance only explains how the net price came about
+      // (the JSON lists it next to LineItemDiscount, which is the same amount), so writing it as a line allowance would count it twice.
+      const qtyN = num(L.LineQuantity), netN = num(L.LineNetAmount), priceN = num(L.LineItemNetPrice), baseN = has(L, "LineItemBaseQuantity") ? num(L.LineItemBaseQuantity) : 1;
+      const sumOf = (ks) => rows.reduce((t, r) => t + ks.reduce((u, k) => u + (num(r[k]) || 0), 0), 0);
+      const allowN = sumOf(["LineAllowanceAmount"]), chargeN = sumOf(["LineChargeAmount"]);
+      const near = (a, b) => Math.abs(a - b) <= 0.02;
+      const known = qtyN !== null && netN !== null && priceN !== null && baseN;
+      const gross = known ? qtyN * priceN / baseN : null;
+      const alreadyInPrice = known && (allowN || chargeN) && near(gross, netN) && !near(gross + chargeN - allowN, netN);
+      if (alreadyInPrice) {
+        rows.forEach((r) => reasonFor.set(r, "already in the net price: quantity × net price equals the line net amount, so writing it as a line allowance would count it twice"));
+        assume("A line allowance or charge is not written to the line when quantity × net price already equals the line net amount (it is already in the net price).");
+      }
       rows.forEach((r) => {
+        if (alreadyInPrice) return;
         if (["LineAllowanceReasonCode", "LineAllowanceReason", "LineAllowancePercentage", "LineAllowanceAmount", "LineAllowanceBaseAmount"].some((k) => has(r, k))) {
           acs.push(C("AllowanceCharge", [B("ChargeIndicator", "false"), B("AllowanceChargeReasonCode", v(r, "LineAllowanceReasonCode")), B("AllowanceChargeReason", v(r, "LineAllowanceReason")),
             B("MultiplierFactorNumeric", v(r, "LineAllowancePercentage")), M("Amount", v(r, "LineAllowanceAmount")), M("BaseAmount", v(r, "LineAllowanceBaseAmount"))]));
@@ -200,7 +229,7 @@
           ...props
         ]),
         C("Price", [M("PriceAmount", v(L, "LineItemNetPrice")), B("BaseQuantity", v(L, "LineItemBaseQuantity"), { unitCode: v(L, "LineItemUoM") }),
-          has(L, "LineItemDiscount") || has(L, "LineItemGrossPrice") ? C("AllowanceCharge", [B("ChargeIndicator", "false"), M("Amount", v(L, "LineItemDiscount")), M("BaseAmount", v(L, "LineItemGrossPrice"))]) : ""])
+          has(L, "LineItemDiscount") || has(L, "LineItemGrossPrice") ? C("AllowanceCharge", [B("ChargeIndicator", "false"), M("Amount", priceDiscount(L)), M("BaseAmount", v(L, "LineItemGrossPrice"))]) : ""])
       ]);
     });
 
@@ -262,7 +291,10 @@
         const x = o[k];
         if (k.startsWith("__")) return;
         if (x && typeof x === "object") walk(x, path ? path + "." + k : k);
-        else if (x !== "" && x !== null && x !== undefined && !seen.has(k)) notMapped.push({ path: path ? path + "." + k : k, value: String(x) });
+        else if (x !== "" && x !== null && x !== undefined && !seen.has(k)) {
+          const why = reasonFor.get(o);
+          notMapped.push({ path: path ? path + "." + k : k, value: String(x), reason: why && /^Line(Allowance|Charge)/.test(k) ? why : "" });
+        }
       });
     };
     walk(inv, "");

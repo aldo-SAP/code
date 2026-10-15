@@ -1259,11 +1259,11 @@
     const j = state.json;
     $("tab-json").hidden = !j;
     if (!j) { $("jsonInfo").innerHTML = ""; $("jsonXml").textContent = ""; if (!$("pJson").hidden) showTab("fields"); return; }
-    const rows = j.notMapped.map((m) => "<tr><td><code>" + esc(m.path) + "</code></td><td>" + esc(m.value) + "</td></tr>").join("");
+    const rows = j.notMapped.map((m) => "<tr><td><code>" + esc(m.path) + "</code></td><td>" + esc(m.value) + "</td><td>" + esc(m.reason || "") + "</td></tr>").join("");
     $("jsonInfo").innerHTML =
       '<p class="json-sum">' + esc(T("Built from the JSON request")) + (j.total > 1 ? " · " + esc(T("first of {n} invoices", { n: j.total })) : "") + "</p>" +
       "<h3>" + esc(T("Not placed in the XML")) + " · " + j.notMapped.length + "</h3>" +
-      (rows ? '<div class="tablewrap"><table class="ac"><thead><tr><th>' + esc(T("JSON field")) + "</th><th>" + esc(T("Value")) + "</th></tr></thead><tbody>" + rows + "</tbody></table></div>"
+      (rows ? '<div class="tablewrap"><table class="ac"><thead><tr><th>' + esc(T("JSON field")) + "</th><th>" + esc(T("Value")) + "</th><th>" + esc(T("Why")) + "</th></tr></thead><tbody>" + rows + "</tbody></table></div>"
         : '<p class="none">' + esc(T("Every field with a value was placed.")) + "</p>") +
       "<h3>" + esc(T("Placed by reading the field name")) + " · " + j.assumptions.length + "</h3>" +
       "<ul class=\"json-notes\">" + j.assumptions.map((a) => "<li>" + esc(a) + "</li>").join("") + "</ul>";
