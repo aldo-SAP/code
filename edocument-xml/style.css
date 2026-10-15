@@ -348,10 +348,11 @@ tr.line { cursor: pointer; }
 tr.line:hover td { background: var(--bg); }
 tr.line td:first-child { white-space: nowrap; vertical-align: top; font-size: 0.9rem; }
 /* the open/close mark is a small chevron in a narrow last column */
-.go { width: 1.4em; padding-left: 0 !important; padding-right: 4px !important; text-align: right; }
+.go { overflow: hidden; width: 1.4em; padding-left: 0 !important; padding-right: 4px !important; text-align: right; }
 td.go::before { content: "›"; display: inline-block; color: var(--faint); font-size: 1.3em; line-height: 1; transition: transform 0.12s; }
 tr.line.open td.go::before { transform: rotate(90deg); }
-tr.detail > td { background: var(--bg); padding: 4px 14px 10px; }
+tr.detail > td { background: var(--bg); padding: 4px 14px 10px; max-width: 0; }
+.detail-grid { min-width: 0; }
 .detail-grid { display: grid; gap: 0 28px; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); }
 /* Line allowances/charges: an inner block across the full width, its own fields laid out in the same columns */
 .detail-grid > .sub {
@@ -773,3 +774,6 @@ tr.flash > td:only-child { box-shadow: inset 0 0 0 2px var(--hl); border-radius:
   #sec-lines table.tc > tbody > tr.line > td:nth-child(2) { padding-right: 1.4rem; }
   #sec-lines table.tc > thead th.go { display: none; }
 }
+
+/* a column header's BT tag drops under its name when the table is tight, so a small table does not need to scroll */
+table.ac th .thc { flex-wrap: wrap; row-gap: 0; }
