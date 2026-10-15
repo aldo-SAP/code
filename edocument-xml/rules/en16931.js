@@ -154,6 +154,9 @@
       const off = ok || exp === null || actual === null ? "" : " (off by " + fmt(Math.abs(round(exp) - round(actual))) + ")";
       rule(id, at, ok, text, (calc ? calc + " = " : "") + (exp === null ? "?" : fmt(exp)) + (ok ? " = " : " ≠ ") + bt + " " + (actual === null ? "missing" : fmt(actual)) + off);
     };
+    // A standalone rule set (PINT AE) replaces EN 16931: it runs alone, with its own model and rules.
+    const alone = (extraSets || []).find((id) => SETS[id] && SETS[id].standalone);
+    if (alone) { setLabel = SETS[alone].label; SETS[alone].run({ R, cn, rule }); return out; }
     // Number for a calculation; "?" when missing.
     const n = (x) => (x === null || x === undefined ? "?" : fmt(x));
     // "line 1 100.00 + line 2 50.00 …" for the items being added up; long lists end with the rest summed.
