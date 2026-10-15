@@ -717,7 +717,8 @@
           const nBad = lineChecks.filter((c) => !c.warn).length;
           const flag = lineChecks.length ? '<span class="lerr' + (nBad ? "" : " warn") + '" title="' + esc(lineChecks.map((c) => c.id).join(", ")) + '">' +
             (nBad ? T(nBad > 1 ? "✗ {n} errors" : "✗ {n} error", { n: nBad }) : "! " + lineChecks.length) + "</span>" : "";
-          body += '<tr class="line frow' + (nBad ? " has-err" : "") + '" data-line="' + i + '" tabindex="0" aria-expanded="false"><td>' + esc(val(ln, "ID") || i + 1) + flag + "</td><td>" +
+          const lineNo = String(val(ln, "ID") || i + 1);
+          body += '<tr class="line frow' + (nBad ? " has-err" : "") + '" data-line="' + i + '" style="--idw:' + Math.min(lineNo.length, 12) + 'ch" tabindex="0" aria-expanded="false"><td>' + esc(lineNo) + flag + "</td><td>" +
             esc(val(ln, "Item/Name") || "—") + (sid ? '<div class="small">' + esc(sid) + "</div>" : "") + '</td><td class="r">' +
             (q ? esc(txt(q)) + (unit ? ' <span class="unit" title="' + esc(UNITS[unit] || unit) + '">' + esc(unit) + "</span>" : "") : "—") +
             '</td><td class="r">' + (price ? fmtAmount(txt(price), "") : "—") + "</td><td><span class=\"vatc\" data-cat=\"" + esc(cat) + "\">" + esc(cat) + (pct ? " " + esc(pct) + " %" : "") + "</span>" +
