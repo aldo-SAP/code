@@ -61,8 +61,8 @@
           <button type="button" class="display-btn" id="displayBtn" aria-expanded="false" aria-controls="displayMenu"><span data-i18n>Display</span><span class="fcount" id="displayCount" hidden>0</span></button>
           <div class="display-menu" id="displayMenu">
             <label><input type="checkbox" id="showEmpty"> <span data-i18n>Show empty fields</span></label>
-            <label title="Show every BT number and the XML path of each field"><input type="checkbox" id="showTags"> <span data-i18n>Technical view</span></label>
-            <label title="Dates and amounts exactly as written in the XML, for comparing with SAP"><input type="checkbox" id="showRaw"> <span data-i18n>Exact values</span></label>
+            <label title="Show every BT number and the XML path of each field"><input type="checkbox" id="showTags"> <span data-i18n>Show BT numbers and XML paths</span></label>
+            <label title="Dates and amounts exactly as written in the XML, for comparing with SAP"><input type="checkbox" id="showRaw"> <span data-i18n>Raw values (as in XML)</span></label>
             <label title="Fold the blocks that have no problem to one line; the arrow on a block folds it by hand"><input type="checkbox" id="showFold"> <span data-i18n>Fold passing blocks</span></label>
           </div>
         </div>
@@ -70,8 +70,15 @@
     </div>
     <div class="issue-nav" id="issueNav" hidden>
       <button type="button" id="issuePrev" aria-label="Previous issue" data-i18n-aria="Previous issue">&uarr;</button>
-      <button type="button" id="issueNext" class="issue-next"><span data-i18n>Next issue</span> <b id="issueN">1/1</b></button>
+      <button type="button" id="issueNext" class="issue-next"><span data-i18n>Next issue</span> <b id="issueN"></b></button>
     </div>
+    <aside class="issue-panel" id="issuePanel" aria-label="Issues" data-i18n-aria="Issues" hidden>
+      <div class="ip-head"><h2><span data-i18n>Issues</span></h2><span class="ip-count" id="ipCount"></span>
+        <button type="button" id="ipClose" class="ip-x" aria-label="Hide issues" data-i18n-aria="Hide issues" title="Hide issues">&times;</button></div>
+      <div class="ip-list" id="ipList"></div>
+      <button type="button" class="ip-rules" id="ipRules" data-i18n>Show all rules</button>
+    </aside>
+    <button type="button" class="ip-open" id="ipOpen" hidden><span data-i18n>Issues</span> <b id="ipOpenCount"></b></button>
     <div class="tabpanel" id="pFields" role="tabpanel" aria-labelledby="tab-fields">
       <div id="content"></div>
     </div>

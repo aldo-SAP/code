@@ -1028,10 +1028,11 @@
     el.innerHTML = '<div class="v-main"><span class="v-icon" aria-hidden="true">' + (bad ? "✗" : "✓") + "</span><div><div class=\"v-text\">" +
       (bad ? T("✗ {bad} of {n} rules fail", { bad, n: checks.length }).replace(/^✗\s*/, "") : T("✓ {n} rules pass", { n: checks.length }).replace(/^✓\s*/, "")) + "</div>" +
       (warn ? '<div class="v-sub">' + T(warn > 1 ? "{n} warnings" : "{n} warning", { n: warn }) + "</div>" : "") +
-      '<button type="button" class="v-sets" data-act="checks" title="' + esc(T("Change the rule sets")) + '">' + esc(T("Checked against")) + " EN 16931" +
+      '<button type="button" class="v-sets" data-act="checks" title="' + esc(T("Change the rule sets")) + '">' + esc(T("Rule sets")) + ": EN 16931" +
       state.ruleSets.map((id) => " · " + esc(T(EN16931.sets[id].name))).join("") + "</button></div></div>" +
+      '<div class="v-issues" id="vIssues"></div>' +
       (chips ? '<div class="v-chips">' + chips + "</div>" : "") +
-      (bad || warn ? '<button type="button" class="v-btn" data-act="checks">' + T("Show the rules") + "</button>" : "");
+      (bad || warn ? '<button type="button" class="v-btn" data-act="checks">' + T("Show all {n} rules", { n: checks.length }) + "</button>" : "");
   }
 
   // Phone summary: the figures to match against SAP in one compact card (the wide hero and fact tiles are hidden there).
@@ -1229,7 +1230,7 @@
     $("pRaw").hidden = name !== "raw";
     $("fieldTools").hidden = name !== "fields";
     $("filtersBtn").hidden = name !== "fields";
-    $("issueNav").hidden = name !== "fields" || !issueList.length;
+    syncIssueChrome();
     if (name === "fields") measureStick();
   }
   document.querySelectorAll(".tab").forEach((t) => t.addEventListener("click", () => showTab(t.dataset.tab)));
@@ -1267,10 +1268,23 @@
   });
 
   // Next / previous issue: walks through every failing field, line or block, errors first, each in page order.
+  // The same list feeds the first lines of the verdict, the issues panel on wide screens and the Next issue button.
   let issueList = [], issueIdx = -1;
+  const blockTitle = (el) => {
+    const c = el.closest && el.closest(".card"), id = c ? c.id.replace(/^sec-/, "") : "";
+    return id ? T((state.sectionTitles && state.sectionTitles.get(id)) || humanize(id)) : "";
+  };
+  function issueLabel(el) {
+    if (el.matches(".row, .frow")) {
+      const l = el.querySelector(".kl, .thl, td:first-child"), b = el.querySelector(".bt");
+      return { label: l ? l.textContent.trim() : "", bt: b ? b.textContent.trim() : "" };
+    }
+    if (el.matches("tr.line")) { const c = el.querySelector("td"); return { label: T("Line") + " " + (c ? c.textContent.trim().split(/\s+/)[0] : ""), bt: "" }; }
+    return { label: blockTitle(el), bt: "" };
+  }
   function updateIssues() {
     const fails = state.checks.filter((c) => !c.ok);
-    const content = $("content"), seen = new Set(), items = [];
+    const content = $("content"), byEl = new Map(), items = [];
     const pos = (x, y) => (x.compareDocumentPosition(y) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1);
     [false, true].forEach((warn) => {
       const els = [];
@@ -1278,23 +1292,80 @@
         let t = Array.from(content.querySelectorAll('[data-rules~="' + c.id + '"]'));
         if (!t.length && c.lines && c.lines.length) t = c.lines.map((i) => content.querySelector('tr.line[data-line="' + i + '"]')).filter(Boolean);
         if (!t.length && c.sec) t = [$("sec-" + c.sec)].filter(Boolean);
-        t.forEach((el) => { if (!seen.has(el)) { seen.add(el); els.push(el); } });
+        t.forEach((el) => {
+          if (!byEl.has(el)) { byEl.set(el, { el, warn, checks: [] }); els.push(el); }
+          byEl.get(el).checks.push(c);
+        });
       });
-      els.sort(pos).forEach((el) => items.push({ el, warn }));
+      els.sort(pos).forEach((el) => {
+        const it = byEl.get(el), l = issueLabel(el);
+        items.push(Object.assign(it, l, { block: blockTitle(el), msg: I18N.tr(it.checks[0].text), ids: it.checks.map((c) => c.id).filter((x, i, s) => s.indexOf(x) === i) }));
+      });
     });
     issueList = items; issueIdx = -1;
-    $("issueNav").hidden = !items.length || $("pFields").hidden;
-    $("issueN").textContent = "–/" + items.length;
+    $("issueN").textContent = "";
+    renderIssueUI();
+    syncIssueChrome();
   }
-  function stepIssue(d) {
-    if (!issueList.length) return;
-    issueIdx = (issueIdx + d + issueList.length) % issueList.length;
-    const it = issueList[issueIdx];
+  const issueBtn = (it, i, compact) => '<button type="button" class="iss ' + (it.warn ? "warn" : "bad") + '" data-issue="' + i + '"><span class="iss-top"><code>' + esc(it.ids.join(" ")) +
+    "</code>" + (compact ? "" : '<span class="iss-blk">' + esc(it.block) + "</span>") + '</span><span class="iss-msg">' + esc(it.msg) + '</span><span class="iss-fld">' +
+    esc(it.label) + (it.bt ? " · " + esc(it.bt) : "") + "</span></button>";
+  function renderIssueUI() {
+    const bad = issueList.filter((x) => !x.warn).length, warn = issueList.length - bad;
+    const count = bad ? T("{n} errors", { n: bad }) : "";
+    const countLine = [bad ? (bad > 1 ? T("{n} errors", { n: bad }) : T("{n} error", { n: bad })) : "", warn ? (warn > 1 ? T("{n} warnings", { n: warn }) : T("{n} warning", { n: warn })) : ""].filter(Boolean).join(" · ");
+    $("ipCount").textContent = countLine;
+    $("ipOpenCount").textContent = String(issueList.length);
+    $("ipList").innerHTML = issueList.map((it, i) => issueBtn(it, i, false)).join("");
+    const v = $("vIssues");
+    if (v) v.innerHTML = issueList.slice(0, 3).map((it, i) => issueBtn(it, i, true)).join("") +
+      (issueList.length > 3 ? '<button type="button" class="iss-more" data-act="checks">' + T("+{n} more", { n: issueList.length - 3 }) + "</button>" : "");
+    void count;
+  }
+  // Panel on wide screens (closable, remembered), Next issue button elsewhere once the verdict has scrolled out of view.
+  const widePanel = window.matchMedia("(min-width: 1500px)");
+  let panelPref = true;
+  try { panelPref = localStorage.getItem("edocxml.issuePanel") !== "0"; } catch (e) {}
+  function syncIssueChrome() {
+    const has = issueList.length > 0 && !$("pFields").hidden, open = widePanel.matches && has && panelPref;
+    $("issuePanel").hidden = !open;
+    $("ipOpen").hidden = !(widePanel.matches && has && !panelPref);
+    document.body.classList.toggle("panel-open", open);
+    const vb = $("verdict").getBoundingClientRect().bottom;
+    $("issueNav").hidden = !has || open || (vb > 0 && issueIdx < 0);
+    $("ipList").querySelectorAll(".iss").forEach((b) => b.classList.toggle("on", +b.dataset.issue === issueIdx));
+  }
+  let syncQueued = false;
+  const queueSync = () => { if (!syncQueued) { syncQueued = true; requestAnimationFrame(() => { syncQueued = false; syncIssueChrome(); }); } };
+  window.addEventListener("scroll", queueSync, { passive: true });
+  window.addEventListener("resize", queueSync);
+  widePanel.addEventListener("change", syncIssueChrome);
+  const setPanel = (on) => { panelPref = on; try { localStorage.setItem("edocxml.issuePanel", on ? "1" : "0"); } catch (e) {} syncIssueChrome(); };
+  $("ipClose").addEventListener("click", () => setPanel(false));
+  $("ipOpen").addEventListener("click", () => setPanel(true));
+  $("ipRules").addEventListener("click", () => { const c = $("sec-checks"); if (c) { openCard(c); flash(c); } });
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest && e.target.closest("[data-issue]");
+    if (b) goIssue(+b.dataset.issue);
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.target.closest && e.target.closest("input, textarea, select, [contenteditable]") || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.key === "j" || e.key === "k") stepIssue(e.key === "j" ? 1 : -1);
+  });
+  function goIssue(i) {
+    if (!issueList[i]) return;
+    issueIdx = i;
+    const it = issueList[i];
     openCard(it.el);
     it.el.scrollIntoView({ behavior: "smooth", block: "center" });
     it.el.classList.add("flash");
     setTimeout(() => it.el.classList.remove("flash"), 1600);
-    $("issueN").textContent = (issueIdx + 1) + "/" + issueList.length;
+    $("issueN").textContent = (i + 1) + "/" + issueList.length;
+    syncIssueChrome();
+  }
+  function stepIssue(d) {
+    if (!issueList.length) return;
+    goIssue((issueIdx + d + issueList.length) % issueList.length);
   }
   $("issueNext").addEventListener("click", () => stepIssue(1));
   $("issuePrev").addEventListener("click", () => stepIssue(-1));
@@ -1507,7 +1578,7 @@
     drop.classList.remove("loaded");
     $("clearBtn").hidden = true;
     $("sampleBtn").hidden = false;
-    setMsg(() => T("Drop a UBL invoice or credit note XML here, or paste it anywhere with Ctrl+V."));
+    setMsg(() => T(window.matchMedia("(hover: none)").matches ? "Open an XML file or paste it. Nothing leaves your browser." : "Drop a UBL invoice or credit note XML here, or paste it anywhere with Ctrl+V."));
   }
 
   // A small invoice that follows the EN 16931 rules, so a first visit shows a green verdict.
@@ -1594,7 +1665,7 @@
     window.scrollTo(0, y);
   });
   I18N.applyStatic();
-  setMsg(() => T("Drop a UBL invoice or credit note XML here, or paste it anywhere with Ctrl+V."));
+  setMsg(() => T(window.matchMedia("(hover: none)").matches ? "Open an XML file or paste it. Nothing leaves your browser." : "Drop a UBL invoice or credit note XML here, or paste it anywhere with Ctrl+V."));
   $("content").classList.toggle("show-tags", state.showTags);
   $("showTags").checked = state.showTags;
   $("showRaw").checked = state.raw;
