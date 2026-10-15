@@ -34,7 +34,6 @@
       <button class="primary" id="pickBtn" type="button" data-i18n>Choose file</button>
       <button id="pasteBtn" type="button" aria-expanded="false" aria-controls="pasteArea" data-i18n>Paste text</button>
       <button id="sampleBtn" type="button" data-i18n>Try a sample invoice</button>
-      <button id="aeSampleBtn" type="button" data-i18n>Try a UAE sample</button>
       <button id="clearBtn" type="button" hidden data-i18n>Clear</button>
     </div>
     <input type="file" id="file" accept=".xml,.json,text/xml,application/xml,application/json">
@@ -124,14 +123,21 @@
 <script src="rules/ubl-structure.js"></script>
 <script src="rules/en16931.js"></script>
 <script src="rules/peppol.js"></script>
-<script src="rules/fr.js"></script>
-<script src="rules/ereport.js"></script>
-<script src="rules/vendor/fontoxpath.js"></script>
-<script src="rules/pint-ae-rules.js"></script>
-<script src="rules/ae.js"></script>
-<script src="rules/ae-it.js"></script>
-<script src="rules/ae-sample.js"></script>
-<script src="json-to-ubl.js"></script>
+<script src="countries/fr/rules.js"></script>
+<script src="countries/fr/ereport.js"></script>
+<script src="countries/ae/vendor/fontoxpath.js"></script>
+<script src="countries/ae/pint-ae-rules.js"></script>
+<script src="countries/ae/rules.js"></script>
+<script src="countries/ae/it-messages.js"></script>
+<script src="countries/ae/it.js"></script>
+<script src="countries/ae/sample.js"></script>
+<script src="lib/codes.js"></script>
+<script src="lib/specs.js"></script>
+<script src="lib/profiles.js"></script>
+<script src="lib/attachments.js"></script>
+<script src="lib/sample.js"></script>
+<script src="countries/ae/profile.js"></script>
+<script src="lib/json-to-ubl.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

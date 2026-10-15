@@ -1,14 +1,14 @@
 /*
  * PINT AE (UAE) rules: the official Peppol PINT AE schematron, version 1.0.4 (billing and self-billing, invoice and credit note).
  *
- * All 302 asserts (170 of the PINT layer, 132 of the UAE layer) are in pint-ae-rules.js exactly as published; this file only runs them.
- * They are XPath 2 expressions, evaluated on the document with fontoxpath (rules/vendor), the way the official validator does:
+ * All 302 asserts (170 of the PINT layer, 132 of the UAE layer) are in pint-ae-rules.js (same folder) exactly as published; this file only runs them.
+ * They are XPath 2 expressions, evaluated on the document with fontoxpath (vendor/), the way the official validator does:
  * for every node matching a rule's context, the first matching rule of a pattern checks its asserts.
  *
  * PINT AE is not EN 16931: it has its own semantic model, code lists and rules. With this rule set on, the EN 16931 and PEPPOL rules
  * are not applied (EN16931.check runs a "standalone" set alone).
  *
- * Needs, loaded before: en16931.js, vendor/fontoxpath.js, pint-ae-rules.js.
+ * Needs, loaded before: rules/en16931.js, vendor/fontoxpath.js, pint-ae-rules.js.
  */
 (function () {
   "use strict";
@@ -186,8 +186,8 @@
     name: "PINT AE (UAE)",
     standalone: true,
     // the UAE profile identifiers of billing and self-billing
-    detect: (R) => /urn:peppol:pint:(?:self)?billing-1@ae-1/i.test(val(R, "CustomizationID")),
+    detect: (R) => window.PintAE.detect(R),
     run
   });
-  window.PintAE = { ids: Array.from(new Set(ids)), version: DATA.version };
+  window.PintAE = { ids: Array.from(new Set(ids)), version: DATA.version, detect: (R) => /urn:peppol:pint:(?:self)?billing-1@ae-1/i.test(val(R, "CustomizationID")) };
 })();

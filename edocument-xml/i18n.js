@@ -25,7 +25,6 @@
     "Choose file": "Scegli file",
     "Paste text": "Incolla testo",
     "Clear": "Svuota",
-    "Try a UAE sample": "Prova un esempio UAE",
     "XML input": "XML in ingresso",
     "Paste the XML here; it is read as soon as it's complete.": "Incolla qui l'XML; viene letto appena è completo.",
     "Overview": "Panoramica",
@@ -235,23 +234,6 @@
     "JSON field": "Campo JSON",
     "Value": "Valore",
     "Why": "Motivo",
-    "Item type": "Tipo di articolo",
-    "Goods": "Beni",
-    "Service": "Servizio",
-    "Goods and service": "Beni e servizio",
-    "Type of goods or services": "Tipo di beni o servizi",
-    "Service accounting code": "Codice contabile del servizio",
-    "Transaction type": "Tipo di transazione",
-    "Free trade zone": "Zona franca",
-    "Deemed supply": "Cessione presunta",
-    "Margin scheme": "Regime del margine",
-    "Summary invoice": "Fattura riepilogativa",
-    "Continuous supply": "Fornitura continuativa",
-    "Disclosed agent billing": "Fatturazione per conto (agente dichiarato)",
-    "Supply through e-commerce": "Fornitura tramite e-commerce",
-    "Exports": "Esportazioni",
-    "none of the special supplies": "nessuna fornitura speciale",
-    "Frequency of billing": "Frequenza di fatturazione",
     "Not applied: the selected rule set has its own model and rules": "Non applicato: il set di regole scelto ha un proprio modello e proprie regole",
     "Every field with a value was placed.": "Ogni campo con un valore è stato inserito.",
     "Placed by reading the field name": "Inseriti in base al nome del campo",
@@ -805,6 +787,16 @@
 
   // ---------- Italian: patterns for messages built from data ----------
   // {name} captures any text; the captured parts are translated again (category names, line names …).
+  // A pattern "text with {name}" and its Italian becomes { re, names, it }
+  const compile = ([en, it]) => {
+    const names = [];
+    const re = new RegExp("^" + en.split(/(\{\w+\})/).map((part) => {
+      const m = /^\{(\w+)\}$/.exec(part);
+      if (m) { names.push(m[1]); return "(.+?)"; }
+      return part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }).join("") + "$");
+    return { re, names, it };
+  };
   const IT_PATTERNS = [
     ["{a}: VAT amount must be 0 at a 0 % rate", "{a}: l'importo IVA deve essere 0 con aliquota 0 %"],
     ["{a}: VAT amount must equal taxable amount × rate", "{a}: l'importo IVA deve essere uguale a imponibile × aliquota"],
@@ -835,15 +827,7 @@
     ["All amounts must be in the document currency ({a})", "Tutti gli importi devono essere nella valuta del documento ({a})"],
     ["Note #{a}# must state the {b}", "La nota #{a}# deve indicare {b}"],
     ["{a} ({b})", "{a} ({b})"]
-  ].map(([en, it]) => {
-    const names = [];
-    const re = new RegExp("^" + en.split(/(\{\w+\})/).map((part) => {
-      const m = /^\{(\w+)\}$/.exec(part);
-      if (m) { names.push(m[1]); return "(.+?)"; }
-      return part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    }).join("") + "$");
-    return { re, names, it };
-  });
+  ].map(compile);
 
   // Words and short phrases inside details and item names ("Fails on line 2", "lines (line 1 100.00) …").
   // Longer phrases are listed first so they win over the words they contain.
@@ -878,15 +862,7 @@
     ["A UBL invoice should not include {_a}", "Una fattura UBL non dovrebbe includere {_a}"],
     ["A UBL invoice shall not include the {_a}", "Una fattura UBL non deve includere {_a}"],
     ["A UBL credit note should not include the {_a}", "Una nota di credito UBL non dovrebbe includere {_a}"]
-  ].map(([en, it]) => {
-    const names = [];
-    const re = new RegExp("^" + en.split(/(\{\w+\})/).map((part) => {
-      const m = /^\{(\w+)\}$/.exec(part);
-      if (m) { names.push(m[1]); return "(.+?)"; }
-      return part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    }).join("") + "$");
-    return { re, names, it };
-  }));
+  ].map(compile));
   const SR_ONCE = {
     "Contract identifier": "L'identificativo del contratto", "Receive advice identifier": "L'identificativo dell'avviso di ricevimento",
     "Despatch advice identifier": "L'identificativo dell'avviso di spedizione", "Invoice object identifier": "L'identificativo dell'oggetto fatturato",
@@ -968,20 +944,6 @@
     "Identifier schemes (BT-29, BT-46, BT-60, BT-71) must be ISO 6523 ICD codes (SEPA for the seller or payee)": "Gli schemi degli identificativi (BT-29, BT-46, BT-60, BT-71) devono essere codici ISO 6523 ICD (SEPA per venditore o beneficiario)"
   });
 
-  // Details the PINT AE engine builds
-  IT_PATTERNS.push(...[
-    ["{_n} places", "{_n} punti"],
-    ["could not be evaluated: {_e}", "non valutabile: {_e}"]
-  ].map(([en, it]) => {
-    const names = [];
-    const re = new RegExp("^" + en.split(/(\{\w+\})/).map((part) => {
-      const m = /^\{(\w+)\}$/.exec(part);
-      if (m) { names.push(m[1]); return "(.+?)"; }
-      return part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    }).join("") + "$");
-    return { re, names, it };
-  }));
-
   const DICTS = { it: { exact: IT, patterns: IT_PATTERNS, words: IT_WORDS } };
 
   const fill = (s, vars) => (vars ? String(s).replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m)) : String(s));
@@ -1036,7 +998,8 @@
       listeners.forEach((f) => f(l));
     },
     onChange: (f) => listeners.push(f),
-    addItalian: (map) => Object.assign(IT, map),   // exact texts from other files (the PINT AE messages)
+    // Italian texts from a country's own file: exact texts, and patterns [["English with {x}", "Italiano con {x}"], …]
+    addItalian: (map, patterns) => { Object.assign(IT, map); (patterns || []).forEach((p) => IT_PATTERNS.push(compile(p))); },
     T, tr, applyStatic
   };
   window.T = T;

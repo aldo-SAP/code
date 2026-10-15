@@ -2,61 +2,8 @@
   "use strict";
   const $ = (id) => document.getElementById(id);
 
-  // ---------- Code lists ----------
-  const DOC_TYPES = {
-    "71": "Request for payment", "80": "Debit note related to goods or services", "82": "Metered services invoice",
-    "84": "Debit note related to financial adjustments", "261": "Self-billed credit note", "262": "Consolidated credit note",
-    "296": "Credit note for price variation", "308": "Delcredere credit note", "325": "Proforma invoice", "326": "Partial invoice",
-    "380": "Commercial invoice", "381": "Credit note", "383": "Debit note", "384": "Corrected invoice", "385": "Consolidated invoice",
-    "386": "Prepayment invoice", "387": "Hire invoice", "388": "Tax invoice", "389": "Self-billed invoice", "390": "Delcredere invoice",
-    "393": "Factored invoice", "394": "Lease invoice", "395": "Consignment invoice", "396": "Factored credit note",
-    "527": "Self-billed debit note", "532": "Forwarder's credit note", "575": "Insurer's invoice", "623": "Forwarder's invoice",
-    "633": "Port charges document", "751": "Invoice information for accounting purposes", "780": "Freight invoice",
-    "870": "Consular invoice", "875": "Partial construction invoice", "876": "Partial final construction invoice",
-    "877": "Final construction invoice", "935": "Customs invoice"
-  };
-  const PAY_MEANS = {
-    "1": "Instrument not defined", "10": "In cash", "20": "Cheque", "30": "Credit transfer", "31": "Debit transfer",
-    "42": "Payment to bank account", "48": "Bank card", "49": "Direct debit", "54": "Credit card", "55": "Debit card",
-    "57": "Standing agreement", "58": "SEPA credit transfer", "59": "SEPA direct debit", "68": "Online payment service",
-    "97": "Clearing between partners", "ZZZ": "Mutually defined"
-  };
-  const VAT_CAT = {
-    S: "Standard rate", Z: "Zero rated", E: "Exempt from tax", AE: "VAT reverse charge",
-    K: "Intra-community supply (VAT exempt)", G: "Export outside the EU (tax not charged)",
-    O: "Outside the scope of VAT", L: "Canary Islands (IGIC)", M: "Ceuta and Melilla (IPSI)", B: "Transferred VAT (Italy)"
-  };
-  const DATE_CODE = { "3": "Invoice issue date", "35": "Actual delivery date", "432": "Paid to date" };
-  const AC_REASON = {
-    "41": "Bonus for works ahead of schedule", "42": "Other bonus", "60": "Manufacturer's consumer discount",
-    "62": "Due to military status", "63": "Due to work accident", "64": "Special agreement", "65": "Production error discount",
-    "66": "New outlet discount", "67": "Sample discount", "68": "End-of-range discount", "70": "Incoterm discount",
-    "71": "Point of sales threshold allowance", "88": "Material surcharge/deduction", "95": "Discount", "100": "Special rebate",
-    "102": "Fixed long term", "103": "Temporary", "104": "Standard", "105": "Yearly turnover",
-    AA: "Advertising", ABL: "Additional packaging", ADR: "Other services", FC: "Freight service", FI: "Financing",
-    LA: "Labelling", PC: "Packing", ZZZ: "Mutually defined"
-  };
-  const NOTE_SUBJECT = {
-    AAI: "General information", AAB: "Terms of payments", PMT: "Payment information", PMD: "Payment detail / remittance information",
-    SUR: "Supplier remarks", REG: "Regulatory information", ABL: "Government information", TXD: "Tax declaration",
-    CUS: "Customs declaration information", AAK: "Price conditions"
-  };
-  const SCHEMES = {
-    "0002": "SIREN", "0007": "SE organisation number", "0009": "SIRET", "0037": "FI LY-tunnus", "0060": "DUNS",
-    "0088": "GLN", "0096": "DK P-number", "0106": "NL KvK", "0130": "EU Commission directorates", "0151": "AU ABN",
-    "0183": "CH UID", "0184": "DK CVR", "0188": "JP Corporate number", "0190": "NL OIN", "0191": "EE company code",
-    "0192": "NO organisation number", "0195": "SG UEN", "0196": "IS kennitala", "0199": "LEI", "0200": "LT legal entity code",
-    "0201": "IT iPA code", "0204": "DE Leitweg-ID", "0208": "BE enterprise number", "0209": "GS1 key", "0210": "IT codice fiscale",
-    "0211": "IT partita IVA", "0212": "FI organisation ID", "0213": "FI VAT", "0221": "JP invoice issuer number",
-    "0224": "FR CTC routing code", "0225": "FR CTC electronic address",
-    "9906": "IT VAT", "9907": "IT codice fiscale", "9920": "ES VAT", "9925": "BE VAT", "9930": "DE VAT", "9938": "LU VAT",
-    "9944": "NL VAT", "9957": "FR VAT", "9959": "US EIN", "EM": "Email", SEPA: "SEPA creditor ID"
-  };
-  const UNITS = {
-    C62: "one", H87: "piece", EA: "each", XUN: "unit", XPP: "piece", HUR: "hour", DAY: "day", WEE: "week", MON: "month",
-    ANN: "year", MIN: "minute", KGM: "kilogram", GRM: "gram", TNE: "tonne", MTR: "metre", KMT: "kilometre", MTK: "square metre",
-    MTQ: "cubic metre", LTR: "litre", KWH: "kilowatt hour", SET: "set", PR: "pair", LS: "lump sum", E48: "service unit", ZZ: "mutually defined"
-  };
+  // ---------- Code lists (lib/codes.js) ----------
+  const { DOC_TYPES, PAY_MEANS, VAT_CAT, DATE_CODE, AC_REASON, NOTE_SUBJECT, SCHEMES, UNITS } = EdocCodes;
   // Country and currency names in the chosen language.
   let regionNames = null, currencyNames = null;
   function setDisplayNames() {
@@ -64,184 +11,6 @@
     try { currencyNames = new Intl.DisplayNames([I18N.lang], { type: "currency" }); } catch (e) {}
   }
   setDisplayNames();
-
-  // ---------- Field specs: [path, label, bt (string or {role: bt}), options] ----------
-  const DOC_SPEC = [
-    ["ID", "Document number", "BT-1"],
-    ["IssueDate", "Issue date", "BT-2"],
-    ["IssueTime", "Issue time"],
-    ["InvoiceTypeCode", "Invoice type code", "BT-3", { only: "Invoice" }],
-    ["CreditNoteTypeCode", "Credit note type code", "BT-3", { only: "CreditNote" }],
-    ["DueDate", "Payment due date", "BT-9"],
-    ["TaxPointDate", "VAT point date", "BT-7"],
-    ["DocumentCurrencyCode", "Invoice currency", "BT-5"],
-    ["TaxCurrencyCode", "VAT accounting currency", "BT-6"],
-    ["BuyerReference", "Buyer reference", "BT-10"],
-    ["AccountingCost", "Buyer accounting reference", "BT-19"],
-    ["ProfileID", "Business process type", "BT-23"],
-    ["CustomizationID", "Specification identifier", "BT-24"],
-    ["UBLVersionID", "UBL version"],
-    ["ProfileExecutionID", "Transaction type", "BTAE-02", { fmt: (el) => txnType(txt(el)) }]
-  ];
-  // PINT AE (UAE): the 8 digits of the transaction type (BTAE-02) are flags, from the left: free trade zone, deemed supply, margin scheme,
-  // summary invoice, continuous supply, disclosed agent billing, supply through e-commerce, exports
-  const TXN_FLAGS = ["Free trade zone", "Deemed supply", "Margin scheme", "Summary invoice", "Continuous supply", "Disclosed agent billing", "Supply through e-commerce", "Exports"];
-  const txnType = (v) => {
-    if (!/^[01]{8}$/.test(v)) return esc(v);
-    const on = TXN_FLAGS.filter((_, i) => v[i] === "1");
-    return '<code class="txn">' + esc(v) + "</code> " + (on.length ? on.map((f) => '<span class="chip">' + esc(T(f)) + "</span>").join(" ") : '<span class="dec">' + esc(T("none of the special supplies")) + "</span>");
-  };
-  const ITEM_TYPES = { G: "Goods", S: "Service", B: "Goods and service" };
-  const isAE = (R) => /urn:peppol:pint:(?:self)?billing-1@ae-1/i.test(val(R, "CustomizationID"));
-  const DOC_CLAIMS = ["ID", "IssueDate", "IssueTime", "InvoiceTypeCode", "CreditNoteTypeCode", "DueDate", "TaxPointDate",
-    "DocumentCurrencyCode", "TaxCurrencyCode", "BuyerReference", "AccountingCost", "Note", "ProfileID", "CustomizationID", "UBLVersionID", "ProfileExecutionID"];
-
-  const REF_SPEC = [
-    ["ProjectReference/ID", "Project reference", "BT-11"],
-    ["ContractDocumentReference/ID", "Contract reference", "BT-12"],
-    ["OrderReference/ID", "Purchase order reference", "BT-13"],
-    ["OrderReference/SalesOrderID", "Sales order reference", "BT-14"],
-    ["ReceiptDocumentReference/ID", "Receiving advice reference", "BT-15"],
-    ["DespatchDocumentReference/ID", "Despatch advice reference", "BT-16"],
-    ["OriginatorDocumentReference/ID", "Tender or lot reference", "BT-17"],
-    ["InvoicePeriod/StartDate", "Invoicing period start", "BT-73"],
-    ["InvoicePeriod/EndDate", "Invoicing period end", "BT-74"],
-    ["InvoicePeriod/DescriptionCode", "VAT point date code", "BT-8"]
-  ];
-  const REF_CLAIMS = ["ProjectReference", "ContractDocumentReference", "OrderReference", "ReceiptDocumentReference",
-    "DespatchDocumentReference", "OriginatorDocumentReference", "InvoicePeriod", "BillingReference"];
-
-  const ADR_SPEC = [
-    ["ID", "Document identifier", { N: "BT-122", O: "BT-18" }],
-    ["DocumentTypeCode", "Document type code"],
-    ["DocumentDescription", "Description", "BT-123"],
-    ["Attachment/ExternalReference/URI", "External document location", "BT-124"],
-    ["Attachment/EmbeddedDocumentBinaryObject", "Attached document", "BT-125"]
-  ];
-
-  // Party fields; BT numbers by role: S seller, B buyer, P payee, T tax representative.
-  const PARTY_SPEC = [
-    ["PartyLegalEntity/RegistrationName", "Legal name", { S: "BT-27", B: "BT-44" }],
-    ["PartyName/Name", "Trading name", { S: "BT-28", B: "BT-45", P: "BT-59", T: "BT-62" }],
-    ["PartyIdentification/ID", "Party identifier", { S: "BT-29", B: "BT-46", P: "BT-60" }],
-    ["PartyLegalEntity/CompanyID", "Legal registration identifier", { S: "BT-30", B: "BT-47", P: "BT-61" }],
-    ["PartyTaxScheme/CompanyID", "VAT / tax registration identifier", { S: "BT-31 / BT-32", B: "BT-48", T: "BT-63" }],
-    ["PartyTaxScheme/TaxScheme/ID", "Tax scheme"],
-    ["PartyLegalEntity/CompanyLegalForm", "Additional legal information", { S: "BT-33" }],
-    ["EndpointID", "Electronic address", { S: "BT-34", B: "BT-49" }],
-    ["PostalAddress/StreetName", "Address line 1", { S: "BT-35", B: "BT-50", T: "BT-64" }],
-    ["PostalAddress/AdditionalStreetName", "Address line 2", { S: "BT-36", B: "BT-51", T: "BT-65" }],
-    ["PostalAddress/AddressLine/Line", "Address line 3", { S: "BT-162", B: "BT-163", T: "BT-164" }],
-    ["PostalAddress/CityName", "City", { S: "BT-37", B: "BT-52", T: "BT-66" }],
-    ["PostalAddress/PostalZone", "Post code", { S: "BT-38", B: "BT-53", T: "BT-67" }],
-    ["PostalAddress/CountrySubentity", "Country subdivision", { S: "BT-39", B: "BT-54", T: "BT-68" }],
-    ["PostalAddress/Country/IdentificationCode", "Country", { S: "BT-40", B: "BT-55", T: "BT-69" }],
-    ["Contact/Name", "Contact point", { S: "BT-41", B: "BT-56" }],
-    ["Contact/Telephone", "Contact telephone", { S: "BT-42", B: "BT-57" }],
-    ["Contact/ElectronicMail", "Contact email", { S: "BT-43", B: "BT-58" }]
-  ];
-  // Which party fields exist in EN 16931 for each role (used for "show empty fields").
-  const PARTY_ROLE_FIELDS = (role) => PARTY_SPEC.filter((f) => !f[2] || typeof f[2] === "string" || f[2][role]);
-
-  const DELIVERY_SPEC = [
-    ["DeliveryParty/PartyName/Name", "Deliver to party name", "BT-70"],
-    ["DeliveryLocation/ID", "Deliver to location identifier", "BT-71"],
-    ["ActualDeliveryDate", "Actual delivery date", "BT-72"],
-    ["DeliveryLocation/Address/StreetName", "Deliver to address line 1", "BT-75"],
-    ["DeliveryLocation/Address/AdditionalStreetName", "Deliver to address line 2", "BT-76"],
-    ["DeliveryLocation/Address/AddressLine/Line", "Deliver to address line 3", "BT-165"],
-    ["DeliveryLocation/Address/CityName", "Deliver to city", "BT-77"],
-    ["DeliveryLocation/Address/PostalZone", "Deliver to post code", "BT-78"],
-    ["DeliveryLocation/Address/CountrySubentity", "Deliver to country subdivision", "BT-79"],
-    ["DeliveryLocation/Address/Country/IdentificationCode", "Deliver to country", "BT-80"]
-  ];
-
-  const PAYMEANS_SPEC = [
-    ["PaymentMeansCode", "Payment means type", "BT-81 / BT-82"],
-    ["PaymentID", "Remittance information", "BT-83"],
-    ["PaymentDueDate", "Payment due date"],
-    ["PayeeFinancialAccount/ID", "Payment account (IBAN)", "BT-84"],
-    ["PayeeFinancialAccount/Name", "Payment account name", "BT-85"],
-    ["PayeeFinancialAccount/FinancialInstitutionBranch/ID", "Payment service provider (BIC)", "BT-86"],
-    ["CardAccount/PrimaryAccountNumberID", "Card number (last digits)", "BT-87"],
-    ["CardAccount/NetworkID", "Card network"],
-    ["CardAccount/HolderName", "Card holder name", "BT-88"],
-    ["PaymentMandate/ID", "Mandate reference", "BT-89"],
-    ["PaymentMandate/PayerFinancialAccount/ID", "Debited account", "BT-91"]
-  ];
-  const PAYTERMS_SPEC = [
-    ["Note", "Payment terms", "BT-20"],
-    ["PaymentDueDate", "Payment due date"],
-    ["Amount", "Amount"]
-  ];
-
-  const AC_SPEC = [
-    ["ChargeIndicator", "Type"],
-    ["AllowanceChargeReasonCode", "Reason code", { A: "BT-98", C: "BT-105" }],
-    ["AllowanceChargeReason", "Reason", { A: "BT-97", C: "BT-104" }],
-    ["MultiplierFactorNumeric", "Percentage", { A: "BT-94", C: "BT-101" }],
-    ["Amount", "Amount", { A: "BT-92", C: "BT-99" }],
-    ["BaseAmount", "Base amount", { A: "BT-93", C: "BT-100" }],
-    ["TaxCategory/ID", "VAT category", { A: "BT-95", C: "BT-102" }],
-    ["TaxCategory/Percent", "VAT rate", { A: "BT-96", C: "BT-103" }],
-    ["TaxCategory/TaxScheme/ID", "Tax scheme"]
-  ];
-  const LINE_AC_SPEC = [
-    ["ChargeIndicator", "Type"],
-    ["AllowanceChargeReasonCode", "Reason code", { A: "BT-140", C: "BT-145" }],
-    ["AllowanceChargeReason", "Reason", { A: "BT-139", C: "BT-144" }],
-    ["MultiplierFactorNumeric", "Percentage", { A: "BT-138", C: "BT-143" }],
-    ["Amount", "Amount", { A: "BT-136", C: "BT-141" }],
-    ["BaseAmount", "Base amount", { A: "BT-137", C: "BT-142" }]
-  ];
-
-  const TOTAL_SPEC = [
-    ["LineExtensionAmount", "Sum of line net amounts", "BT-106"],
-    ["AllowanceTotalAmount", "Sum of allowances", "BT-107"],
-    ["ChargeTotalAmount", "Sum of charges", "BT-108"],
-    ["TaxExclusiveAmount", "Total without VAT", "BT-109"],
-    ["TaxInclusiveAmount", "Total with VAT", "BT-112"],
-    ["PrepaidAmount", "Paid amount", "BT-113"],
-    ["PayableRoundingAmount", "Rounding amount", "BT-114"],
-    ["PayableAmount", "Amount due for payment", "BT-115"]
-  ];
-
-  const LINE_SPEC = [
-    ["ID", "Line identifier", "BT-126"],
-    ["Note", "Line note", "BT-127"],
-    ["DocumentReference/ID", "Invoiced object identifier", "BT-128"],
-    ["InvoicedQuantity", "Invoiced quantity", "BT-129 / BT-130", { only: "Invoice" }],
-    ["CreditedQuantity", "Credited quantity", "BT-129 / BT-130", { only: "CreditNote" }],
-    ["LineExtensionAmount", "Line net amount", "BT-131"],
-    ["OrderLineReference/LineID", "Referenced purchase order line", "BT-132"],
-    ["OrderLineReference/OrderReference/ID", "Purchase order (line level)"],
-    ["AccountingCost", "Buyer accounting reference", "BT-133"],
-    ["InvoicePeriod/StartDate", "Line period start", "BT-134"],
-    ["InvoicePeriod/EndDate", "Line period end", "BT-135"],
-    ["Price/PriceAmount", "Item net price", "BT-146"],
-    ["Price/AllowanceCharge/Amount", "Item price discount", "BT-147"],
-    ["Price/AllowanceCharge/BaseAmount", "Item gross price", "BT-148"],
-    ["Price/AllowanceCharge/ChargeIndicator", "Price discount indicator"],
-    ["Price/BaseQuantity", "Item price base quantity", "BT-149 / BT-150"],
-    ["Item/ClassifiedTaxCategory/ID", "VAT category", "BT-151"],
-    ["Item/ClassifiedTaxCategory/Percent", "VAT rate", "BT-152"],
-    ["Item/ClassifiedTaxCategory/TaxScheme/ID", "Tax scheme"],
-    ["Item/Name", "Item name", "BT-153"],
-    ["Item/Description", "Item description", "BT-154"],
-    ["Item/SellersItemIdentification/ID", "Seller's item identifier", "BT-155"],
-    ["Item/BuyersItemIdentification/ID", "Buyer's item identifier", "BT-156"],
-    ["Item/StandardItemIdentification/ID", "Item standard identifier", "BT-157"],
-    ["Item/CommodityClassification/ItemClassificationCode", "Item classification", "BT-158"],
-    ["Item/CommodityClassification/CommodityCode", "Item type", "BTAE-13", { fmt: (el) => esc(txt(el)) + (ITEM_TYPES[txt(el)] ? ' <span class="chip">' + esc(T(ITEM_TYPES[txt(el)])) + "</span>" : "") }],
-    ["Item/CommodityClassification/NatureCode", "Type of goods or services", "BTAE-09"],
-    ["Item/AdditionalItemIdentification/ID", "Service accounting code", "BTAE-17"],
-    ["Item/OriginCountry/IdentificationCode", "Item country of origin", "BT-159"],
-    ["Item/AdditionalItemProperty", "Item attribute", "BT-160 / BT-161", { fmt: itemProperty }]
-  ];
-
-  // Fields EN 16931 requires (cardinality 1..1 in their group): shown even when empty fields are hidden.
-  const REQUIRED = new Set(("BT-1 BT-2 BT-3 BT-5 BT-24 BT-27 BT-40 BT-44 BT-55 BT-106 BT-109 BT-112 BT-115 " +
-    "BT-126 BT-129 BT-130 BT-131 BT-146 BT-151 BT-153").split(" "));
 
   // ---------- State ----------
   const state = { root: null, kind: null, name: "", size: 0, wrapped: "", showEmpty: false, showTags: false, raw: false, foldPassing: false, openCards: new Set(), closedCards: new Set(), flaggedRules: new Set(), secFlag: {}, atts: [], attIndex: new Map(), cache: new Map() };
@@ -264,6 +33,10 @@
   const first = (ctx, path) => byPath(ctx, path)[0] || null;
   const val = (ctx, path) => txt(first(ctx, path));
   const has = (ctx, path) => !!val(ctx, path);
+  // The fields shown (lib/specs.js) and what each country's format adds (countries/*/profile.js)
+  const H = { esc, txt, T, val, first, renderValue };
+  const { DOC_SPEC, DOC_CLAIMS, REF_SPEC, REF_CLAIMS, ADR_SPEC, PARTY_SPEC, PARTY_ROLE_FIELDS, DELIVERY_SPEC, PAYMEANS_SPEC, PAYTERMS_SPEC, AC_SPEC, LINE_AC_SPEC, TOTAL_SPEC, LINE_SPEC, REQUIRED } = EdocSpecs(H);
+  const profileOf = (R) => EdocProfiles.active(H, R);
   function humanize(name) {
     const words = name.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2").split(" ");
     return words.map((w, i) => (i && !/^[A-Z0-9]+$/.test(w) ? w.toLowerCase() : w)).join(" ");
@@ -422,11 +195,6 @@
     }
     return html ? '<div class="extras-h">' + T("More fields") + "</div>" + html : "";
   }
-  function itemProperty(el) {
-    return "<b>" + esc(val(el, "Name")) + "</b>: " + esc(val(el, "Value")) +
-      (first(el, "ValueQuantity") ? " " + renderValue(first(el, "ValueQuantity")) : "");
-  }
-
   // ---------- Sections ----------
   function card(id, title, body, opts) {
     opts = opts || {};
@@ -537,19 +305,20 @@
     const claim = (...names) => names.forEach((n) => claimed.add(n));
     const out = [];
     const docCur = val(R, "DocumentCurrencyCode");
+    const prof = profileOf(R);
 
     // Document
     {
       claim(...DOC_CLAIMS);
       const used = new Set();
-      const spec = DOC_SPEC.map((f) => (f[0] === "ID" ? ["ID", kind === "CreditNote" ? "Credit note number" : "Invoice number", "BT-1"] : f));
+      const spec = DOC_SPEC.concat(prof.docFields).map((f) => (f[0] === "ID" ? ["ID", kind === "CreditNote" ? "Credit note number" : "Invoice number", "BT-1"] : f));
       out.push({ id: "doc", title: "Document", html: card("doc", "Document", renderFields(R, spec, null, used)) });
     }
     // References
     {
       claim(...REF_CLAIMS);
       const used = new Set();
-      let body = renderFields(R, isAE(R) ? REF_SPEC.map((f) => (f[0] === "InvoicePeriod/DescriptionCode" ? [f[0], "Frequency of billing", "BTAE-06"] : f)) : REF_SPEC, null, used);
+      let body = renderFields(R, EdocProfiles.relabel(REF_SPEC, prof.refLabels), null, used);
       body += extras(REF_CLAIMS.filter((n) => n !== "BillingReference").flatMap((n) => byPath(R, n)), used, true);
       out.push({ id: "refs", title: "References", html: card("refs", "References", body) });
     }
@@ -736,6 +505,7 @@
       const lineTag = kind === "CreditNote" ? "CreditNoteLine" : "InvoiceLine";
       claim("InvoiceLine", "CreditNoteLine");
       const lines = byPath(R, lineTag);
+      const lineSpec = EdocProfiles.addRows(LINE_SPEC, prof.lineFields);
       let body = "";
       if (lines.length) {
         const lt = "cac:" + lineTag + "/";
@@ -750,7 +520,7 @@
           const cat = val(ln, "Item/ClassifiedTaxCategory/ID"), pct = val(ln, "Item/ClassifiedTaxCategory/Percent");
           const sid = val(ln, "Item/SellersItemIdentification/ID");
           const u = new Set();
-          let detail = renderFields(ln, LINE_SPEC, null, u);
+          let detail = renderFields(ln, lineSpec, null, u);
           detail += lineAcTables(ln, u);
           detail += extras([ln], u);
           // Rules that fail on this line: flag the row and list them in a full-width row right under it.
@@ -827,102 +597,9 @@
   }
 
 
-  // ---------- Attachments ----------
-  function collectAttachments() {
-    state.atts = []; state.attIndex = new Map(); state.cache.forEach((c) => c.url && URL.revokeObjectURL(c.url)); state.cache = new Map();
-    const all = state.root.getElementsByTagName("*");
-    for (const el of all) {
-      if (el.localName !== "EmbeddedDocumentBinaryObject") continue;
-      let adr = el.parentElement;
-      while (adr && adr.localName !== "AdditionalDocumentReference" && adr.localName !== "DocumentReference") adr = adr.parentElement;
-      const b64 = el.textContent.replace(/\s+/g, "");
-      const pad = (b64.match(/=+$/) || [""])[0].length;
-      const i = state.atts.length;
-      const head = sniffB64(b64);
-      const mime = el.getAttribute("mimeCode") || head || "";
-      const filename = el.getAttribute("filename") || (adr ? val(adr, "ID") : "") || "attachment-" + (i + 1) + extFor(mime);
-      let warn = "";
-      if (mime === "application/pdf" && head && head !== "application/pdf") warn = "Declared as PDF, but the content doesn't start with %PDF.";
-      state.atts.push({ el, b64, filename, mime, sniffed: head, size: Math.max(0, Math.floor(b64.length * 3 / 4) - pad),
-        desc: adr ? val(adr, "DocumentDescription") : "", ref: adr ? val(adr, "ID") : "", warn });
-      state.attIndex.set(el, i);
-    }
-  }
-  function sniffB64(b64) {
-    let bytes;
-    try { bytes = atob(b64.slice(0, 16).replace(/[^A-Za-z0-9+/]/g, "").slice(0, 12)); } catch (e) { return ""; }
-    if (bytes.startsWith("%PDF")) return "application/pdf";
-    if (bytes.startsWith("\x89PNG")) return "image/png";
-    if (bytes.startsWith("\xFF\xD8\xFF")) return "image/jpeg";
-    if (bytes.startsWith("GIF8")) return "image/gif";
-    if (bytes.startsWith("PK")) return "application/zip";
-    if (/^\s*</.test(bytes) || bytes.startsWith("\xEF\xBB\xBF<")) return "application/xml";
-    return "";
-  }
-  function extFor(mime) {
-    return ({ "application/pdf": ".pdf", "image/png": ".png", "image/jpeg": ".jpg", "image/gif": ".gif", "application/zip": ".zip",
-      "application/xml": ".xml", "text/xml": ".xml", "text/csv": ".csv", "text/plain": ".txt",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx", "application/vnd.oasis.opendocument.spreadsheet": ".ods" })[mime] || "";
-  }
-  function attBytes(i) {
-    const a = state.atts[i];
-    let c = state.cache.get(i);
-    if (!c) {
-      let b64 = a.b64.replace(/-/g, "+").replace(/_/g, "/");
-      if (b64.length % 4) b64 += "=".repeat(4 - (b64.length % 4));
-      const bin = atob(b64);
-      const u8 = new Uint8Array(bin.length);
-      for (let j = 0; j < bin.length; j++) u8[j] = bin.charCodeAt(j);
-      const type = a.sniffed || a.mime || "application/octet-stream";
-      c = { u8, type, url: URL.createObjectURL(new Blob([u8], { type })) };
-      state.cache.set(i, c);
-    }
-    return c;
-  }
-
-  const viewer = $("viewer"), vBody = $("vBody");
-  let viewing = -1;
-  function preview(i) {
-    const a = state.atts[i];
-    let c;
-    try { c = attBytes(i); } catch (e) { alert(T("This attachment isn't valid Base64, so it can't be opened.")); return; }
-    viewing = i;
-    $("vTitle").textContent = a.filename + " · " + formatSize(c.u8.length);
-    $("vOpen").href = c.url;
-    vBody.textContent = "";
-    const t = c.type;
-    if (t === "application/pdf") {
-      const f = document.createElement("iframe");
-      f.title = T("Preview of {name}", { name: a.filename }); f.src = c.url;
-      vBody.appendChild(f);
-    } else if (/^image\//.test(t)) {
-      const img = document.createElement("img"); img.alt = a.filename; img.src = c.url; vBody.appendChild(img);
-    } else if (/xml|json|csv|text\//.test(t) || /\.(xml|txt|csv|json)$/i.test(a.filename)) {
-      const pre = document.createElement("pre");
-      pre.textContent = new TextDecoder("utf-8").decode(c.u8.subarray(0, 3 * 1048576));
-      vBody.appendChild(pre);
-    } else {
-      const d = document.createElement("div"); d.className = "msg";
-      d.textContent = T("No in-page preview for {type}. Use Download to open it.", { type: t || T("this file type") });
-      vBody.appendChild(d);
-    }
-    if (typeof viewer.showModal === "function") viewer.showModal(); else viewer.setAttribute("open", "");
-  }
-  function closeViewer() { vBody.textContent = ""; viewing = -1; if (viewer.open) viewer.close(); }
-  function download(i) {
-    const a = state.atts[i];
-    let c;
-    try { c = attBytes(i); } catch (e) { alert(T("This attachment isn't valid Base64, so it can't be saved.")); return; }
-    const blob = new Blob([c.u8], { type: c.type });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob); link.download = a.filename;
-    document.body.appendChild(link); link.click(); link.remove();
-    setTimeout(() => URL.revokeObjectURL(link.href), 5000);
-  }
-  $("vClose").addEventListener("click", closeViewer);
-  $("vDownload").addEventListener("click", () => { if (viewing >= 0) download(viewing); });
-  viewer.addEventListener("close", () => { vBody.textContent = ""; viewing = -1; });
-  viewer.addEventListener("click", (e) => { if (e.target === viewer) closeViewer(); });
+  // ---------- Attachments (lib/attachments.js) ----------
+  const ATT = EdocAttachments({ state, $, T, val, formatSize });
+  const { preview, download, extFor } = ATT, collectAttachments = ATT.collect, closeViewer = ATT.close;
 
   // ---------- Render ----------
   const fmtMoney = (raw) => (raw === "" || raw == null ? "—" : fmtAmount(raw, ""));
@@ -1655,7 +1332,7 @@
       (dashes ? " · " + T("removed {n} leading “-” from tags", { n: dashes }) : "") +
       (amps ? " · " + esc(T("escaped {n} bare “&”", { n: amps })) : ""));
     $("clearBtn").hidden = false;
-    $("sampleBtn").hidden = true; $("aeSampleBtn").hidden = true;
+    sampleBtns.forEach((b) => { b.hidden = true; });
     pasteArea.hidden = true; pasteArea.value = ""; pasteBtn.setAttribute("aria-expanded", "false");
     return true;
   }
@@ -1670,17 +1347,21 @@
     pasteArea.value = "";
     drop.classList.remove("loaded");
     $("clearBtn").hidden = true;
-    $("sampleBtn").hidden = false; $("aeSampleBtn").hidden = false;
+    sampleBtns.forEach((b) => { b.hidden = false; });
     setMsg(() => T(window.matchMedia("(hover: none)").matches ? "Open an XML file or paste it. Nothing leaves your browser." : "Drop a UBL invoice or credit note XML here, or paste it anywhere with Ctrl+V."));
   }
 
-  // A small invoice that follows the EN 16931 rules, so a first visit shows a green verdict.
-  const SAMPLE_XML = `<?xml version="1.0" encoding="UTF-8"?><Invoice xmlns="urn:oasis:names:specification:ubl:schema:xsd:Invoice-2" xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2" xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"><cbc:CustomizationID>urn:cen.eu:en16931:2017</cbc:CustomizationID><cbc:ProfileID>urn:fdc:peppol.eu:2017:poacc:billing:01:1.0</cbc:ProfileID><cbc:ID>INV-2026-0042</cbc:ID><cbc:IssueDate>2026-10-01</cbc:IssueDate><cbc:DueDate>2026-10-31</cbc:DueDate><cbc:InvoiceTypeCode>380</cbc:InvoiceTypeCode><cbc:DocumentCurrencyCode>EUR</cbc:DocumentCurrencyCode><cbc:BuyerReference>PO-7781</cbc:BuyerReference><cac:AccountingSupplierParty><cac:Party><cbc:EndpointID schemeID="EM">billing@example-supplies.test</cbc:EndpointID><cac:PartyName><cbc:Name>Example Supplies GmbH</cbc:Name></cac:PartyName><cac:PostalAddress><cbc:StreetName>Hauptstrasse 12</cbc:StreetName><cbc:CityName>Berlin</cbc:CityName><cbc:PostalZone>10115</cbc:PostalZone><cac:Country><cbc:IdentificationCode>DE</cbc:IdentificationCode></cac:Country></cac:PostalAddress><cac:PartyTaxScheme><cbc:CompanyID>DE123456789</cbc:CompanyID><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:PartyTaxScheme><cac:PartyLegalEntity><cbc:RegistrationName>Example Supplies GmbH</cbc:RegistrationName></cac:PartyLegalEntity></cac:Party></cac:AccountingSupplierParty><cac:AccountingCustomerParty><cac:Party><cbc:EndpointID schemeID="EM">accounts@sample-buyer.test</cbc:EndpointID><cac:PartyName><cbc:Name>Sample Buyer SRL</cbc:Name></cac:PartyName><cac:PostalAddress><cbc:StreetName>Via Roma 5</cbc:StreetName><cbc:CityName>Milano</cbc:CityName><cbc:PostalZone>20121</cbc:PostalZone><cac:Country><cbc:IdentificationCode>IT</cbc:IdentificationCode></cac:Country></cac:PostalAddress><cac:PartyLegalEntity><cbc:RegistrationName>Sample Buyer SRL</cbc:RegistrationName></cac:PartyLegalEntity></cac:Party></cac:AccountingCustomerParty><cac:PaymentMeans><cbc:PaymentMeansCode>58</cbc:PaymentMeansCode><cac:PayeeFinancialAccount><cbc:ID>DE89370400440532013000</cbc:ID></cac:PayeeFinancialAccount></cac:PaymentMeans><cac:TaxTotal><cbc:TaxAmount currencyID="EUR">38.00</cbc:TaxAmount><cac:TaxSubtotal><cbc:TaxableAmount currencyID="EUR">200.00</cbc:TaxableAmount><cbc:TaxAmount currencyID="EUR">38.00</cbc:TaxAmount><cac:TaxCategory><cbc:ID>S</cbc:ID><cbc:Percent>19</cbc:Percent><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:TaxCategory></cac:TaxSubtotal></cac:TaxTotal><cac:LegalMonetaryTotal><cbc:LineExtensionAmount currencyID="EUR">200.00</cbc:LineExtensionAmount><cbc:TaxExclusiveAmount currencyID="EUR">200.00</cbc:TaxExclusiveAmount><cbc:TaxInclusiveAmount currencyID="EUR">238.00</cbc:TaxInclusiveAmount><cbc:PayableAmount currencyID="EUR">238.00</cbc:PayableAmount></cac:LegalMonetaryTotal><cac:InvoiceLine><cbc:ID>1</cbc:ID><cbc:InvoicedQuantity unitCode="C62">4</cbc:InvoicedQuantity><cbc:LineExtensionAmount currencyID="EUR">200.00</cbc:LineExtensionAmount><cac:Item><cbc:Name>Office chair, ergonomic</cbc:Name><cac:SellersItemIdentification><cbc:ID>CH-100</cbc:ID></cac:SellersItemIdentification><cac:ClassifiedTaxCategory><cbc:ID>S</cbc:ID><cbc:Percent>19</cbc:Percent><cac:TaxScheme><cbc:ID>VAT</cbc:ID></cac:TaxScheme></cac:ClassifiedTaxCategory></cac:Item><cac:Price><cbc:PriceAmount currencyID="EUR">50.00</cbc:PriceAmount></cac:Price></cac:InvoiceLine></Invoice>`;
-  $("sampleBtn").addEventListener("click", () => load(SAMPLE_XML, "sample-invoice.xml"));
-  // A UAE (PINT AE) invoice, so the UAE rules can be seen at once (rules/ae-sample.js)
-  if (window.AE_SAMPLE_XML) $("aeSampleBtn").addEventListener("click", () => load(window.AE_SAMPLE_XML, "sample-uae-invoice.xml"));
-  else $("aeSampleBtn").hidden = true;
-
+  // The sample buttons: one invoice that follows EN 16931 (lib/sample.js) and one per country format that has an example
+  // (countries/*/profile.js), so a first visit shows a green verdict at once.
+  const sampleBtns = [$("sampleBtn")];
+  EdocProfiles.all(H).filter((p) => p.sample).forEach((p) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.id = p.id + "SampleBtn"; b.dataset.i18n = ""; b.textContent = p.sample.label;
+    $("sampleBtn").after(b);
+    b.addEventListener("click", () => load(p.sample.xml, p.sample.file));
+    sampleBtns.push(b);
+  });
+  $("sampleBtn").addEventListener("click", () => load(window.EDOC_SAMPLE_XML, "sample-invoice.xml"));
   function loadFile(f) {
     if (!f) return;
     const r = new FileReader();

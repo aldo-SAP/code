@@ -37,8 +37,8 @@ changes made to the mutant that caused it.
 
 ## PINT AE (UAE)
 
-The PINT AE rules are not re-written: `../rules/pint-ae-rules.js` holds all 302 official asserts (170 PINT layer, 132 UAE layer) exactly as published and
-`../rules/ae.js` evaluates them with [fontoxpath](../rules/vendor/README.md) the way the official stylesheet does. Because of that the tests ask three things:
+The PINT AE rules are not re-written: `../countries/ae/pint-ae-rules.js` holds all 302 official asserts (170 PINT layer, 132 UAE layer) exactly as published and
+`../countries/ae/rules.js` evaluates them with [fontoxpath](../countries/ae/vendor/README.md) the way the official stylesheet does. Because of that the tests ask three things:
 
 1. `check-ae-rules.js`: the viewer has every official assert id, and no other.
 2. `differential.js --sets=ae`: the failed asserts equal the official stylesheet's, on
@@ -49,7 +49,7 @@ The PINT AE rules are not re-written: `../rules/pint-ae-rules.js` holds all 302 
 3. `coverage-ae.py`: how many of the 302 asserts the official stylesheet actually fails on these documents. An assert that is never reached is a rule the tests did
    not exercise; the few that cannot be reached are listed in the script with the reason.
 
-`gen-pint-ae.py` regenerates `../rules/pint-ae-rules.js` from the unpacked release (`python3 gen-pint-ae.py .cache/pint-ae`).
+`gen-pint-ae.py` regenerates `../countries/ae/pint-ae-rules.js` from the unpacked release (`python3 gen-pint-ae.py .cache/pint-ae`).
 
 ## Known differences
 
@@ -76,3 +76,8 @@ python3 gen-ubl-structure.py .cache/en16931/ubl/xslt/EN16931-UBL-validation.xslt
 ```
 
 When the official artefacts are updated, delete `.cache/`, run `./run.sh`, regenerate the two files, and look at what differs.
+
+## Screen regression snapshot
+
+`node snapshot.js OUT.json DIR…` loads the two sample invoices and the first six XML files of each folder, in English and Italian, and writes the
+rendered verdict, hero, fields and raw XML. Run it before and after a change that must not alter the screen (a refactoring) and compare the two files with `cmp`.
