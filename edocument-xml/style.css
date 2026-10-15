@@ -290,7 +290,8 @@ tr.line.flash > td { background: var(--hl-soft); }
 @media (min-width: 641px) { .fnav-side { flex-wrap: wrap; overflow: visible; } }
 .card.full { grid-column: 1 / -1; }
 .card[hidden], .sub[hidden] { display: none; }
-.card h2 { margin: 0 0 6px; font-size: 0.98rem; font-weight: 600; display: flex; gap: 8px; align-items: center; }
+.card h2 { margin: 0 0 8px; padding-bottom: 8px; border-bottom: 1px solid var(--line); font-size: 0.98rem; font-weight: 600; display: flex; gap: 8px; align-items: center; }
+.card.collapsed h2 { margin-bottom: 0; padding-bottom: 0; border-bottom-color: transparent; }
 .card h2 .n { color: var(--muted); font-weight: 400; font-size: 0.86rem; }
 .card h2 .act { margin-left: auto; display: flex; gap: 6px; }
 .sub { border: 1px solid var(--line-soft); border-radius: 8px; padding: 4px 10px 6px; margin-top: 8px; }
@@ -621,7 +622,8 @@ td > .dl .xtag { display: none; }
 
 /* Blocks without a problem fold to one line; the reason for a failure sits under its field. */
 .card.collapsible > h2 { cursor: pointer; user-select: none; }
-.card .chev { display: inline-block; width: 0.9em; color: var(--muted); font-size: 0.8rem; }
+.card .chev { display: inline-block; width: 0.9em; margin-left: auto; color: var(--muted); font-size: 0.8rem; text-align: right; }
+.card.collapsed h2 .sum ~ .chev, .card h2 .act ~ .chev { margin-left: 8px; }
 .card.collapsible .chev::before { content: "▾"; }
 .card.collapsed .chev::before { content: "▸"; }
 .card.collapsed > .card-body { display: none; }

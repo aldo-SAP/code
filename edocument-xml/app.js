@@ -430,10 +430,11 @@
     const errs = loose.length ? '<ul class="checks card-errs">' + loose.map((c) => checkLi(c, false)).join("") + "</ul>" : "";
     const nRows = (body.match(/<div class="row[ "]|<tr class="line /g) || []).length;
     return '<section class="card' + (opts.full ? " full" : "") + (collapsible ? " collapsible" + (open ? "" : " collapsed") : "") + '" id="sec-' + id + '"><h2' +
-      (collapsible ? ' tabindex="0" role="button" aria-expanded="' + open + '" data-act="card"' : "") + ">" + (collapsible ? '<span class="chev" aria-hidden="true"></span>' : "") +
+      (collapsible ? ' tabindex="0" role="button" aria-expanded="' + open + '" data-act="card"' : "") + ">" +
       dot(id) + esc(T(title)) + (opts.count != null ? '<span class="n">' + opts.count + "</span>" : "") +
       (collapsible && nRows ? '<span class="sum">' + T(nRows > 1 ? "{n} fields" : "{n} field", { n: nRows }) + "</span>" : "") +
       (opts.act ? '<span class="act">' + opts.act + "</span>" : "") +
+      (collapsible ? '<span class="chev" aria-hidden="true"></span>' : "") +
       '</h2><div class="card-body">' + errs + (body || '<div class="none">' + T("Not present in this document.") + "</div>") + "</div></section>";
   }
   function sub(title, body) { return '<div class="sub"><h3>' + esc(T(title)) + "</h3>" + body + "</div>"; }
