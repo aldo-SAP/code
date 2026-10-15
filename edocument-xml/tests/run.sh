@@ -95,7 +95,7 @@ run node ereport-differential.js "$F" "$W/er-examples-sv"
 
 # PINT AE (UAE)
 step "PINT AE rules: the viewer carries every official assert"
-run node check-ae-rules.js "$W/ae.ids"
+run node check-rules.js PintAE "$W/ae.ids"
 step "PINT AE: every message has its Italian text (countries/ae/it-messages.js is rebuilt from ae-it.tsv)"
 run node gen-ae-it.js
 for v in billing selfbilling; do
@@ -105,9 +105,33 @@ for v in billing selfbilling; do
   done
   [ "$v" = billing ] && run node check-ae-viewer.js "$AD"
   ae_run "PINT AE ($v) on the official example invoices and credit notes" "$AD" "$v" ""
-  mkdir -p "$W/ae-targeted-$v"; python3 -I mutate-ae-targeted.py "$W/ae-targeted-$v" "$AD" --log="$W/ae-targeted-$v.log.json" > /dev/null
+  mkdir -p "$W/ae-targeted-$v"; python3 -I targeted-ae.py "$W/ae-targeted-$v" "$AD" --log="$W/ae-targeted-$v.log.json" > /dev/null
   ae_run "PINT AE ($v) on documents aimed at single rules" "$W/ae-targeted-$v" "$v" "$W/ae-targeted-$v.log.json" "$([ "$v" = selfbilling ] && echo ibr-cl-01)"
 done
+
+# XRechnung (Germany): the official KoSIT validation is the EN 16931 schematron plus the XRechnung one (which carries the Peppol rules it integrates).
+# The EN 16931 part is compared above; here only the asserts of the XRechnung schematron are (the viewer runs the EN 16931 rules too, but they are not looked at)
+XRC="$C/xrechnung"
+ids "$XRC/xr-ubl.xslt" > "$W/de.ids"
+DE_GROUPS=""
+de_run() { # label docdir [mutation log]
+  local d="$2" tag; tag=$(basename "$2")
+  saxon "$XRC/xr-ubl.xslt" "$d" "$W/$tag-xr"
+  step "$1 ($(ls "$d" | wc -l) documents)"
+  run node differential.js --docs="$d" --svrl="$W/$tag-xr" --ids="$W/de.ids" --sets=de --workers=4 ${3:+--log="$3"}
+  DE_GROUPS="$DE_GROUPS $W/$tag-xr"
+}
+step "XRechnung: the viewer carries every official assert"
+run node check-rules.js XRechnung "$W/de.ids"
+step "XRechnung: every message has its English and Italian text (countries/de/messages.js is rebuilt from de-en.tsv and de-it.tsv)"
+run node gen-de-messages.js
+DD="$W/de-examples"; mkdir -p "$DD"; n=0
+while IFS= read -r f; do
+    n=$((n+1)); cp "$f" "$DD/$(printf %03d $n)_$(basename "$f")"
+done < <({ find "$XRC/testsuite/src/test" -name "*.xml" | grep -iv "uncefact\|cii"; ls "$XRC"/sch/test/instances/ubl-inv/*.xml "$XRC"/sch/test/instances/ubl-cn/*.xml; } | sort)
+de_run "XRechnung on the official test suite and rule test documents" "$DD" ""
+mkdir -p "$W/de-targeted"; python3 -I targeted-de.py "$W/de-targeted" "$DD" --log="$W/de-targeted.log.json" > /dev/null
+de_run "XRechnung on documents aimed at single rules" "$W/de-targeted" "$W/de-targeted.log.json"
 if [ "$1" != "quick" ]; then
   N=${MUTANTS:-600}
   python3 mutate.py "$W/mut-en" "$N" "${SEED:-1}" "$D" > /dev/null
@@ -124,14 +148,22 @@ if [ "$1" != "quick" ]; then
     # a changed CustomizationID turns a self-billing document into a billing one for the viewer (it picks the type codes from it) but not for the
     # official stylesheet of the variant that was run: only ibr-cl-01 can differ, and the targeted documents cover it
     CL=""; [ "$v" = selfbilling ] && CL="ibr-cl-01"
-    python3 -I mutate-ae.py "$W/ae-single-$v" "$W/ae-examples-$v" --rate="${AE_RATE:-0.12}" --seed="${SEED:-1}" --log="$W/ae-single-$v.log.json" > /dev/null
+    python3 -I mutate-single.py "$W/ae-single-$v" "$W/ae-examples-$v" --rate="${AE_RATE:-0.12}" --seed="${SEED:-1}" --log="$W/ae-single-$v.log.json" > /dev/null
     ae_run "PINT AE ($v) on documents with one change each" "$W/ae-single-$v" "$v" "$W/ae-single-$v.log.json" "$CL"
     python3 mutate.py "$W/ae-random-$v" "${AE_RANDOM:-400}" "$(( ${SEED:-1} + 2 ))" "$W/ae-examples-$v" > /dev/null
     ae_run "PINT AE ($v) on randomly broken documents" "$W/ae-random-$v" "$v" "$W/ae-random-$v.log.json" "$CL"
   done
   step "PINT AE: how many official asserts the test documents reach"
   # shellcheck disable=SC2086
-  run python3 -I coverage-ae.py "$W/ae.ids" $AE_GROUPS
+  run python3 -I coverage.py ae "$W/ae.ids" $AE_GROUPS
+  # XRechnung: the same for the German documents
+  python3 -I mutate-single.py "$W/de-single" "$DD" --profile=de --rate="${DE_RATE:-0.004}" --seed="${SEED:-1}" --log="$W/de-single.log.json" > /dev/null
+  de_run "XRechnung on documents with one change each" "$W/de-single" "$W/de-single.log.json"
+  python3 mutate.py "$W/de-random" "${DE_RANDOM:-400}" "$(( ${SEED:-1} + 3 ))" "$DD" > /dev/null
+  de_run "XRechnung on randomly broken documents" "$W/de-random" "$W/de-random.log.json"
+  step "XRechnung: how many official asserts the test documents reach"
+  # shellcheck disable=SC2086
+  run python3 -I coverage.py de "$W/de.ids" $DE_GROUPS
 fi
 echo; [ $fail = 0 ] && echo "ALL CONFORMANT" || echo "DIFFERENCES FOUND"
 exit $fail

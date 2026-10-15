@@ -40,7 +40,7 @@
   </div>
   <textarea id="pasteArea" hidden spellcheck="false" aria-label="XML input" data-i18n-aria="XML input" placeholder="Paste the XML here; it is read as soon as it's complete." data-i18n-ph="Paste the XML here; it is read as soon as it's complete."></textarea>
 
-  <p class="intro" id="intro"><span data-i18n>Checks a UBL invoice or credit note against the EN 16931 rules and, when the file asks for them, PEPPOL, France and Italy, or the UAE (PINT AE) rules. Everything stays in your browser.</span></p>
+  <p class="intro" id="intro"><span data-i18n>Checks a UBL invoice or credit note against the EN 16931 rules and, when the file asks for them, PEPPOL, France, Germany (XRechnung) and Italy, or the UAE (PINT AE) rules. Everything stays in your browser.</span></p>
 
   <div id="out" hidden>
     <div class="verdict" id="verdict" hidden></div>
@@ -138,6 +138,12 @@
 <script src="lib/attachments.js"></script>
 <script src="lib/sample.js"></script>
 <script src="countries/ae/profile.js"></script>
+<script src="countries/de/xrechnung-rules.js"></script>
+<script src="countries/de/rules.js"></script>
+<script src="countries/de/messages.js"></script>
+<script src="countries/de/it.js"></script>
+<script src="countries/de/sample.js"></script>
+<script src="countries/de/profile.js"></script>
 <script src="lib/json-to-ubl.js"></script>
 <script src="app.js"></script>
 </body>

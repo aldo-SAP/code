@@ -706,10 +706,11 @@
     const ctx = {
       R, cn, rule, cmp, each, terms, req, items, names, sum, has, val, first, byPath, txt, num, round, fmt, validDate, validCountry,
       lines, allows, charges, lineAllows, lineCharges, seller, buyer, payee, rep, taxIds, docCur, taxCur, taxTotals, vatTotal, vat, subs, lmt,
-      allEls, typeCode, qtyTag, isCharge
+      allEls, typeCode, qtyTag, isCharge,
+      reported: (id) => out.some((x) => x.id === id)   // a set that repeats rules of another (XRechnung carries Peppol rules) skips the ones already reported
     };
-    (extraSets || []).forEach((id) => {
-      if (!SETS[id]) return;
+    // in registration order, so the result does not depend on the order the sets were switched on
+    Object.keys(SETS).filter((id) => (extraSets || []).includes(id)).forEach((id) => {
       setLabel = SETS[id].label;
       SETS[id].run(ctx);
     });

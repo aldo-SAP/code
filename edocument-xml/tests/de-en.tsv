@@ -1,0 +1,50 @@
+BR-DE-1	An invoice must contain "PAYMENT INSTRUCTIONS" (BG-16).
+BR-DE-15	The element "Buyer reference" (BT-10) must be provided.
+BR-DE-16	If the VAT category codes S, Z, E, AE, K, G, L or M are used in an invoice, at least one of "Seller VAT identifier" (BT-31), "Seller tax registration identifier" (BT-32) or "SELLER TAX REPRESENTATIVE PARTY" (BG-11) must be provided.
+BR-DE-17	"Invoice type code" (BT-3) should only carry these UNTDID 1001 codes: 326 (Partial invoice), 380 (Commercial invoice), 384 (Corrected invoice), 389 (Self-billed invoice), 381 (Credit note), 875 (Partial construction invoice), 876 (Partial final construction invoice), 877 (Final construction invoice).
+BR-DE-18	Skonto (cash discount) lines in {_n} must match this regular expression: {_v}. Skonto terms go in "Payment terms" (BT-20): the first segment is "SKONTO", the second "TAGE=n" (days), the third "PROZENT=n" (percent; no sign, a point and two decimals). If the discount is not calculated on BT-115 "Amount due for payment" but on a part of it, the base amount follows as a fourth segment "BASISBETRAG=n" (an Amount). Every entry starts with #, the segments are separated by # and a line ends with #. A complete Skonto statement must be followed by an XML line break. Everything must be in capital letters. Extra whitespace (spaces, tabs or line breaks) is not allowed. Other characters or texts than those given are not allowed.
+BR-DE-21	The element "Specification identifier" (BT-24) should follow the syntax of the XRechnung standard identifier.
+BR-DE-22	The "filename" attribute of all "EmbeddedDocumentBinaryObject" elements must be unique.
+BR-DE-26	If "Invoice type code" (BT-3) is 384 (Corrected invoice), PRECEDING INVOICE REFERENCE (BG-3) should be present at least once.
+BR-DE-30	If "DIRECT DEBIT" (BG-19) is present, "Bank assigned creditor identifier" (BT-90) must be provided.
+BR-DE-31	If "DIRECT DEBIT" (BG-19) is present, "Debited account identifier" (BT-91) must be provided.
+BR-DE-TMP-32	An invoice should state the supply or service date: either BT-72 "Actual delivery date", BG-14 "Invoicing period", or BG-26 "Invoice line period" in every invoice line.
+BR-TMP-2	BT-124 "External document location" must contain an absolute URL with a valid scheme.
+BR-TMP-6	Dates in UBL must be given as YYYY-MM-DD.
+BR-DE-2	The group "SELLER CONTACT" (BG-6) must be provided.
+BR-DE-3	The element "Seller city" (BT-37) must be provided.
+BR-DE-4	The element "Seller post code" (BT-38) must be provided.
+BR-DE-5	The element "Seller contact point" (BT-41) must be provided.
+BR-DE-6	The element "Seller contact telephone number" (BT-42) must be provided.
+BR-DE-7	The element "Seller contact email address" (BT-43) must be provided.
+BR-DE-27	BT-42 should contain at least three digits.
+BR-DE-28	BT-43 should contain exactly one @ sign, with at least two characters on both sides and no space or dot next to it. A dot should not be at the beginning or the end.
+BR-DE-8	The element "Buyer city" (BT-52) must be provided.
+BR-DE-9	The element "Buyer post code" (BT-53) must be provided.
+BR-DE-10	The element "Deliver to city" (BT-77) must be provided if the group "DELIVER TO ADDRESS" (BG-15) is provided.
+BR-DE-11	The element "Deliver to post code" (BT-78) must be provided if the group "DELIVER TO ADDRESS" (BG-15) is provided.
+BR-DE-19	"Payment account identifier" (BT-84) should contain a correct IBAN if "Payment means type code" (BT-81) requests code 58 (SEPA) as the means of payment.
+BR-DE-23-a	If BT-81 "Payment means type code" holds a credit transfer code (30, 58), BG-17 "CREDIT TRANSFER" must be provided.
+BR-DE-23-b	If BT-81 "Payment means type code" holds a credit transfer code (30, 58), BG-18 and BG-19 must not be provided.
+BR-DE-24-a	If BT-81 "Payment means type code" holds a card payment code (48, 54, 55), exactly one BG-18 "PAYMENT CARD INFORMATION" must be provided.
+BR-DE-24-b	If BT-81 "Payment means type code" holds a card payment code (48, 54, 55), BG-17 and BG-19 must not be provided.
+BR-DE-20	"Debited account identifier" (BT-91) should contain a correct IBAN if "Payment means type code" (BT-81) requests code 59 (SEPA) as the means of payment.
+BR-DE-25-a	If BT-81 "Payment means type code" holds a direct debit code (59), exactly one BG-19 "DIRECT DEBIT" must be provided.
+BR-DE-25-b	If BT-81 "Payment means type code" holds a direct debit code (59), BG-17 and BG-18 must not be provided.
+BR-DE-14	The element "VAT category rate" (BT-119) must be provided.
+BR-DEX-01	The element {_n} "Attached Document" (BT-125) uses a MIME code that is not allowed: {_v}. For an Extension the MIME code application/xml may be used in addition to the list of mime codes (defined in section 8.2, "Binary Object").
+BR-DEX-02	The "Invoice line net amount" (BT-131) of an "INVOICE LINE" (BG-25) or a "SUB INVOICE LINE" (BG-DEX-01) should equal the sum of the "Invoice line net amount" (BT-131) of the "SUB INVOICE LINE"s (BG-DEX-01) directly below it.
+BR-DEX-03	A Sub Invoice Line (BG-DEX-01) must contain exactly one "SUB INVOICE LINE VAT INFORMATION" (BG-DEX-06).
+BR-DEX-10	The element "Third party payment type" BT-DEX-001 must be provided if the group "THIRD PARTY PAYMENT" (BG-DEX-09) is provided.
+BR-DEX-11	The element "Third party payment amount" BT-DEX-002 must be provided if the group "THIRD PARTY PAYMENT" (BG-DEX-09) is provided.
+BR-DEX-12	The element "Third party payment description" BT-DEX-003 must be provided if the group "THIRD PARTY PAYMENT" (BG-DEX-09) is provided.
+BR-DEX-13	The maximum number of decimals for "Third party payment amount" (BT-DEX-002) is 2.
+BR-DEX-14	The currency of "Third party payment amount" BT-DEX-002 must equal BT-5 ("Invoice currency code").
+BR-DE-CVD-02	The element {_n} "Tender or lot reference" (BT-17) must be provided.
+BR-DE-CVD-01	The element {_n} "Contract reference" (BT-12) must be provided.
+BR-DE-CVD-03	An invoice must contain at least one {_n} INVOICE LINE (BG-25) in which the scheme identifier of {_n} "Item classification identifier" (BT-158) is 'CVD' and {_n} "Item attribute name" (BT-160) is 'cva'.
+BR-DE-CVD-06-a	If the scheme identifier of {_n} "Item classification identifier" (BT-158) is 'CVD', the same invoice line must have exactly one {_n} "Item attribute name" (BT-160) with the value 'cva'.
+BR-DE-CVD-06-b	If {_n} "Item attribute name" (BT-160) is 'cva', the same invoice line must have exactly one {_n} "Item classification identifier" (BT-158) with the scheme identifier 'CVD'.
+BR-TMP-CVD-01	The scheme for {_n} "Item classification identifier" (BT-158) must be taken from the UNTDID 7143 code list.
+BR-DE-CVD-04	An {_n} "Item classification identifier" (BT-158) with the scheme identifier 'CVD' must hold a value from the list of allowed vehicle categories.
+BR-DE-CVD-05	If, within {_n} ITEM ATTRIBUTES (BG-32), the {_n} "Item attribute name" (BT-160) is 'cva', the {_n} "Item attribute value" (BT-161) must hold one of the allowed values.

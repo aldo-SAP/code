@@ -92,6 +92,20 @@
       return mo >= 1 && mo <= 12 && d >= 1 && d <= [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][mo - 1];
     }]
   };
+  // fn:sum of decimals: fontoxpath adds them as binary floating point (193.70 + 48.75 + 93.34 is not 335.79), Saxon adds them exactly.
+  // u:sum takes the decimals as the text they were written in (the shortest text of the number) and adds those exactly.
+  const decimalParts = (n) => {
+    let t = Number.isInteger(n) && Math.abs(n) < 1e21 ? String(n) : n.toFixed(10).replace(/0+$/, "").replace(/\.$/, "");
+    if (/e/i.test(t)) t = n.toFixed(20);
+    const neg = t[0] === "-"; if (neg) t = t.slice(1);
+    const [i, f = ""] = t.split(".");
+    return { int: BigInt(i + f), scale: f.length, neg };
+  };
+  FUNCTIONS.sum = [["xs:decimal*"], "xs:decimal", (xs) => {
+    const parts = xs.map(decimalParts), scale = Math.max(0, ...parts.map((p) => p.scale));
+    const total = parts.reduce((t, p) => t + (p.neg ? -1n : 1n) * p.int * 10n ** BigInt(scale - p.scale), 0n);
+    return Number(total) / Math.pow(10, scale);
+  }];
   Object.keys(FUNCTIONS).forEach((name) => {
     const [params, ret, fn] = FUNCTIONS[name];
     fx.registerCustomXPathFunction({ namespaceURI: NS.u, localName: name }, params, ret, (_c, ...args) => fn(...args));
@@ -100,7 +114,8 @@
   function registerFunction(prefix, localName, params, ret, fn) {
     fx.registerCustomXPathFunction({ namespaceURI: NS[prefix], localName }, params, ret, (_c, ...args) => fn(...args));
   }
-  const fixTest = (t) => t.replace(/\(string\(\.\) castable as xs:date\)/g, "(string(.) castable as xs:date and u:realDate(string(.)))");
+  const fixTest = (t) => t.replace(/\(string\(\.\) castable as xs:date\)/g, "(string(.) castable as xs:date and u:realDate(string(.)))")
+    .replace(/(^|[^\w:.$-])(?:fn:)?sum\(/g, "$1u:sum(");
 
   // ---------- Text scanning ----------
   // Splits at a top-level separator: "|" (alternatives of a context) or " or "

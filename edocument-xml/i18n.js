@@ -61,7 +61,7 @@
     "{n} fields": "{n} campi",
     "{n} field": "{n} campo",
     "Try a sample invoice": "Prova una fattura di esempio",
-    "Checks a UBL invoice or credit note against the EN 16931 rules and, when the file asks for them, PEPPOL, France and Italy, or the UAE (PINT AE) rules. Everything stays in your browser.": "Controlla una fattura o nota di credito UBL con le regole EN 16931 e, quando il file lo richiede, PEPPOL, Francia e Italia, oppure le regole degli Emirati (PINT AE). Tutto resta nel tuo browser.",
+    "Checks a UBL invoice or credit note against the EN 16931 rules and, when the file asks for them, PEPPOL, France, Germany (XRechnung) and Italy, or the UAE (PINT AE) rules. Everything stays in your browser.": "Controlla una fattura o nota di credito UBL con le regole EN 16931 e, quando il file lo richiede, PEPPOL, Francia, Germania (XRechnung) e Italia, oppure le regole degli Emirati (PINT AE). Tutto resta nel tuo browser.",
     "Technical view": "Vista tecnica",
     "Total": "Totale",
     "Exact values": "Valori esatti",
@@ -944,7 +944,9 @@
     "Identifier schemes (BT-29, BT-46, BT-60, BT-71) must be ISO 6523 ICD codes (SEPA for the seller or payee)": "Gli schemi degli identificativi (BT-29, BT-46, BT-60, BT-71) devono essere codici ISO 6523 ICD (SEPA per venditore o beneficiario)"
   });
 
-  const DICTS = { it: { exact: IT, patterns: IT_PATTERNS, words: IT_WORDS } };
+  // English only translates the messages that are not English already (the German text of the XRechnung rules)
+  const EN = { exact: {}, patterns: [], words: [] };
+  const DICTS = { it: { exact: IT, patterns: IT_PATTERNS, words: IT_WORDS }, en: EN };
 
   const fill = (s, vars) => (vars ? String(s).replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m)) : String(s));
 
@@ -1000,6 +1002,7 @@
     onChange: (f) => listeners.push(f),
     // Italian texts from a country's own file: exact texts, and patterns [["English with {x}", "Italiano con {x}"], …]
     addItalian: (map, patterns) => { Object.assign(IT, map); (patterns || []).forEach((p) => IT_PATTERNS.push(compile(p))); },
+    addEnglish: (map, patterns) => { Object.assign(EN.exact, map); (patterns || []).forEach((p) => EN.patterns.push(compile(p))); },
     T, tr, applyStatic
   };
   window.T = T;

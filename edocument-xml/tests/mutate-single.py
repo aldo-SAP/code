@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Systematic single-change mutants of the official PINT AE example invoices, to exercise every rule.
+"""Systematic single-change mutants of the official example invoices of a profile (--profile=ae|de), to exercise every rule.
 
-usage: mutate-ae.py OUTDIR SRCDIR [--rate=0.3] [--seed=1] [--log=FILE]
+usage: mutate-single.py OUTDIR SRCDIR [--profile=ae] [--rate=0.3] [--seed=1] [--log=FILE]
 
 Where mutate.py breaks documents at random, this one walks every element and attribute of every example and changes it in one way at a time:
 deleted, duplicated, emptied, and set to values of the kind it holds (dates, amounts, codes, identifiers, flags). Each variant is kept with the
 probability --rate (default 0.3), so the set stays a few thousand documents; --rate=1 keeps them all. The changes made are written to the log
-(OUTDIR/../mutlog-ae.json by default) next to the document names, so a difference can be reproduced.
+(OUTDIR/../mutlog-single.json by default) next to the document names, so a difference can be reproduced.
 """
 import sys, os, json, random, copy
 from lxml import etree
@@ -14,7 +14,8 @@ from lxml import etree
 out, src = sys.argv[1], sys.argv[2]
 opt = {a.split("=")[0][2:]: a.split("=")[1] for a in sys.argv[3:] if a.startswith("--") and "=" in a}
 rate, seed = float(opt.get("rate", 0.3)), int(opt.get("seed", 1))
-logfile = opt.get("log", os.path.join(os.path.dirname(os.path.abspath(out)), "mutlog-ae.json"))
+profile = opt.get("profile", "ae")
+logfile = opt.get("log", os.path.join(os.path.dirname(os.path.abspath(out)), "mutlog-single.json"))
 rnd = random.Random(seed)
 os.makedirs(out, exist_ok=True)
 
@@ -26,6 +27,17 @@ CODES = ["", "X", "XX", "AE", "AED", "USD", "380", "381", "389", "480", "81", "S
 IDS = ["", " ", "X", "0", "1", "123456789012345", "100000000000003", "ABC 123", "1234567890123", "AE", "urn:fdc:peppol.eu:2017:poacc:billing:01:1.0"]
 # (the billing and self-billing identifiers are left out: the official stylesheets are run per variant, so swapping one for the other would not compare like with like)
 TEXTS = ["", " ", "X", "x" * 300, "Ünïcode", "a\nb"]
+
+
+if profile == "de":
+    # XRechnung: BR-DE rules look at contact data, the Skonto text, identifier schemes, VAT categories, CVD vehicle data
+    CODES += ["0204", "0088", "0060", "XR01", "XR02", "XR03", "CVD", "K", "G", "L", "M", "S", "Z", "E", "AE", "42", "58", "59", "49", "30", "ZZZ", "DE", "FR", "GR", "EL", "cva",
+              "M1", "N3", "clean", "zero-emission", "other", "VAT", "AAA", "application/xml", "text/plain", "326", "384", "875", "876", "877", "389", "InvoiceTypeCode", "EM", "SEPA"]
+    IDS += ["04011000-12345-34", "991-01234-44", "DE123456789", "DE89370400440532013000", "DE89370400440532013001", "abc@example.de", "not-an-email", "+49 30 1234567", "12", "http://example.de/x", "mailto:a@b.de"]
+    TEXTS += ["#SKONTO#TAGE=14#PROZENT=2.00#", "#SKONTO#TAGE=14#PROZENT=2.00#BASISBETRAG=100.00#", "#SKONTO#TAGE=14#PROZENT=2#", "#VERZUG#TAGE=14#PROZENT=2.00#", "cva", "a@b.de", "Eine Notiz"]
+    CUSTOM = ["urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0", "urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0#conformant#urn:xeinkauf.de:kosit:extension:xrechnung_3.0",
+              "urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0#compliant#urn:xeinkauf.de:kosit:xrechnung:cvd_0.9", "urn:cen.eu:en16931:2017"]
+    IDS += CUSTOM
 
 
 def pool(tag, text):

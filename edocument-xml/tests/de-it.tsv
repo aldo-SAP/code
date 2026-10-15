@@ -1,0 +1,77 @@
+PEPPOL-EN16931-R008	Il documento NON DEVE contenere elementi vuoti.
+PEPPOL-EN16931-R001	Il processo di business DEVE essere indicato.
+PEPPOL-EN16931-R053	DEVE essere indicato un solo totale imposte con i relativi riepiloghi imposta.
+PEPPOL-EN16931-R054	DEVE essere indicato un solo totale imposte senza riepiloghi quando è indicata la valuta fiscale.
+PEPPOL-EN16931-R055	L'importo totale IVA della fattura e l'importo totale IVA nella valuta di contabilizzazione DEVONO avere lo stesso segno
+PEPPOL-EN16931-R005	Il codice valuta di contabilizzazione IVA DEVE essere diverso dal codice valuta della fattura, quando indicato.
+PEPPOL-EN16931-R010	L'indirizzo elettronico dell'acquirente DEVE essere indicato
+PEPPOL-EN16931-R020	L'indirizzo elettronico del venditore DEVE essere indicato
+PEPPOL-EN16931-R041	L'importo base di sconto/maggiorazione DEVE essere indicato quando è indicata la percentuale.
+PEPPOL-EN16931-R042	La percentuale di sconto/maggiorazione DEVE essere indicata quando è indicato l'importo base.
+PEPPOL-EN16931-R040	L'importo di sconto/maggiorazione deve essere uguale a importo base * percentuale / 100 se esistono importo base e percentuale
+PEPPOL-EN16931-R043	Il valore di ChargeIndicator di sconto/maggiorazione DEVE essere 'true' o 'false'
+PEPPOL-EN16931-R061	Il riferimento del mandato DEVE essere indicato per l'addebito diretto.
+PEPPOL-EN16931-R110	La data di inizio del periodo di riga DEVE rientrare nel periodo di fatturazione.
+PEPPOL-EN16931-R111	La data di fine del periodo di riga DEVE rientrare nel periodo di fatturazione.
+PEPPOL-EN16931-R120	L'importo netto di riga DEVE essere uguale a (quantità fatturata * (prezzo netto dell'articolo / quantità base del prezzo) + somma delle maggiorazioni di riga - somma degli sconti di riga
+PEPPOL-EN16931-R121	La quantità base DEVE essere un numero positivo maggiore di zero.
+PEPPOL-EN16931-R101	L'elemento Document reference può essere usato solo per l'oggetto della riga di fattura
+PEPPOL-EN16931-R044	La maggiorazione a livello di prezzo NON è consentita. È ammesso solo il valore 'false'.
+PEPPOL-EN16931-R046	Il prezzo netto dell'articolo DEVE essere uguale a (prezzo lordo - importo dello sconto) quando è indicato il prezzo lordo.
+PEPPOL-EN16931-R130	Il codice unità della quantità base del prezzo DEVE essere uguale a quello della quantità fatturata.
+BR-DE-1	Una fattura deve contenere le "PAYMENT INSTRUCTIONS" (istruzioni di pagamento, BG-16).
+BR-DE-15	L'elemento "Buyer reference" (riferimento dell'acquirente, BT-10) deve essere indicato.
+BR-DE-16	Se in una fattura sono usati i codici IVA S, Z, E, AE, K, G, L o M, deve essere indicato almeno uno tra "Seller VAT identifier" (BT-31), "Seller tax registration identifier" (BT-32) o "SELLER TAX REPRESENTATIVE PARTY" (BG-11).
+BR-DE-17	Con "Invoice type code" (BT-3) dovrebbero essere usati solo questi codici UNTDID 1001: 326 (fattura parziale), 380 (fattura commerciale), 384 (fattura rettificativa), 389 (autofattura), 381 (nota di credito), 875 (fattura parziale di costruzione), 876 (fattura finale parziale di costruzione), 877 (fattura finale di costruzione).
+BR-DE-18	Le righe di Skonto (sconto di cassa) in {_n} devono corrispondere a questa espressione regolare: {_v}. Le condizioni di Skonto vanno in "Payment terms" (BT-20): il primo segmento è "SKONTO", il secondo "TAGE=n" (giorni), il terzo "PROZENT=n" (percentuale: senza segno, con punto e due decimali). Se lo sconto non è calcolato su BT-115 "Amount due for payment" ma su una parte di esso, l'importo base segue come quarto segmento "BASISBETRAG=n" (un Amount). Ogni voce inizia con #, i segmenti sono separati da # e una riga termina con #. Dopo un'indicazione completa di Skonto deve seguire un'interruzione di riga XML. Tutto deve essere in lettere maiuscole. Spazi aggiuntivi (spazi, tabulazioni o interruzioni di riga) non sono ammessi. Altri caratteri o testi diversi da quelli indicati non sono ammessi.
+BR-DE-21	L'elemento "Specification identifier" (BT-24) dovrebbe rispettare la sintassi dell'identificativo dello standard XRechnung.
+BR-DE-22	L'attributo "filename" di tutti gli elementi "EmbeddedDocumentBinaryObject" deve essere univoco.
+BR-DE-26	Se "Invoice type code" (BT-3) è 384 (fattura rettificativa), PRECEDING INVOICE REFERENCE (BG-3) dovrebbe essere presente almeno una volta.
+BR-DE-30	Se è presente "DIRECT DEBIT" (BG-19), deve essere indicato "Bank assigned creditor identifier" (BT-90).
+BR-DE-31	Se è presente "DIRECT DEBIT" (BG-19), deve essere indicato "Debited account identifier" (BT-91).
+BR-DE-TMP-32	Una fattura dovrebbe indicare la data di fornitura o prestazione: BT-72 "Actual delivery date", BG-14 "Invoicing period", oppure BG-26 "Invoice line period" in ogni riga di fattura.
+BR-TMP-2	BT-124 "External document location" deve contenere un URL assoluto con uno schema valido.
+BR-TMP-6	Le date in UBL devono essere indicate nel formato AAAA-MM-GG (YYYY-MM-DD).
+BR-DE-2	Il gruppo "SELLER CONTACT" (BG-6) deve essere indicato.
+BR-DE-3	L'elemento "Seller city" (BT-37) deve essere indicato.
+BR-DE-4	L'elemento "Seller post code" (BT-38) deve essere indicato.
+BR-DE-5	L'elemento "Seller contact point" (BT-41) deve essere indicato.
+BR-DE-6	L'elemento "Seller contact telephone number" (BT-42) deve essere indicato.
+BR-DE-7	L'elemento "Seller contact email address" (BT-43) deve essere indicato.
+BR-DE-27	BT-42 dovrebbe contenere almeno tre cifre.
+BR-DE-28	BT-43 dovrebbe contenere esattamente una chiocciola (@), con almeno due caratteri su entrambi i lati e senza spazio o punto accanto. Un punto non dovrebbe trovarsi all'inizio o alla fine.
+BR-DE-8	L'elemento "Buyer city" (BT-52) deve essere indicato.
+BR-DE-9	L'elemento "Buyer post code" (BT-53) deve essere indicato.
+BR-DE-10	L'elemento "Deliver to city" (BT-77) deve essere indicato se è indicato il gruppo "DELIVER TO ADDRESS" (BG-15).
+BR-DE-11	L'elemento "Deliver to post code" (BT-78) deve essere indicato se è indicato il gruppo "DELIVER TO ADDRESS" (BG-15).
+BR-DE-19	"Payment account identifier" (BT-84) dovrebbe contenere un IBAN corretto se "Payment means type code" (BT-81) richiede il codice 58 (SEPA) come mezzo di pagamento.
+BR-DE-23-a	Se BT-81 "Payment means type code" contiene un codice di bonifico (30, 58), deve essere indicato BG-17 "CREDIT TRANSFER".
+BR-DE-23-b	Se BT-81 "Payment means type code" contiene un codice di bonifico (30, 58), BG-18 e BG-19 non devono essere indicati.
+BR-DE-24-a	Se BT-81 "Payment means type code" contiene un codice di pagamento con carta (48, 54, 55), deve essere indicato esattamente un BG-18 "PAYMENT CARD INFORMATION".
+BR-DE-24-b	Se BT-81 "Payment means type code" contiene un codice di pagamento con carta (48, 54, 55), BG-17 e BG-19 non devono essere indicati.
+BR-DE-20	"Debited account identifier" (BT-91) dovrebbe contenere un IBAN corretto se "Payment means type code" (BT-81) richiede il codice 59 (SEPA) come mezzo di pagamento.
+BR-DE-25-a	Se BT-81 "Payment means type code" contiene un codice di addebito diretto (59), deve essere indicato esattamente un BG-19 "DIRECT DEBIT".
+BR-DE-25-b	Se BT-81 "Payment means type code" contiene un codice di addebito diretto (59), BG-17 e BG-18 non devono essere indicati.
+BR-DE-14	L'elemento "VAT category rate" (BT-119) deve essere indicato.
+BR-DEX-01	L'elemento {_n} "Attached Document" (BT-125) usa un MIME code non ammesso: {_v}. Nel caso di una Extension, oltre alla lista dei mime code (definita nella sezione 8.2, "Binary Object") può essere usato il MIME code application/xml.
+BR-DEX-02	Il valore di "Invoice line net amount" (BT-131) di una "INVOICE LINE" (BG-25) o di una "SUB INVOICE LINE" (BG-DEX-01) dovrebbe essere uguale alla somma degli "Invoice line net amount" (BT-131) delle "SUB INVOICE LINE" (BG-DEX-01) direttamente sottostanti.
+BR-DEX-03	Una Sub Invoice Line (BG-DEX-01) deve contenere esattamente una "SUB INVOICE LINE VAT INFORMATION" (BG-DEX-06).
+BR-DEX-09	Importo dovuto per il pagamento (BT-115) = importo totale della fattura con IVA (BT-112) - importo pagato (BT-113) + importo di arrotondamento (BT-114) + Σ importo del pagamento di terzi (BT-DEX-002).
+BR-DEX-04	Qualsiasi identificativo di schema in {_n} DEVE essere codificato con la lista ISO 6523 ICD.
+BR-DEX-05	Qualsiasi identificativo di schema in {_n} DEVE essere codificato con la lista ISO 6523 ICD.
+BR-DEX-06	Qualsiasi identificativo di schema in {_n} DEVE essere codificato con la lista ISO 6523 ICD.
+BR-DEX-07	Qualsiasi identificativo di schema per un identificativo di indirizzo elettronico in {_n} DEVE appartenere alla lista di codici CEF EAS.
+BR-DEX-08	Qualsiasi identificativo di schema per un identificativo del luogo di consegna in {_n} DEVE essere codificato con la lista ISO 6523 ICD.
+BR-DEX-10	L'elemento "Third party payment type" BT-DEX-001 deve essere indicato se è indicato il gruppo "THIRD PARTY PAYMENT" (BG-DEX-09).
+BR-DEX-11	L'elemento "Third party payment amount" BT-DEX-002 deve essere indicato se è indicato il gruppo "THIRD PARTY PAYMENT" (BG-DEX-09).
+BR-DEX-12	L'elemento "Third party payment description" BT-DEX-003 deve essere indicato se è indicato il gruppo "THIRD PARTY PAYMENT" (BG-DEX-09).
+BR-DEX-13	Il numero massimo di decimali per "Third party payment amount" (BT-DEX-002) è 2.
+BR-DEX-14	La valuta di "Third party payment amount" BT-DEX-002 deve corrispondere a BT-5 ("Invoice currency code").
+BR-DE-CVD-02	L'elemento {_n} "Tender or lot reference" (BT-17) deve essere indicato.
+BR-DE-CVD-01	L'elemento {_n} "Contract reference" (BT-12) deve essere indicato.
+BR-DE-CVD-03	Una fattura deve contenere almeno una {_n} INVOICE LINE (BG-25) in cui l'identificativo dello schema di {_n} "Item classification identifier" (BT-158) è 'CVD' e {_n} "Item attribute name" (BT-160) è 'cva'.
+BR-DE-CVD-06-a	Se l'identificativo dello schema di {_n} "Item classification identifier" (BT-158) è 'CVD', la stessa riga di fattura deve avere esattamente un {_n} "Item attribute name" (BT-160) con il valore 'cva'.
+BR-DE-CVD-06-b	Se {_n} "Item attribute name" (BT-160) è 'cva', la stessa riga di fattura deve avere esattamente un {_n} "Item classification identifier" (BT-158) con l'identificativo dello schema 'CVD'.
+BR-TMP-CVD-01	Lo schema di {_n} "Item classification identifier" (BT-158) deve essere scelto dalla lista di codici UNTDID 7143.
+BR-DE-CVD-04	Un {_n} "Item classification identifier" (BT-158) con l'identificativo dello schema 'CVD' deve contenere un valore della lista delle categorie di veicolo ammesse.
+BR-DE-CVD-05	Se, all'interno di {_n} ITEM ATTRIBUTES (BG-32), l'{_n} "Item attribute name" (BT-160) è 'cva', l'{_n} "Item attribute value" (BT-161) deve contenere uno dei valori ammessi.
