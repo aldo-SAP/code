@@ -94,7 +94,6 @@ input[type="file"] { display: none; }
   padding: 2px 8px; border-radius: 999px; background: var(--ink); color: var(--paper);
 }
 .badge.cn { background: var(--to); }
-.badge.bar { background: none; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); }
 .docno { font-size: 1.7rem; font-weight: 600; letter-spacing: -0.01em; overflow-wrap: anywhere; line-height: 1.2; }
 .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-top: 4px; }
 .who { font-weight: 600; padding: 4px 10px; border-radius: 8px; overflow-wrap: anywhere; }
@@ -103,6 +102,8 @@ input[type="file"] { display: none; }
 .who.to { background: var(--to-soft); color: var(--to); }
 .who span { color: var(--ink); }
 .arrow { color: var(--faint); font-size: 1.2rem; }
+.hero-bar { flex: 0 0 auto; align-self: center; padding: 0 28px; }
+.hero-bar span { display: inline-block; font-size: 1.35rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 6px 18px; border-radius: 999px; color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
 .hero-amount { flex: 0 1 320px; min-width: 250px; align-self: center; padding-left: 28px; border-left: 1px solid var(--line-soft);
   display: grid; grid-template-columns: 1fr; justify-items: end; text-align: right; gap: 2px; }
 .hero-amount .lbl { color: var(--muted); font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; }
@@ -436,6 +437,8 @@ dialog#viewer::backdrop { background: rgba(20, 18, 14, 0.6); }
   .tab-tools input[type="search"] { flex: 1; width: auto; }
   .row, .card.full > .row, .card.full > .sub > .row { grid-template-columns: 1fr; }
   .hero, .sheet { padding: 16px; }
+  .hero-bar { flex: 1 1 100%; padding: 4px 0 0; }
+  .hero-bar span { font-size: 1.05rem; padding: 3px 14px; }
   .hero-amount { flex: 1 1 100%; min-width: 0; padding: 12px 0 0; border-left: 0; border-top: 1px solid var(--line-soft);
     grid-template-columns: 1fr auto; align-items: end; justify-items: start; text-align: left; column-gap: 12px; }
   .hero-amount .lbl { grid-column: 1; grid-row: 1; align-self: end; }
