@@ -821,3 +821,12 @@ table.ac-calc td.bt-col { width: 1%; white-space: nowrap; text-align: right; pad
 #jsonInfo .json-notes li { margin: 2px 0; }
 #jsonXml { max-height: none; }
 #jsonInfo table.ac td:first-child { width: 42%; color: var(--ink); }
+
+/* phone cards: the failure messages of a line sit inside the line's card, not in a box of their own */
+@media (max-width: 720px) {
+  #sec-lines table.tc > tbody > tr.line:has(+ tr.line-err) { border-bottom-width: 0; border-bottom-left-radius: 0; border-bottom-right-radius: 0; margin-bottom: 0; }
+  #sec-lines table.tc > tbody > tr.line-err { padding: 0; margin: 0 0 8px; border: 1px solid rgba(127, 127, 127, 0.3); border-top: 0; border-radius: 0 0 10px 10px; overflow: hidden; }
+  #sec-lines table.tc > tbody > tr.line.has-err + tr.line-err { border-color: var(--err); border-top: 0; }
+  #sec-lines table.tc > tbody > tr.line-err > td { padding: 4px 12px 10px; }
+  #sec-lines table.tc > tbody > tr.line.open + tr.line-err { margin-bottom: 0; border-bottom-width: 0; border-radius: 0; }
+}

@@ -26,7 +26,7 @@ function official(file) {
   for (const m of text.matchAll(/<svrl:(active-pattern|failed-assert)\b([^>]*)>/g)) {
     const id = (/\bid="([^"]*)"/.exec(m[2]) || [])[1];
     if (m[1] === "active-pattern") pattern = id;
-    else if (id) out.add(id.startsWith("BR-FR") && pattern ? pattern : id);
+    else if (id) out.add(id.startsWith("BR-FR") && !id.startsWith("BR-FREXT") && pattern ? pattern : id);
   }
   return out;
 }

@@ -13,9 +13,11 @@ ids() { grep -ho 'name="id">[A-Za-z0-9-]*<' "$@" | sed 's/name="id">//;s/<//' | 
 
 EN="$C/en16931/ubl/xslt/EN16931-UBL-validation.xslt"
 FR="$C/france/FNFE_RFE_INVOICE/UBL/EN16931/2xslt"
+FX2="$C/france/FNFE_RFE_INVOICE/UBL/EXTENDED-CTC-FR/2xslt"
 PP="$C/peppol-ubl.xslt"
 ids "$EN" "$PP" > "$W/en-pp.ids"
 ids "$FR"/*.xslt > "$W/en-fr.ids"
+ids "$FX2"/*.xslt > "$W/en-fx.ids"
 
 # Differences that are intended or come from the official artefacts, not from mistakes:
 #  - national PEPPOL rule sets this tool does not implement (DE, DK-R-003+, GR, IS, IT, SE-R-003+, NL/NO come from other sources)
@@ -24,9 +26,29 @@ ids "$FR"/*.xslt > "$W/en-fr.ids"
 IGNORE_EN="DE-R,DK-R,GR-,IS-R,IT-R,SE-R,NL-R,NO-R,PEPPOL-EN16931-R007,BR-CO-09"
 #  - France: extended-profile (multi-vendor, sub-line) rules; the FR copy of the EN schematron is older (UBL-SR-25/58/59 differ)
 IGNORE_FR="BR-CO-09,BR-FR-MV,BR-FR-BD,UBL-SR-25,UBL-SR-58,UBL-SR-59"
+#  - EXTENDED-CTC-FR documents (compared with that profile's own schematron): its replacement rules BR-FREXT-/UBL-FREXT- are not implemented, and
+#    the engine only applies the line-reference relaxation (UBL-CR-528..531); the other rules that profile switches off stay on, on purpose
+#    (UBL-SR-04/16/20/34/52 and the other UBL-CR extension rules), so it reports them where the official extended schematron does not
+IGNORE_FX="BR-CO-09,BR-FR-MV,BR-FR-BD,BR-FREXT,UBL-FREXT"
 #  - only in mutants: a VAT tax category written without the VAT scheme, which the official S/B/O/IG/IP rules treat differently
 #    (the primary rules BR-CO-04, BR-32, BR-37, BR-47, BR-48 do match)
 IGNORE_MUT="BR-S-01,BR-S-02,BR-S-04,BR-O-01,BR-O-11,BR-O-12,BR-IG-01,BR-IP-08,UBL-SR-13,BR-CO-11,BR-S-08"
+
+# France documents on the EXTENDED-CTC-FR profile are checked against that profile's own schematron, the others against the CIUS FR one
+split_fr() { # dir -> dir.ext and dir.cius
+  mkdir -p "$1.ext" "$1.cius"
+  for f in "$1"/*.xml; do
+    if grep -qiP '<(cbc:)?CustomizationID>[^<]*extended-ctc-fr' "$f"; then cp "$f" "$1.ext/"; else cp "$f" "$1.cius/"; fi
+  done; }
+fr_run() { # label docdir extra-ignore log
+  local d="$2" ign="$3" lg="$4" tag; tag=$(basename "$d")
+  split_fr "$d"
+  for x in BR-FR-Flux2-Schematron-UBL BR-FR-Flux2-Schematron-UBL_WARNING EN16931-UBL-validation; do saxon "$FR/$x.xslt" "$d.cius" "$W/$tag-cius-$x"; done
+  for x in BR-FR-Flux2-Schematron-UBL BR-FR-Flux2-Schematron-UBL_WARNING EXTENDED-CTC-FR-UBL; do saxon "$FX2/$x.xslt" "$d.ext" "$W/$tag-ext-$x"; done
+  step "$1 ($(ls "$d.cius" | wc -l) CIUS FR, $(ls "$d.ext" | wc -l) EXTENDED-CTC-FR documents)"
+  run node differential.js --docs="$d.cius" --svrl="$W/$tag-cius-BR-FR-Flux2-Schematron-UBL,$W/$tag-cius-BR-FR-Flux2-Schematron-UBL_WARNING,$W/$tag-cius-EN16931-UBL-validation" --ids="$W/en-fr.ids" --sets=fr --ignore="$IGNORE_FR$ign" ${lg:+--log="$W/$tag-cius.log.json"}
+  run node differential.js --docs="$d.ext" --svrl="$W/$tag-ext-BR-FR-Flux2-Schematron-UBL,$W/$tag-ext-BR-FR-Flux2-Schematron-UBL_WARNING,$W/$tag-ext-EXTENDED-CTC-FR-UBL" --ids="$W/en-fx.ids" --sets=fr --ignore="$IGNORE_FX$ign" ${lg:+--log="$W/$tag-ext.log.json"}
+}
 
 step() { echo; echo "== $1"; }
 run() { "$@" || fail=1; }
@@ -51,9 +73,7 @@ while IFS= read -r f; do
   grep -q "InvoiceLine\|CreditNoteLine" "$f" && grep -q "<Invoice\|<CreditNote\|:Invoice \|:CreditNote " "$f" || continue
   n=$((n+1)); cp "$f" "$F/$(printf %03d $n)_$(basename "$f" | tr ' ' '_')"
 done < <(find "$C/france-examples" "$C/france/FNFE_RFE_INVOICE/Z.example/TEST/UBL" -name "*.xml" -not -path "*__MACOSX*" 2>/dev/null)
-for x in BR-FR-Flux2-Schematron-UBL BR-FR-Flux2-Schematron-UBL_WARNING EN16931-UBL-validation; do saxon "$FR/$x.xslt" "$F" "$W/fr-$x"; done
-step "France (XP Z12-012, UBL) on $n official example invoices"
-run node differential.js --docs="$F" --svrl="$W/fr-BR-FR-Flux2-Schematron-UBL,$W/fr-BR-FR-Flux2-Schematron-UBL_WARNING,$W/fr-EN16931-UBL-validation" --ids="$W/en-fr.ids" --sets=fr --ignore="$IGNORE_FR"
+fr_run "France (XP Z12-012, UBL) on $n official example invoices" "$F" "" ""
 
 # E-reporting: the UBL is turned into a Flux 10 report; the official Flux 10 schematron checks that report
 FX="$C/france/FNFE_RFE_INVOICE/Flux10/Flux10.xslt"
@@ -68,9 +88,7 @@ if [ "$1" != "quick" ]; then
   step "EN 16931 + PEPPOL on $N mutated example invoices"
   run node differential.js --docs="$W/mut-en" --svrl="$W/mut-en-en,$W/mut-en-pp" --ids="$W/en-pp.ids" --sets=peppol --ignore="$IGNORE_EN,$IGNORE_MUT" --log="$W/mut-en.log.json"
   python3 mutate.py "$W/mut-fr" "$N" "$(( ${SEED:-1} + 1 ))" "$F" > /dev/null
-  for x in BR-FR-Flux2-Schematron-UBL BR-FR-Flux2-Schematron-UBL_WARNING EN16931-UBL-validation; do saxon "$FR/$x.xslt" "$W/mut-fr" "$W/mut-fr-$x"; done
-  step "France on $N mutated example invoices"
-  run node differential.js --docs="$W/mut-fr" --svrl="$W/mut-fr-BR-FR-Flux2-Schematron-UBL,$W/mut-fr-BR-FR-Flux2-Schematron-UBL_WARNING,$W/mut-fr-EN16931-UBL-validation" --ids="$W/en-fr.ids" --sets=fr --ignore="$IGNORE_FR,$IGNORE_MUT" --log="$W/mut-fr.log.json"
+  fr_run "France on $N mutated example invoices" "$W/mut-fr" ",$IGNORE_MUT" log
   node ereport-gen.js "$W/mut-fr" "$W/er-mut" > /dev/null; saxon "$FX" "$W/er-mut" "$W/er-mut-sv"
   step "E-reporting (Flux 10) on $N mutated example invoices"
   run node ereport-differential.js "$W/mut-fr" "$W/er-mut-sv"

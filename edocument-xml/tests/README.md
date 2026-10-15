@@ -41,6 +41,9 @@ Listed at the top of `run.sh` and left out of the comparison on purpose:
 - National PEPPOL rule sets this tool does not implement: Germany, Greece, Iceland, Italy, and Denmark/Sweden beyond the first rules.
 - `BR-CO-09`: the official list rejects the Greek VAT prefix `EL`; the viewer accepts it, as it is the EU prefix.
 - France: the multi-vendor and sub-line rules of the extended profiles (`BR-FR-MV-`, `BR-FR-BD-`).
+- France, `extended-ctc-fr` invoices: they are compared with that profile's own schematron. Its replacement rules (`BR-FREXT-`, `UBL-FREXT-`) are not implemented.
+  The viewer applies only one relaxation of that profile, the line-level order, despatch, receipt and previous-invoice references (`UBL-CR-528` to `531`);
+  the other rules the profile switches off (for example `UBL-SR-16`, one buyer identifier) stay on, on purpose.
 - Mutants only: a VAT tax category written **without** the VAT scheme. The primary rules (`BR-CO-04`, `BR-32`, `BR-37`,
   `BR-47`, `BR-48`) match; the secondary S/B/O/IG/IP rules treat it differently in a few documents.
 

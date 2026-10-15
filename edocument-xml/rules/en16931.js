@@ -710,8 +710,12 @@
       setLabel = SETS[id].label;
       SETS[id].run(ctx);
     });
+    // The EXTENDED-CTC-FR profile allows purchase order, despatch, receipt and previous-invoice references on the line
+    // (annex EXT-FR-FE-BG-09), so its official schematron (EXTENDED-CTC-FR-UBL.sch) switches off these four rules. Only with the France rules on.
+    if ((extraSets || []).includes("fr") && /extended-ctc-fr/i.test(val(R, "CustomizationID"))) return out.filter((r) => !EXTENDED_FR_OFF.has(r.id));
     return out;
   }
+  const EXTENDED_FR_OFF = new Set(["UBL-CR-528", "UBL-CR-529", "UBL-CR-530", "UBL-CR-531"]);
 
   window.EN16931 = { check, roundingInInclusive, register, detect, sets: SETS, util: { byPath, first, val, has, txt, num } };
 })();
