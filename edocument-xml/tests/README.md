@@ -38,7 +38,7 @@ changes made to the mutant that caused it.
 ## PINT AE (UAE)
 
 The PINT AE rules are not re-written: `../countries/ae/pint-ae-rules.js` holds all 302 official asserts (170 PINT layer, 132 UAE layer) exactly as published and
-`../countries/ae/rules.js` evaluates them with [fontoxpath](../countries/ae/vendor/README.md) the way the official stylesheet does. Because of that the tests ask three things:
+`../lib/schematron.js` evaluates them with [fontoxpath](../lib/vendor/README.md) the way the official stylesheet does. Because of that the tests ask three things:
 
 1. `check-ae-rules.js`: the viewer has every official assert id, and no other.
 2. `differential.js --sets=ae`: the failed asserts equal the official stylesheet's, on
