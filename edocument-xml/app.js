@@ -361,10 +361,12 @@
   const whyHtml = (flag) => (flag ? '<div class="why">' + (flag.msgs && flag.msgs.length ? flag.msgs.map(esc).join("<br>") : esc(T("Required field"))) + "</div>" : "");
   const flagTitle = (flag) => (flag.ids.length ? T("Fails {ids}", { ids: flag.ids.join(", ") }) : T("Required field"));
   const missing = () => '<span class="missing">' + T("Missing") + "</span>";
+  // several BT numbers (BT-81 / BT-82) go one under the other, so the label keeps its width
+  const btHtml = (bt) => { const parts = String(bt).split(" / "); const spans = parts.map((b) => '<span class="bt">' + esc(b) + "</span>").join(""); return parts.length > 1 ? '<span class="bts">' + spans + "</span>" : spans; };
   function row(label, bt, valueHtml, cls, tag, flag) {
     if (flag) cls = (cls ? cls + " " : "") + "flag-" + flag.lvl;
     return '<div class="row' + (cls ? " " + cls : "") + '"' + (flag ? ' title="' + esc(flagTitle(flag)) + '"' + dataRules(flag) : "") + '><div class="k"><span class="kl">' + esc(T(label)) + "</span>" +
-      (bt ? '<span class="bt">' + esc(bt) + "</span>" : "") + xtag(tag) + '</div><div class="v">' + valueHtml + whyHtml(flag) + "</div></div>";
+      (bt ? btHtml(bt) : "") + xtag(tag) + '</div><div class="v">' + valueHtml + whyHtml(flag) + "</div></div>";
   }
   function markDeep(el, used) { used.add(el); for (const k of el.querySelectorAll("*")) used.add(k); }
 

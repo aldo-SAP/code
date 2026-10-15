@@ -477,6 +477,7 @@ button, a, summary, label, .tab { touch-action: manipulation; -webkit-tap-highli
 /* BT numbers sit at the right end of their label cell. */
 .row > .k { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 2px 8px; }
 .row > .k .kl { flex: 1 1 0; min-width: 0; }
+.bts { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
 .row > .k .bt { flex: none; margin: 1px 0 0 auto; }
 .show-tags .row > .k .xtag { flex: 1 1 100%; }
 .thc { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
