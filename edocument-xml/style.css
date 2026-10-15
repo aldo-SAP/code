@@ -834,3 +834,19 @@ table.ac-calc td.bt-col { width: 1%; white-space: nowrap; text-align: right; pad
 /* VAT: the total closes the breakdown table */
 #sec-vat tfoot td { font-weight: 600; border-top: 2px solid var(--line); border-bottom: 0; padding-top: 8px; }
 #sec-vat tfoot td .thl { white-space: normal; font-weight: 600; }
+
+/* compact verdict: title, rule sets and warnings on one line; every issue on one or two lines */
+.verdict { padding: 8px 14px; gap: 6px 14px; margin: 8px 0 10px; }
+.v-main { gap: 10px; flex: 1 1 auto; }
+.v-main > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 12px; }
+.v-icon { font-size: 1.25rem; }
+.v-text { font-size: 1rem; }
+.v-sets { display: inline; margin-top: 0; font-size: 0.78rem; }
+.v-sub { font-size: 0.8rem; }
+.v-issues { order: 3; gap: 4px; }
+.vchip { padding: 1px 9px; font-size: 0.78rem; }
+.v-btn { padding: 4px 10px; font-size: 0.82rem; }
+.v-issues .iss { flex-direction: row; flex-wrap: wrap; align-items: baseline; gap: 1px 10px; min-height: 0; padding: 5px 10px; border-radius: 8px; }
+.v-issues .iss-top { order: 0; flex: none; }
+.v-issues .iss-fld { order: 1; flex: none; margin: 0; font-size: 0.8rem; font-weight: 600; color: var(--ink); }
+.v-issues .iss-msg { order: 2; flex: 1 1 16em; min-width: 0; font-size: 0.84rem; line-height: 1.3; color: var(--ink); -webkit-line-clamp: 2; }
