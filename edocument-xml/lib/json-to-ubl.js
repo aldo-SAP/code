@@ -38,6 +38,8 @@
   }
 
   function convert(input) {
+    // the document request ({ id, document: [ … ] }) has its own converter (lib/json-document.js)
+    if (input && !Array.isArray(input.req) && Array.isArray(input.document) && window.JsonDocument) return window.JsonDocument.convert(input);
     const list = input && Array.isArray(input.req) ? input.req : Array.isArray(input) ? input : [input];
     const inv = list[0];
     if (!inv || typeof inv !== "object") throw new Error("No invoice found in the JSON (expected { \"req\": [ { … } ] }).");

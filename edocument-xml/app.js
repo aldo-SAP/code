@@ -1357,7 +1357,7 @@
       wrapped = root.localName; root = found;
     }
     // Extra rule sets (PEPPOL, France …) start from what the CustomizationID says; the Checks card can change them.
-    Object.assign(state, { root, kind: root.localName, name: name || "", size: text.length, wrapped, text, ruleSets: fromJson ? ["fr"] : EN16931.detect(root), json: fromJson });
+    Object.assign(state, { root, kind: root.localName, name: name || "", size: text.length, wrapped, text, ruleSets: fromJson ? (fromJson.ruleSets === "detect" ? EN16931.detect(root) : ["fr"]) : EN16931.detect(root), json: fromJson });
     $("filter").value = "";
     render();
     showTab("fields");
