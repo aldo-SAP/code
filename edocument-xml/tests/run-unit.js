@@ -20,7 +20,9 @@ function inPage([text, forced]) {
     const inv = Array.from(t.children).find((c) => c.localName === "Invoice" || c.localName === "CreditNote");
     if (!inv) return;
     let res;
-    try { res = EN16931.check(inv, inv.localName, forced ? [forced] : EN16931.detect(inv)); } catch (e) { out.push({ i, crash: String(e.message) }); return; }
+    // the rules look at the document element (/ubl:Invoice …): the invoice of a test becomes a document of its own
+    const root = new DOMParser().parseFromString(new XMLSerializer().serializeToString(inv), "application/xml").documentElement;
+    try { res = EN16931.check(root, root.localName, forced ? [forced] : EN16931.detect(root)); } catch (e) { out.push({ i, crash: String(e.message) }); return; }
     // ids like BR-IG-08-1 name a variant of BR-IG-08
     const bad = expect.filter(([k, id]) => {
       const base = id.replace(/-\d$/, ""), failed = res.some((x) => (x.id === id || x.id === base) && !x.ok);

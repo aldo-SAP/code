@@ -3,7 +3,18 @@
 #   run.sh            unit tests + examples + 600 mutants each for EN 16931/PEPPOL and France
 #   run.sh quick      unit tests + examples only
 # Exit code 0 only when nothing differs (apart from the documented differences below).
-cd "$(dirname "$0")"; T="$PWD"; C="$T/.cache"; W="$C/work"
+#   run.sh par        the same in four parallel parts (en, fr, ae, de), each with its own folder and log (.cache/log-<part>.txt); the full check in a quarter of the time
+#   SECTIONS="ae de" run.sh   only those parts (en = EN 16931 and Peppol, fr = France, ae = UAE, de = Germany)
+cd "$(dirname "$0")"; T="$PWD"; C="$T/.cache"; W="$C/work${SECTIONS:+-${SECTIONS// /_}}"
+sec() { [ -z "$SECTIONS" ] || [[ " $SECTIONS " == *" $1 "* ]]; }
+if [ "$1" = par ]; then
+  shift; pids=""; [ -d "$C/en16931" ] || ./fetch-artefacts.sh || exit 2
+  for part in en fr ae de; do SECTIONS=$part ./run.sh "$@" > "$C/log-$part.txt" 2>&1 & pids="$pids $!"; done
+  rc=0; for p in $pids; do wait "$p" || rc=1; done
+  for part in en fr ae de; do echo "== $part: $(tail -1 "$C/log-$part.txt")"; done
+  [ $rc = 0 ] && echo "ALL CONFORMANT" || { echo "DIFFERENCES FOUND (see .cache/log-<part>.txt)"; grep -hE "^(OFFICIAL|ENGINE) ONLY.*[^e]$|^  [A-Za-z]" "$C"/log-*.txt | head -20; }
+  exit $rc
+fi
 [ -d "$C/en16931" ] || ./fetch-artefacts.sh || exit 2
 mkdir -p "$W"; rm -rf "$W"/*
 fail=0
@@ -22,19 +33,16 @@ AEC="$C/pint-ae"
 ids "$AEC"/billing/trn-invoice/schematron/*.xslt > "$W/ae.ids"
 ids "$FX2"/*.xslt > "$W/en-fx.ids"
 
-# Differences that are intended or come from the official artefacts, not from mistakes:
-#  - national PEPPOL rule sets this tool does not implement (DE, DK-R-003+, GR, IS, IT, SE-R-003+, NL/NO come from other sources)
-#  - BR-CO-09: the official list rejects EL, the EU VAT prefix of Greece; this tool accepts it
-#  - PEPPOL-EN16931-R007: the official stylesheet also reports it for documents without a ProfileID, which R001 already covers
-IGNORE_EN="DE-R,DK-R,GR-,IS-R,IT-R,SE-R,NL-R,NO-R,PEPPOL-EN16931-R007,BR-CO-09"
-#  - France: extended-profile (multi-vendor, sub-line) rules; the FR copy of the EN schematron is older (UBL-SR-25/58/59 differ)
-IGNORE_FR="BR-CO-09,UBL-SR-25,UBL-SR-58,UBL-SR-59"
+# Differences that are intended or come from the official artefacts, not from mistakes. EN 16931 and Peppol are the official asserts run as published, so none
+# remain between the viewer and the official stylesheets of the same version; what is listed below is France's older copy of the EN 16931 schematron.
+IGNORE_EN=""
+#  - France: extended-profile (multi-vendor, sub-line) rules; the FR copy of the EN schematron is older (UBL-SR-25/58/59 and BR-CO-09 differ: the CEN
+#    stylesheet 1.3.17, run on the same document, reports BR-CO-09 where a VAT identifier is missing, the FR copy does not)
+IGNORE_FR="UBL-SR-25,UBL-SR-58,UBL-SR-59,BR-CO-09"
 #  - EXTENDED-CTC-FR documents are compared with that profile's own schematron: the BR-FREXT-/UBL-FREXT- rules are the official ones and the EN 16931 rules it
 #    leaves out are switched off (FR_EXT_OFF), so only the known EN 16931 difference remains
-IGNORE_FX="BR-CO-09"
-#  - only in mutants: a VAT tax category written without the VAT scheme, which the official S/B/O/IG/IP rules treat differently
-#    (the primary rules BR-CO-04, BR-32, BR-37, BR-47, BR-48 do match)
-IGNORE_MUT="BR-S-01,BR-S-02,BR-S-04,BR-O-01,BR-O-11,BR-O-12,BR-IG-01,BR-IP-08,UBL-SR-13,BR-CO-11,BR-S-08"
+IGNORE_FX=""
+IGNORE_MUT=""
 
 # France documents on the EXTENDED-CTC-FR profile are checked against that profile's own schematron, the others against the CIUS FR one
 split_fr() { # dir -> dir.ext and dir.cius
@@ -63,12 +71,30 @@ ae_run() { # label docdir billing|selfbilling [mutation log]
 }
 AE_GROUPS=""
 step() { echo; echo "== $1"; }
+# The UBL 2.1 structure check of the viewer against libxml2's schema validation, on the given folders and on copies of their documents with one schema-aimed change each
+XSD="$C/ubl-xsd"
+xsd_check() { # label example-dir…
+  local lab="$1"; shift
+  step "UBL 2.1 schema ($lab): the viewer and libxml2 agree on the documents and on schema-aimed changes of them"
+  python3 -I mutate-xsd.py "$W/xsd-mut-$lab" "$@" --per-doc="${XSD_PER_DOC:-12}" --seed="${SEED:-1}" > /dev/null
+  python3 -I xsd-verdicts.py "$XSD" "$W/xsd-$lab.json" "$@" "$W/xsd-mut-$lab" > /dev/null
+  run node xsd-differential.js "$W/xsd-$lab.json"
+}
 run() { "$@" || fail=1; }
 
+if sec en; then
 step "EN 16931 unit tests (official, $(ls "$C"/en16931/test/Invoice-unit-UBL "$C"/en16931/test/CreditNote-unit-UBL | grep -c xml) files)"
 run node run-unit.js "$C/en16931/test/Invoice-unit-UBL" "$C/en16931/test/CreditNote-unit-UBL"
-step "PEPPOL unit tests (official)"
-run node run-unit.js --sets=peppol "$C/peppol/rules/unit-UBL-PEPPOL"
+step "PEPPOL unit tests (official: Peppol and the national rules DE, DK, GR, IT, NL, NO, SE)"
+run node run-unit.js --sets=peppol "$C"/peppol/rules/unit-UBL-*
+step "EN 16931 and PEPPOL: the viewer carries every official assert"
+python3 assert-ids.py "$C/en16931/ubl/schematron/preprocessed/EN16931-UBL-validation-preprocessed.sch" > "$W/en.ids"
+run node check-rules.js EN16931 "$W/en.ids"
+python3 assert-ids.py "$C/peppol/rules/sch/PEPPOL-EN16931-UBL.sch" > "$W/pp.ids"
+run node check-rules.js PeppolRules "$W/pp.ids"
+step "EN 16931 and PEPPOL: every message has its Italian text (rules/messages.js is rebuilt from en-it.tsv and pp-it.tsv), and so has every message of all rule sets"
+run node gen-en-messages.js
+run node check-all-translations.js
 
 # example invoices from the three repositories (valid ones)
 D="$W/examples"; mkdir -p "$D"; n=0
@@ -79,7 +105,14 @@ done < <(find "$C/en16931/ubl/examples" "$C/en16931/test/testfiles" "$C/peppol/r
 saxon "$EN" "$D" "$W/ex-en"; saxon "$PP" "$D" "$W/ex-pp"
 step "EN 16931 + PEPPOL on $n official example invoices"
 run node differential.js --docs="$D" --svrl="$W/ex-en,$W/ex-pp" --ids="$W/en-pp.ids" --sets=peppol --ignore="$IGNORE_EN"
+step "UBL 2.1 schema: the content model in the viewer is the one the OASIS schemas give"
+python3 -I gen-ubl-schema.py "$XSD" "$W/ubl-schema-data.js" > /dev/null && run cmp "$W/ubl-schema-data.js" ../rules/ubl-schema-data.js
+xsd_check en "$D"
+step "How to fix: every line belongs to a rule and has both languages"
+run node check-help.js
+fi
 
+if sec fr; then
 F="$W/fr-examples"; mkdir -p "$F"; n=0
 while IFS= read -r f; do
   grep -q "InvoiceLine\|CreditNoteLine" "$f" && grep -q "<Invoice\|<CreditNote\|:Invoice \|:CreditNote " "$f" || continue
@@ -99,8 +132,11 @@ FX="$C/france/FNFE_RFE_INVOICE/Flux10/Flux10.xslt"
 node ereport-gen.js "$F" "$W/er-examples" > /dev/null; saxon "$FX" "$W/er-examples" "$W/er-examples-sv"
 step "E-reporting (Flux 10) on $n official example invoices"
 run node ereport-differential.js "$F" "$W/er-examples-sv"
+xsd_check fr "$F"
+fi
 
 # PINT AE (UAE)
+if sec ae; then
 step "PINT AE rules: the viewer carries every official assert"
 run node check-rules.js PintAE "$W/ae.ids"
 step "PINT AE: every message has its Italian text (countries/ae/it-messages.js is rebuilt from ae-it.tsv)"
@@ -116,7 +152,9 @@ for v in billing selfbilling; do
   ae_run "PINT AE ($v) on documents aimed at single rules" "$W/ae-targeted-$v" "$v" "$W/ae-targeted-$v.log.json" "$([ "$v" = selfbilling ] && echo ibr-cl-01)"
   step "PINT AE ($v): the failed rules of these documents show in Italian"
   run node check-translations.js ae "$AD" "$W/ae-targeted-$v"
+  xsd_check "ae-$v" "$AD"
 done
+fi
 
 # XRechnung (Germany): the official KoSIT validation is the EN 16931 schematron plus the XRechnung one (which carries the Peppol rules it integrates).
 # The EN 16931 part is compared above; here only the asserts of the XRechnung schematron are (the viewer runs the EN 16931 rules too, but they are not looked at)
@@ -130,6 +168,7 @@ de_run() { # label docdir [mutation log]
   run node differential.js --docs="$d" --svrl="$W/$tag-xr" --ids="$W/de.ids" --sets=de --workers=4 ${3:+--log="$3"}
   DE_GROUPS="$DE_GROUPS $W/$tag-xr"
 }
+if sec de; then
 step "XRechnung: the viewer carries every official assert"
 run node check-rules.js XRechnung "$W/de.ids"
 step "XRechnung: every message has its English and Italian text (countries/de/messages.js is rebuilt from de-en.tsv and de-it.tsv)"
@@ -143,12 +182,17 @@ mkdir -p "$W/de-targeted"; python3 -I targeted-de.py "$W/de-targeted" "$DD" --lo
 de_run "XRechnung on documents aimed at single rules" "$W/de-targeted" "$W/de-targeted.log.json"
 step "XRechnung: the failed rules of these documents show in English and Italian"
 run node check-translations.js de "$DD" "$W/de-targeted"
+xsd_check de "$DD"
+fi
 if [ "$1" != "quick" ]; then
   N=${MUTANTS:-600}
+  if sec en; then
   python3 mutate.py "$W/mut-en" "$N" "${SEED:-1}" "$D" > /dev/null
   saxon "$EN" "$W/mut-en" "$W/mut-en-en"; saxon "$PP" "$W/mut-en" "$W/mut-en-pp"
   step "EN 16931 + PEPPOL on $N mutated example invoices"
   run node differential.js --docs="$W/mut-en" --svrl="$W/mut-en-en,$W/mut-en-pp" --ids="$W/en-pp.ids" --sets=peppol --ignore="$IGNORE_EN,$IGNORE_MUT" --log="$W/mut-en.log.json"
+  fi
+  if sec fr; then
   python3 mutate.py "$W/mut-fr" "$N" "$(( ${SEED:-1} + 1 ))" "$F" > /dev/null
   fr_run "France on $N mutated example invoices" "$W/mut-fr" ",$IGNORE_MUT" log
   step "France: the failed rules of the mutants show in English and Italian"
@@ -156,6 +200,8 @@ if [ "$1" != "quick" ]; then
   node ereport-gen.js "$W/mut-fr" "$W/er-mut" > /dev/null; saxon "$FX" "$W/er-mut" "$W/er-mut-sv"
   step "E-reporting (Flux 10) on $N mutated example invoices"
   run node ereport-differential.js "$W/mut-fr" "$W/er-mut-sv"
+  fi
+  if sec ae; then
   # PINT AE: every element and attribute of the examples changed one at a time (a share of them), and random breaks
   for v in billing selfbilling; do
     # a changed CustomizationID turns a self-billing document into a billing one for the viewer (it picks the type codes from it) but not for the
@@ -169,6 +215,8 @@ if [ "$1" != "quick" ]; then
   step "PINT AE: how many official asserts the test documents reach"
   # shellcheck disable=SC2086
   run python3 -I coverage.py ae "$W/ae.ids" $AE_GROUPS
+  fi
+  if sec de; then
   # XRechnung: the same for the German documents
   python3 -I mutate-single.py "$W/de-single" "$DD" --profile=de --rate="${DE_RATE:-0.004}" --seed="${SEED:-1}" --log="$W/de-single.log.json" > /dev/null
   de_run "XRechnung on documents with one change each" "$W/de-single" "$W/de-single.log.json"
@@ -177,6 +225,7 @@ if [ "$1" != "quick" ]; then
   step "XRechnung: how many official asserts the test documents reach"
   # shellcheck disable=SC2086
   run python3 -I coverage.py de "$W/de.ids" $DE_GROUPS
+  fi
 fi
 echo; [ $fail = 0 ] && echo "ALL CONFORMANT" || echo "DIFFERENCES FOUND"
 exit $fail

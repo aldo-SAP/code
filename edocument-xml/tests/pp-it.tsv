@@ -1,0 +1,131 @@
+PEPPOL-EN16931-R080	È ammesso un solo riferimento al progetto a livello di documento
+PEPPOL-EN16931-R007	Il processo di business DEVE avere il formato 'urn:fdc:peppol.eu:2017:poacc:billing:NN:1.0', dove NN indica il numero del processo.
+PEPPOL-EN16931-R004	L'identificativo della specifica DEVE avere il valore 'urn:cen.eu:en16931:2017#compliant#urn:fdc:peppol.eu:2017:poacc:billing:3.0'.
+PEPPOL-COMMON-R040	Il GLN deve avere un formato valido secondo le regole GS1.
+PEPPOL-COMMON-R041	Il numero di organizzazione norvegese DEVE essere indicato nel formato corretto.
+PEPPOL-COMMON-R042	Il numero di organizzazione danese (CVR) DEVE essere indicato nel formato corretto.
+PEPPOL-COMMON-R052	Il numero della camera di commercio danese (P) DEVE essere indicato nel formato corretto.
+PEPPOL-COMMON-R053	Il numero ERSTORG danese (SE) DEVE essere indicato nel formato corretto.
+PEPPOL-COMMON-R043	Il numero di impresa belga DEVE essere indicato nel formato corretto.
+PEPPOL-COMMON-R044	Il Codice Univoco Unità Organizzativa (codice IPA) deve essere indicato nel formato corretto
+PEPPOL-COMMON-R045	Il Codice Fiscale deve essere indicato nel formato corretto
+PEPPOL-COMMON-R046	Il Codice Fiscale deve essere indicato nel formato corretto
+PEPPOL-COMMON-R047	La Partita IVA italiana deve essere indicata nel formato corretto
+PEPPOL-COMMON-R049	Il numero di organizzazione svedese DEVE essere indicato nel formato corretto.
+PEPPOL-COMMON-R050	L'Australian Business Number (ABN) DEVE essere indicato nel formato corretto.
+NO-R-002	Per i fornitori norvegesi, la maggior parte degli emittenti di fattura deve aggiungere "Foretaksregisteret" alla fattura. Se il venditore è una società per azioni, una società per azioni pubblica o la filiale di una società estera, la parola «Foretaksregisteret» deve comparire anche nel documento di vendita (legge sul registro delle imprese).
+NO-R-001	Per i fornitori norvegesi, la partita IVA DEVE essere il prefisso paese NO seguito da un numero di organizzazione norvegese valido (nove cifre) seguito dalle lettere MVA.
+DK-R-002	I fornitori danesi DEVONO indicare l'entità giuridica (numero CVR)
+DK-R-014	Per i fornitori danesi è obbligatorio indicare lo schemeID "0184" (numero CVR danese) quando PartyLegalEntity/CompanyID è usato per AccountingSupplierParty
+DK-R-013	Per i fornitori danesi è obbligatorio usare lo schemeID quando PartyIdentification/ID è usato per AccountingCustomerParty o AccountingSupplierParty
+DK-R-005	Per i fornitori danesi sono ammessi i seguenti codici dei mezzi di pagamento: 1, 10, 31, 42, 48, 49, 50, 58, 59, 93 e 97
+DK-R-009	Per i fornitori danesi, se il PaymentID inizia con 04# o 15#, l'identificativo di istruzione di 16 cifre deve essere aggiunto al PaymentID, ad es. "04#1234567890123456", quando il mezzo di pagamento è 50 (Giro)
+DK-R-010	Per i fornitori danesi che usano il PaymentMeansCode 93, il PaymentID è obbligatorio. I primi tre caratteri del PaymentID DEVONO essere 71#, 73# o 75# (kortartskode) e PayeeFinancialAccount/ID DEVE essere lungo esattamente 8 caratteri.
+DK-R-011	Per i fornitori danesi, se il PaymentID inizia con 71# o 75#, l'identificativo di istruzione di 15-16 cifre deve essere aggiunto al PaymentID, ad es. "71#1234567890123456", quando il metodo di pagamento è 93 (FIK)
+DK-R-017	Per i clienti danesi è obbligatorio indicare lo schemeID "0184" (numero CVR danese) quando PartyLegalEntity/CompanyID è usato per AccountingCustomerParty
+DK-R-003	Se i fornitori danesi indicano una classificazione dell'articolo, dovrebbe essere usato UNSPSC versione 19.05.01 o 26.08.01.
+IT-R-001	BT-32 (identificativo di registrazione fiscale del venditore) - Per i fornitori italiani BT-32 deve avere una lunghezza tra 11 e 16 caratteri.
+IT-R-003	BT-37 (città del venditore) - I fornitori italiani devono indicare la città di residenza.
+IT-R-004	BT-38 (CAP del venditore) - I fornitori italiani devono indicare il CAP di residenza.
+SE-R-001	Per i fornitori svedesi, le partite IVA svedesi devono essere composte da 14 caratteri.
+SE-R-002	Per i fornitori svedesi, le partite IVA svedesi devono avere gli ultimi 12 caratteri in forma numerica
+SE-R-003	I numeri di organizzazione svedesi dovrebbero essere numerici.
+SE-R-004	I numeri di organizzazione svedesi sono composti da 10 caratteri.
+SE-R-013	L'ultima cifra di un numero di organizzazione svedese deve essere valida secondo l'algoritmo di Luhn.
+SE-R-005	Per i fornitori svedesi, quando si usa l'identificativo di registrazione fiscale del venditore, deve essere indicato 'Godkänd för F-skatt'
+SE-R-007	Per i fornitori svedesi che usano Plusgiro, l'ID del conto deve essere numerico
+SE-R-010	Per i fornitori svedesi che usano Plusgiro, l'ID del conto deve avere da 2 a 8 caratteri
+SE-R-008	Per i fornitori svedesi che usano Bankgiro, l'ID del conto deve essere numerico
+SE-R-009	Per i fornitori svedesi che usano Bankgiro, l'ID del conto deve avere da 7 a 8 caratteri
+SE-R-011	Per i fornitori svedesi che usano Bankgiro o Plusgiro svedese, il modo corretto di indicarlo è usare il codice 30 per PaymentMeans e l'ID di FinancialInstitutionBranch con il codice SE:BANKGIRO o SE:PLUSGIRO
+SE-R-012	Per le operazioni nazionali tra partner commerciali svedesi, il bonifico dovrebbe essere indicato con PaymentMeansCode="30"
+GR-R-001-1	Quando il fornitore è greco, l'ID della fattura dovrebbe essere composto da 6 segmenti
+GR-R-001-2	Quando il fornitore è greco, il primo segmento dell'ID della fattura deve essere un TIN valido e corrispondere al TIN del fornitore o del rappresentante fiscale
+GR-R-001-3	Quando il fornitore è greco, il secondo segmento dell'ID della fattura deve essere una data valida corrispondente alla data di emissione della fattura
+GR-R-001-4	Quando il fornitore è greco, il terzo segmento dell'ID della fattura deve essere un intero positivo
+GR-R-001-5	Quando il fornitore è greco, il quarto segmento dell'ID della fattura deve essere un tipo di documento greco valido
+GR-R-001-6	Quando il fornitore è greco, il quinto segmento dell'ID della fattura non deve essere vuoto
+GR-R-001-7	Quando il fornitore è greco, il sesto segmento dell'ID della fattura non deve essere vuoto
+GR-R-002	I fornitori greci devono indicare la propria denominazione completa come registrata nel Registro delle imprese greco (G.E.MH.) come persona giuridica o nel Registro fiscale come persona fisica
+GR-S-011	I fornitori greci devono indicare il proprio identificativo di registrazione fiscale del venditore, preceduto dal codice paese
+GR-R-003	Per i fornitori greci, la partita IVA deve iniziare con 'EL' e deve essere un TIN valido
+GR-R-004-1	Quando il fornitore è greco, deve esserci un numero MARK
+GR-S-008-1	Quando il fornitore è greco, dovrebbe esserci un URL della fattura
+GR-R-008-2	Quando il fornitore è greco, non dovrebbe esserci più di un URL della fattura
+GR-R-004-2	Quando il fornitore è greco, il numero MARK deve essere un intero positivo
+GR-R-008-3	Quando il fornitore è greco ed esiste il riferimento al documento URL della fattura, dovrebbe essere presente l'URI del riferimento esterno
+NL-R-001	Per i fornitori nei Paesi Bassi, se il documento è una nota di credito, DEVE contenere un riferimento a una fattura (cac:BillingReference/cac:InvoiceDocumentReference/cbc:ID)
+NL-R-002	Per i fornitori nei Paesi Bassi, l'indirizzo del fornitore (cac:AccountingSupplierParty/cac:Party/cac:PostalAddress) DEVE contenere via (cbc:StreetName), città (cbc:CityName) e CAP (cbc:PostalZone)
+NL-R-003	Per i fornitori nei Paesi Bassi, l'identificativo dell'entità giuridica DEVE essere un numero KVK o OIN (schemeID 0106 o 0190)
+NL-R-004	Per i fornitori nei Paesi Bassi, se il cliente è nei Paesi Bassi, l'indirizzo del cliente (cac:AccountingCustomerParty/cac:Party/cac:PostalAddress) DEVE contenere via (cbc:StreetName), città (cbc:CityName) e CAP (cbc:PostalZone)
+NL-R-005	Per i fornitori nei Paesi Bassi, se il cliente è nei Paesi Bassi, l'identificativo dell'entità giuridica del cliente DEVE essere un numero KVK o OIN (schemeID 0106 o 0190)
+NL-R-006	Per i fornitori nei Paesi Bassi, se il rappresentante fiscale è nei Paesi Bassi, l'indirizzo del rappresentante (cac:TaxRepresentativeParty/cac:PostalAddress) DEVE contenere via (cbc:StreetName), città (cbc:CityName) e CAP (cbc:PostalZone)
+NL-R-007	Per i fornitori nei Paesi Bassi, il fornitore DEVE indicare un mezzo di pagamento (cac:PaymentMeans) se il pagamento va dal cliente al fornitore
+DE-R-001	Una fattura DEVE contenere le "PAYMENT INSTRUCTIONS" (istruzioni di pagamento, BG-16).
+DE-R-015	L'elemento "Buyer reference" (riferimento dell'acquirente, BT-10) DEVE essere indicato.
+DE-R-016	Se è usato uno dei codici IVA S, Z, E, AE, K, G, L o M, una fattura DEVE contenere almeno uno tra "Seller VAT identifier" (BT-31), "Seller tax registration identifier" (BT-32) o "SELLER TAX REPRESENTATIVE PARTY" (BG-11).
+DE-R-017	L'elemento "Invoice type code" (BT-3) dovrebbe contenere solo questi valori della lista UNTDID 1001: 326 (fattura parziale), 380 (fattura commerciale), 384 (fattura rettificativa), 389 (autofattura), 381 (nota di credito), 875 (fattura parziale di costruzione), 876 (fattura finale parziale di costruzione), 877 (fattura finale di costruzione).
+DE-R-022	I documenti allegati forniti con una fattura in "ADDITIONAL SUPPORTING DOCUMENTS" (BG-24) DEVONO avere un nome file univoco (senza distinzione tra maiuscole e minuscole) nell'elemento "Attached document" (BT-125).
+DE-R-026	Se "Invoice type code" (BT-3) contiene il codice 384 (fattura rettificativa), "PRECEDING INVOICE REFERENCE" (BG-3) dovrebbe essere indicato almeno una volta.
+DE-R-030	Se è presente il gruppo "DIRECT DEBIT" (BG-19), l'elemento "Bank assigned creditor identifier" (BT-90) DEVE essere indicato.
+DE-R-031	Se è presente il gruppo "DIRECT DEBIT" (BG-19), l'elemento "Debited account identifier" (BT-91) DEVE essere indicato.
+DE-R-002	Il gruppo "SELLER CONTACT" (BG-6) DEVE essere indicato.
+DE-R-003	L'elemento "Seller city" (BT-37) DEVE essere indicato.
+DE-R-004	L'elemento "Seller post code" (BT-38) DEVE essere indicato.
+DE-R-005	L'elemento "Seller contact point" (BT-41) DEVE essere indicato.
+DE-R-006	L'elemento "Seller contact telephone number" (BT-42) DEVE essere indicato.
+DE-R-007	L'elemento "Seller contact email address" (BT-43) DEVE essere indicato.
+DE-R-027	"Seller contact telephone number" (BT-42) dovrebbe contenere un numero di telefono valido. Un numero valido dovrebbe avere almeno 3 cifre.
+DE-R-028	"Seller contact email address" (BT-43) dovrebbe contenere esattamente una chiocciola (@), non affiancata da uno spazio o da un punto ma da almeno due caratteri su ciascun lato. Un punto non dovrebbe essere il primo o l'ultimo carattere.
+DE-R-008	L'elemento "Buyer city" (BT-52) DEVE essere indicato.
+DE-R-009	L'elemento "Buyer post code" (BT-53) DEVE essere indicato.
+DE-R-010	L'elemento "Deliver to city" (BT-77) DEVE essere indicato se è indicato il gruppo "DELIVER TO ADDRESS" (BG-15).
+DE-R-011	L'elemento "Deliver to post code" (BT-78) DEVE essere indicato se è indicato il gruppo "DELIVER TO ADDRESS" (BG-15).
+DE-R-019	L'elemento "Payment account identifier" (BT-84) dovrebbe contenere un IBAN valido se "Payment means type code" (BT-81) indica il codice 58 SEPA.
+DE-R-023-1	Se "Payment means type code" (BT-81) contiene un codice di bonifico (30, 58), DEVE essere indicato "CREDIT TRANSFER" (BG-17).
+DE-R-023-2	Se "Payment means type code" (BT-81) contiene un codice di bonifico (30, 58), BG-18 e BG-19 NON DEVONO essere indicati.
+DE-R-020	L'elemento "Debited account identifier" (BT-91) dovrebbe contenere un IBAN valido se "Payment means type code" (BT-81) indica il codice 59 SEPA.
+PEPPOL-EN16931-CL001	Il mime code deve appartenere al sottoinsieme della lista di codici IANA.
+PEPPOL-EN16931-CL002	Il codice del motivo DEVE appartenere al sottoinsieme di UNCL 5189 D.16B.
+PEPPOL-EN16931-CL003	Il codice del motivo DEVE appartenere a UNCL 7161 D.16B.
+PEPPOL-EN16931-CL006	Il codice di descrizione del periodo di fatturazione deve appartenere a UNCL 2005 D.16B.
+PEPPOL-EN16931-CL007	Il codice valuta deve appartenere a ISO 4217:2005
+PEPPOL-EN16931-P0100	Il codice tipo fattura DEVE essere impostato in base al profilo.
+PEPPOL-EN16931-P0101	Il codice tipo nota di credito DEVE essere impostato in base al profilo.
+PEPPOL-EN16931-F001	Una data DEVE avere il formato AAAA-MM-GG.
+PEPPOL-EN16931-P0104	Deve essere usata la categoria fiscale G quando il codice del motivo di esenzione è VATEX-EU-G
+PEPPOL-EN16931-P0105	Deve essere usata la categoria fiscale O quando il codice del motivo di esenzione è VATEX-EU-O
+PEPPOL-EN16931-P0106	Deve essere usata la categoria fiscale K quando il codice del motivo di esenzione è VATEX-EU-IC
+PEPPOL-EN16931-P0107	Deve essere usata la categoria fiscale AE quando il codice del motivo di esenzione è VATEX-EU-AE
+PEPPOL-EN16931-P0108	Deve essere usata la categoria fiscale E quando il codice del motivo di esenzione è VATEX-EU-D
+PEPPOL-EN16931-P0109	Deve essere usata la categoria fiscale E quando il codice del motivo di esenzione è VATEX-EU-F
+PEPPOL-EN16931-P0110	Deve essere usata la categoria fiscale E quando il codice del motivo di esenzione è VATEX-EU-I
+PEPPOL-EN16931-P0111	Deve essere usata la categoria fiscale E quando il codice del motivo di esenzione è VATEX-EU-J
+PEPPOL-EN16931-R002	Non è ammessa più di una nota a livello di documento, a meno che acquirente e venditore siano entrambi organizzazioni tedesche.
+PEPPOL-EN16931-R003	DEVE essere indicato un riferimento dell'acquirente o un riferimento all'ordine d'acquisto.
+PEPPOL-EN16931-R051	Tutti gli attributi currencyID devono avere lo stesso valore del codice valuta della fattura (BT-5), tranne l'importo totale IVA della fattura nella valuta di contabilizzazione (BT-111).
+PEPPOL-EN16931-R100	È ammesso un solo oggetto fatturato per riga
+DK-R-006	Per i fornitori danesi, conto bancario e conto di registrazione sono obbligatori se il mezzo di pagamento è 31 o 42
+DK-R-007	Per i fornitori danesi, PaymentMandate/ID e PayerFinancialAccount/ID sono obbligatori quando il mezzo di pagamento è 49
+DK-R-004	Quando si indicano imposte diverse dall'IVA per clienti danesi, i fornitori danesi DEVONO usare AllowanceChargeReasonCode="ZZZ" e l'imposta DEVE essere indicata in AllowanceChargeReason, come categoria fiscale di 4 cifre oppure includendo un #, ma il # non è ammesso come primo e ultimo carattere
+IT-R-002	BT-35 (riga 1 dell'indirizzo del venditore) - I fornitori italiani devono indicare l'indirizzo postale.
+SE-R-006	Per i fornitori svedesi si usano solo le aliquote IVA ordinarie di 6, 12 o 25
+GR-R-005	I fornitori greci devono indicare la denominazione completa dell'acquirente
+GR-R-009	I fornitori greci che inviano una fattura tramite la rete PEPPOL devono usare come indirizzo elettronico un TIN corretto secondo lo schema PEPPOL Electronic Address Identifier (schemeID 9933).
+GR-R-006	I fornitori greci devono indicare la partita IVA dell'acquirente, se l'acquirente è greco
+IS-R-001	Se il venditore è islandese, il tipo di fattura dovrebbe essere 380 o 381
+IS-R-002	Se il venditore è islandese, la fattura DEVE contenere l'identificativo legale del venditore (BT-30)
+IS-R-003	Se il venditore è islandese, la fattura DEVE contenere il suo indirizzo con via e CAP (BT-35 e BT-38)
+IS-R-008	Se il venditore è islandese e la fattura contiene la descrizione di supporto EINDAGI, l'id deve avere la forma AAAA-MM-GG
+IS-R-009	Se il venditore è islandese e la fattura contiene la descrizione di supporto EINDAGI, la fattura deve avere la data di scadenza (BT-9)
+IS-R-010	Se il venditore è islandese e la fattura contiene la descrizione di supporto EINDAGI, la data indicata deve essere uguale o successiva alla data di scadenza (BT-9)
+IS-R-004	Se venditore e acquirente sono islandesi, la fattura DEVE contenere l'identificativo legale islandese dell'acquirente (BT-47)
+NL-R-008	Per i fornitori nei Paesi Bassi, se il cliente è nei Paesi Bassi, il codice del mezzo di pagamento (cac:PaymentMeans/cbc:PaymentMeansCode) DEVE essere uno tra 30, 48, 49, 57, 58 o 59
+DE-R-018	Le informazioni sullo sconto di cassa per pagamento rapido (Skonto) DEVONO essere indicate nell'elemento "Payment terms" BT-20 in questo modo: primo segmento "SKONTO", secondo segmento numero di giorni ("TAGE=N"), terzo segmento percentuale ("PROZENT=N"). La percentuale deve avere il punto come separatore e due decimali. Ogni voce inizia con # e i segmenti sono separati da #.
+DE-R-024-1	Se "Payment means type code" (BT-81) contiene un codice di pagamento con carta (48, 54, 55), DEVE essere indicato "PAYMENT CARD INFORMATION" (BG-18).
+DE-R-024-2	Se "Payment means type code" (BT-81) contiene un codice di pagamento con carta (48, 54, 55), BG-17 e BG-19 NON DEVONO essere indicati.
+DE-R-025-1	Se "Payment means type code" (BT-81) contiene un codice di addebito diretto (59), DEVE essere indicato "DIRECT DEBIT" (BG-19).
+DE-R-025-2	Se "Payment means type code" (BT-81) contiene un codice di addebito diretto (59), BG-17 e BG-18 NON DEVONO essere indicati.
+DE-R-014	L'elemento "VAT category rate" (BT-119) DEVE essere indicato.
+PEPPOL-EN16931-P0112	I codici tipo fattura 326 o 384 sono ammessi solo quando acquirente e venditore sono entrambi organizzazioni tedesche
+PEPPOL-EN16931-CL008	Lo schema dell'identificativo dell'indirizzo elettronico deve provenire dalla lista di codici "Electronic Address Identifier Scheme"

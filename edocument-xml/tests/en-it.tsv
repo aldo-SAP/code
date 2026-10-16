@@ -1,0 +1,220 @@
+BR-63	L'indirizzo elettronico dell'acquirente (BT-49) DEVE avere un identificativo dello schema.
+BR-11	L'indirizzo postale dell'acquirente DEVE contenere il codice paese dell'acquirente (BT-55).
+BR-57	Ogni indirizzo di consegna (BG-15) DEVE contenere il codice paese di consegna (BT-80).
+BR-DEC-10	Il numero massimo di decimali per la somma degli sconti a livello di documento (BT-107) è 2.
+BR-01	Una fattura DEVE avere un identificativo della specifica (BT-24).
+BR-02	Una fattura DEVE avere un numero di fattura (BT-1).
+BR-03	Una fattura DEVE avere una data di emissione (BT-2).
+BR-04	Una fattura DEVE avere un codice tipo fattura (BT-3).
+BR-05	Una fattura DEVE avere un codice valuta della fattura (BT-5).
+BR-06	Una fattura DEVE contenere il nome del venditore (BT-27).
+BR-07	Una fattura DEVE contenere il nome dell'acquirente (BT-44).
+BR-08	Una fattura DEVE contenere l'indirizzo postale del venditore.
+BR-10	Una fattura DEVE contenere l'indirizzo postale dell'acquirente (BG-8).
+BR-CO-03	La data di esigibilità dell'IVA (BT-7) e il codice della data di esigibilità dell'IVA (BT-8) si escludono a vicenda.
+BR-29	Se sono indicate sia la data di inizio (BT-73) sia la data di fine (BT-74) del periodo di fatturazione, la data di fine (BT-74) DEVE essere successiva o uguale alla data di inizio (BT-73).
+BR-CO-19	Se è usato il periodo di fatturazione (BG-14), la data di inizio (BT-73) o la data di fine (BT-74) del periodo DEVE essere valorizzata, o entrambe.
+BR-65	L'identificativo di classificazione dell'articolo (BT-158) DEVE avere un identificativo dello schema.
+BR-64	L'identificativo standard dell'articolo (BT-157) DEVE avere un identificativo dello schema.
+BR-CL-08	Il codice soggetto della nota fatturata DEVE essere codificato con UNCL4451
+BR-17	Il nome del beneficiario (BT-59) DEVE essere indicato nella fattura, se il beneficiario (BG-10) è diverso dal venditore (BG-4)
+BR-50	L'identificativo del conto di pagamento (BT-84) DEVE essere presente se nella fattura sono indicate le informazioni di bonifico (BG-17).
+BR-49	Un'istruzione di pagamento (BG-16) DEVE specificare il codice del tipo di mezzo di pagamento (BT-81).
+BR-61	Se il codice del tipo di mezzo di pagamento (BT-81) indica bonifico SEPA, bonifico locale o bonifico internazionale non SEPA, l'identificativo del conto di pagamento (BT-84) DEVE essere presente.
+BR-55	Ogni riferimento a fattura precedente (BG-3) DEVE contenere un riferimento alla fattura precedente (BT-25).
+BR-62	L'indirizzo elettronico del venditore (BT-34) DEVE avere un identificativo dello schema.
+BR-09	L'indirizzo postale del venditore (BG-5) DEVE contenere il codice paese del venditore (BT-40).
+UBL-SR-53	Il CompanyID (identificativo IVA) deve essere indicato quando si indica PartyTaxScheme/TaxScheme/ID.
+BR-CL-01	Il codice del tipo di documento DEVE essere codificato con le liste di codici UNTDID 1001 relative a fatture e note di credito.
+BR-CL-03	currencyID DEVE essere codificato con la lista di codici ISO 4217 alpha-3
+BR-CL-04	Il codice valuta della fattura DEVE essere codificato con la lista di codici ISO 4217 alpha-3
+BR-CL-05	Il codice valuta fiscale DEVE essere codificato con la lista di codici ISO 4217 alpha-3
+BR-CL-06	Il codice della data di esigibilità dell'IVA DEVE essere codificato con un sottoinsieme di UNTDID 2005.
+BR-CL-14	I codici paese in una fattura DEVONO essere codificati con la lista di codici ISO 3166-1
+BR-CL-15	I codici paese in una fattura DEVONO essere codificati con la lista di codici ISO 3166-1
+BR-CL-16	I mezzi di pagamento in una fattura DEVONO essere codificati con la lista di codici UNCL4461
+BR-CL-17	Le categorie fiscali di una fattura DEVONO essere codificate con la lista di codici UNCL5305
+BR-CL-18	Le categorie fiscali di una fattura DEVONO essere codificate con la lista di codici UNCL5305
+BR-CL-23	Il codice unità DEVE essere codificato secondo la Raccomandazione UN/ECE 20 con l'estensione della Rec 21
+BR-AE-01	Una fattura che contiene una riga (BG-25), uno sconto a livello di documento (BG-20) o una maggiorazione a livello di documento (BG-21) con codice categoria IVA (BT-151, BT-95 o BT-102) "inversione contabile" DEVE contenere nel riepilogo IVA (BG-23) esattamente un codice categoria IVA (BT-118) uguale a "inversione contabile".
+BR-AE-02	Una fattura che contiene una riga di fattura (BG-25) in cui il codice categoria IVA dell'articolo fatturato (BT-151) è "inversione contabile" DEVE contenere l'identificativo IVA del venditore (BT-31), l'identificativo di registrazione fiscale del venditore (BT-32) e/o l'identificativo IVA del rappresentante fiscale del venditore (BT-63) e l'identificativo IVA dell'acquirente (BT-48) e/o l'identificativo di registrazione legale dell'acquirente (BT-47).
+BR-AE-03	Una fattura che contiene uno sconto a livello di documento (BG-20) in cui il codice categoria IVA dello sconto (BT-95) è "inversione contabile" DEVE contenere l'identificativo IVA del venditore (BT-31), l'identificativo di registrazione fiscale del venditore (BT-32) e/o l'identificativo IVA del rappresentante fiscale del venditore (BT-63) e l'identificativo IVA dell'acquirente (BT-48) e/o l'identificativo di registrazione legale dell'acquirente (BT-47).
+BR-AE-04	Una fattura che contiene una maggiorazione a livello di documento (BG-21) in cui il codice categoria IVA della maggiorazione (BT-102) è "inversione contabile" DEVE contenere l'identificativo IVA del venditore (BT-31), l'identificativo di registrazione fiscale del venditore (BT-32) e/o l'identificativo IVA del rappresentante fiscale del venditore (BT-63) e l'identificativo IVA dell'acquirente (BT-48) e/o l'identificativo di registrazione legale dell'acquirente (BT-47).
+BR-AE-05	In una riga di fattura (BG-25) in cui il codice categoria IVA dell'articolo fatturato (BT-151) è "inversione contabile" l'aliquota IVA dell'articolo fatturato (BT-152) DEVE essere 0 (zero).
+BR-AE-06	In uno sconto a livello di documento (BG-20) in cui il codice categoria IVA dello sconto (BT-95) è "inversione contabile" l'aliquota IVA dello sconto (BT-96) DEVE essere 0 (zero).
+BR-AE-07	In una maggiorazione a livello di documento (BG-21) in cui il codice categoria IVA della maggiorazione (BT-102) è "inversione contabile" l'aliquota IVA della maggiorazione (BT-103) DEVE essere 0 (zero).
+BR-AE-08	In un riepilogo IVA (BG-23) in cui il codice categoria IVA (BT-118) è "inversione contabile" l'imponibile della categoria IVA (BT-116) DEVE essere uguale alla somma degli importi netti di riga (BT-131) meno la somma degli sconti a livello di documento (BT-92) più la somma delle maggiorazioni a livello di documento (BT-99), dove i codici categoria IVA (BT-151, BT-95, BT-102) sono "inversione contabile".
+BR-AE-09	L'importo dell'imposta della categoria IVA (BT-117) in un riepilogo IVA (BG-23) in cui il codice categoria IVA (BT-118) è "inversione contabile" DEVE essere 0 (zero).
+BR-AE-10	Un riepilogo IVA (BG-23) con codice categoria IVA (BT-118) "inversione contabile" DEVE avere un codice del motivo di esenzione IVA (BT-121) che significhi "inversione contabile" oppure il testo del motivo di esenzione IVA (BT-120) "inversione contabile" (o il testo standard equivalente in un'altra lingua).
+BR-E-01	Una fattura che contiene una riga (BG-25), uno sconto a livello di documento (BG-20) o una maggiorazione a livello di documento (BG-21) con codice categoria IVA (BT-151, BT-95 o BT-102) "esente IVA" DEVE contenere nel riepilogo IVA (BG-23) esattamente un codice categoria IVA (BT-118) uguale a "esente IVA".
+BR-E-02	Una fattura che contiene una riga di fattura (BG-25) in cui il codice categoria IVA dell'articolo fatturato (BT-151) è "esente IVA" DEVE contenere l'identificativo IVA del venditore (BT-31), l'identificativo di registrazione fiscale del venditore (BT-32) e/o l'identificativo IVA del rappresentante fiscale del venditore (BT-63).
+BR-E-03	Una fattura che contiene uno sconto a livello di documento (BG-20) in cui il codice categoria IVA dello sconto (BT-95) è "esente IVA" DEVE contenere l'identificativo IVA del venditore (BT-31), l'identificativo di registrazione fiscale del venditore (BT-32) e/o l'identificativo IVA del rappresentante fiscale del venditore (BT-63).
+BR-E-04	Una fattura che contiene una maggiorazione a livello di documento (BG-21) in cui il codice categoria IVA della maggiorazione (BT-102) è "esente IVA" DEVE contenere l'identificativo IVA del venditore (BT-31), l'identificativo di registrazione fiscale del venditore (BT-32) e/o l'identificativo IVA del rappresentante fiscale del venditore (BT-63).
+BR-E-05	In una riga di fattura (BG-25) in cui il codice categoria IVA dell'articolo fatturato (BT-151) è "esente IVA" l'aliquota IVA dell'articolo fatturato (BT-152) DEVE essere 0 (zero).
+BR-E-06	In uno sconto a livello di documento (BG-20) in cui il codice categoria IVA dello sconto (BT-95) è "esente IVA" l'aliquota IVA dello sconto (BT-96) DEVE essere 0 (zero).
+BR-E-07	In una maggiorazione a livello di documento (BG-21) in cui il codice categoria IVA della maggiorazione (BT-102) è "esente IVA" l'aliquota IVA della maggiorazione (BT-103) DEVE essere 0 (zero).
+BR-E-08	In un riepilogo IVA (BG-23) in cui il codice categoria IVA (BT-118) è "esente IVA" l'imponibile della categoria IVA (BT-116) DEVE essere uguale alla somma degli importi netti di riga (BT-131) meno la somma degli sconti a livello di documento (BT-92) più la somma delle maggiorazioni a livello di documento (BT-99), dove i codici categoria IVA (BT-151, BT-95, BT-102) sono "esente IVA".
+BR-E-09	L'importo dell'imposta della categoria IVA (BT-117) in un riepilogo IVA (BG-23) in cui il codice categoria IVA (BT-118) è "esente IVA" DEVE essere 0 (zero).
+BR-E-10	Un riepilogo IVA (BG-23) con codice categoria IVA (BT-118) "esente IVA" DEVE avere un codice del motivo di esenzione IVA (BT-121) o un testo del motivo di esenzione IVA (BT-120).
+BR-G-01	Una fattura che contiene una riga (BG-25), uno sconto a livello di documento (BG-20) o una maggiorazione a livello di documento (BG-21) con codice categoria IVA (BT-151, BT-95 o BT-102) "esportazione extra UE" DEVE contenere nel riepilogo IVA (BG-23) esattamente un codice categoria IVA (BT-118) uguale a "esportazione extra UE".
+BR-G-02	Una fattura che contiene una riga di fattura (BG-25) in cui il codice categoria IVA dell'articolo fatturato (BT-151) è "esportazione extra UE" DEVE contenere l'identificativo IVA del venditore (BT-31) o l'identificativo IVA del rappresentante fiscale del venditore (BT-63).
+BR-G-03	Una fattura che contiene uno sconto a livello di documento (BG-20) in cui il codice categoria IVA dello sconto (BT-95) è "esportazione extra UE" DEVE contenere l'identificativo IVA del venditore (BT-31) o l'identificativo IVA del rappresentante fiscale del venditore (BT-63).
+BR-G-04	Una fattura che contiene una maggiorazione a livello di documento (BG-21) in cui il codice categoria IVA della maggiorazione (BT-102) è "esportazione extra UE" DEVE contenere l'identificativo IVA del venditore (BT-31) o l'identificativo IVA del rappresentante fiscale del venditore (BT-63).
+BR-G-05	In una riga di fattura (BG-25) in cui il codice categoria IVA dell'articolo fatturato (BT-151) è "esportazione extra UE" l'aliquota IVA dell'articolo fatturato (BT-152) DEVE essere 0 (zero).
+BR-G-06	In uno sconto a livello di documento (BG-20) in cui il codice categoria IVA dello sconto (BT-95) è "esportazione extra UE" l'aliquota IVA dello sconto (BT-96) DEVE essere 0 (zero).
+BR-G-07	In una maggiorazione a livello di documento (BG-21) in cui il codice categoria IVA della maggiorazione (BT-102) è "esportazione extra UE" l'aliquota IVA della maggiorazione (BT-103) DEVE essere 0 (zero).
+BR-G-08	In un riepilogo IVA (BG-23) in cui il codice categoria IVA (BT-118) è "esportazione extra UE" l'imponibile della categoria IVA (BT-116) DEVE essere uguale alla somma degli importi netti di riga (BT-131) meno la somma degli sconti a livello di documento (BT-92) più la somma delle maggiorazioni a livello di documento (BT-99), dove i codici categoria IVA (BT-151, BT-95, BT-102) sono "esportazione extra UE".
+BR-G-09	L'importo dell'imposta della categoria IVA (BT-117) in un riepilogo IVA (BG-23) in cui il codice categoria IVA (BT-118) è "esportazione extra UE" DEVE essere 0 (zero).
+BR-G-10	Un riepilogo IVA (BG-23) con codice categoria IVA (BT-118) "esportazione extra UE" DEVE avere un codice del motivo di esenzione IVA (BT-121) che significhi "esportazione extra UE" oppure il testo del motivo di esenzione IVA (BT-120) "esportazione extra UE" (o il testo standard equivalente in un'altra lingua).
+BR-IC-01	Una fattura che contiene una riga (BG-25), uno sconto a livello di documento (BG-20) o una maggiorazione a livello di documento (BG-21) con codice categoria IVA (BT-151, BT-95 o BT-102) "cessione intracomunitaria" DEVE contenere nel riepilogo IVA (BG-23) esattamente un codice categoria IVA (BT-118) uguale a "cessione intracomunitaria".
+BR-IC-02	Una fattura che contiene una riga di fattura (BG-25) in cui il codice categoria IVA dell'articolo fatturato (BT-151) è "cessione intracomunitaria" DEVE contenere l'identificativo IVA del venditore (BT-31) o l'identificativo IVA del rappresentante fiscale del venditore (BT-63) e l'identificativo IVA dell'acquirente (BT-48).
+BR-IC-03	Una fattura che contiene uno sconto a livello di documento (BG-20) in cui il codice categoria IVA dello sconto (BT-95) è "cessione intracomunitaria" DEVE contenere l'identificativo IVA del venditore (BT-31) o l'identificativo IVA del rappresentante fiscale del venditore (BT-63) e l'identificativo IVA dell'acquirente (BT-48).
+BR-IC-04	Una fattura che contiene una maggiorazione a livello di documento (BG-21) in cui il codice categoria IVA della maggiorazione (BT-102) è "cessione intracomunitaria" DEVE contenere l'identificativo IVA del venditore (BT-31) o l'identificativo IVA del rappresentante fiscale del venditore (BT-63) e l'identificativo IVA dell'acquirente (BT-48).
+BR-IC-05	In una riga di fattura (BG-25) in cui il codice categoria IVA dell'articolo fatturato (BT-151) è "cessione intracomunitaria" l'aliquota IVA dell'articolo fatturato (BT-152) DEVE essere 0 (zero).
+BR-IC-06	In uno sconto a livello di documento (BG-20) in cui il codice categoria IVA dello sconto (BT-95) è "cessione intracomunitaria" l'aliquota IVA dello sconto (BT-96) DEVE essere 0 (zero).
+BR-IC-07	In una maggiorazione a livello di documento (BG-21) in cui il codice categoria IVA della maggiorazione (BT-102) è "cessione intracomunitaria" l'aliquota IVA della maggiorazione (BT-103) DEVE essere 0 (zero).
+BR-IC-08	In un riepilogo IVA (BG-23) in cui il codice categoria IVA (BT-118) è "cessione intracomunitaria" l'imponibile della categoria IVA (BT-116) DEVE essere uguale alla somma degli importi netti di riga (BT-131) meno la somma degli sconti a livello di documento (BT-92) più la somma delle maggiorazioni a livello di documento (BT-99), dove i codici categoria IVA (BT-151, BT-95, BT-102) sono "cessione intracomunitaria".
+BR-IC-09	L'importo dell'imposta della categoria IVA (BT-117) in un riepilogo IVA (BG-23) in cui il codice categoria IVA (BT-118) è "cessione intracomunitaria" DEVE essere 0 (zero).
+BR-IC-10	Un riepilogo IVA (BG-23) con codice categoria IVA (BT-118) "cessione intracomunitaria" DEVE avere un codice del motivo di esenzione IVA (BT-121) che significhi "cessione intracomunitaria" oppure il testo del motivo di esenzione IVA (BT-120) "cessione intracomunitaria" (o il testo standard equivalente in un'altra lingua).
+BR-IG-01	Una fattura che contiene una riga (BG-25), uno sconto a livello di documento (BG-20) o una maggiorazione a livello di documento (BG-21) con codice categoria IVA (BT-151, BT-95 o BT-102) "IGIC" DEVE contenere nel riepilogo IVA (BG-23) almeno un codice categoria IVA (BT-118) uguale a "IGIC".
+BR-IG-02	Una fattura che contiene una riga di fattura (BG-25) in cui il codice categoria IVA dell'articolo fatturato (BT-151) è "IGIC" DEVE contenere l'identificativo IVA del venditore (BT-31), l'identificativo di registrazione fiscale del venditore (BT-32) e/o l'identificativo IVA del rappresentante fiscale del venditore (BT-63).
+BR-IG-03	Una fattura che contiene uno sconto a livello di documento (BG-20) in cui il codice categoria IVA dello sconto (BT-95) è "IGIC" DEVE contenere l'identificativo IVA del venditore (BT-31), l'identificativo di registrazione fiscale del venditore (BT-32) e/o l'identificativo IVA del rappresentante fiscale del venditore (BT-63).
+BR-IG-04	Una fattura che contiene una maggiorazione a livello di documento (BG-21) in cui il codice categoria IVA della maggiorazione (BT-102) è "IGIC" DEVE contenere l'identificativo IVA del venditore (BT-31), l'identificativo di registrazione fiscale del venditore (BT-32) e/o l'identificativo IVA del rappresentante fiscale del venditore (BT-63).
+BR-IG-05	In una riga di fattura (BG-25) in cui il codice categoria IVA dell'articolo fatturato (BT-151) è "IGIC" l'aliquota IVA dell'articolo fatturato (BT-152) DEVE essere 0 (zero) o maggiore di zero.
+BR-IG-06	In uno sconto a livello di documento (BG-20) in cui il codice categoria IVA dello sconto (BT-95) è "IGIC" l'aliquota IVA dello sconto (BT-96) DEVE essere 0 (zero) o maggiore di zero.
+BR-IG-07	In una maggiorazione a livello di documento (BG-21) in cui il codice categoria IVA della maggiorazione (BT-102) è "IGIC" l'aliquota IVA della maggiorazione (BT-103) DEVE essere 0 (zero) o maggiore di zero.
+BR-IG-08	Per ogni diverso valore di aliquota della categoria IVA (BT-119) con codice categoria IVA (BT-118) "IGIC", l'imponibile della categoria IVA (BT-116) in un riepilogo IVA (BG-23) DEVE essere uguale alla somma degli importi netti di riga (BT-131) più la somma delle maggiorazioni a livello di documento (BT-99) meno la somma degli sconti a livello di documento (BT-92), dove il codice categoria IVA (BT-151, BT-102, BT-95) è "IGIC" e l'aliquota IVA (BT-152, BT-103, BT-96) è uguale all'aliquota della categoria IVA (BT-119).
+BR-IG-09	L'importo dell'imposta della categoria IVA (BT-117) in un riepilogo IVA (BG-23) con codice categoria IVA (BT-118) "IGIC" DEVE essere uguale all'imponibile della categoria IVA (BT-116) moltiplicato per l'aliquota della categoria IVA (BT-119).
+BR-IG-10	Un riepilogo IVA (BG-23) con codice categoria IVA (BT-118) "IGIC" NON DEVE avere un codice del motivo di esenzione IVA (BT-121) né un testo del motivo di esenzione IVA (BT-120).
+BR-IP-01	Una fattura che contiene una riga (BG-25), uno sconto a livello di documento (BG-20) o una maggiorazione a livello di documento (BG-21) con codice categoria IVA (BT-151, BT-95 o BT-102) "IPSI" DEVE contenere nel riepilogo IVA (BG-23) almeno un codice categoria IVA (BT-118) uguale a "IPSI".
+BR-IP-02	Una fattura che contiene una riga di fattura (BG-25) in cui il codice categoria IVA dell'articolo fatturato (BT-151) è "IPSI" DEVE contenere l'identificativo IVA del venditore (BT-31), l'identificativo di registrazione fiscale del venditore (BT-32) e/o l'identificativo IVA del rappresentante fiscale del venditore (BT-63).
+BR-IP-03	Una fattura che contiene uno sconto a livello di documento (BG-20) in cui il codice categoria IVA dello sconto (BT-95) è "IPSI" DEVE contenere l'identificativo IVA del venditore (BT-31), l'identificativo di registrazione fiscale del venditore (BT-32) e/o l'identificativo IVA del rappresentante fiscale del venditore (BT-63).
+BR-IP-04	Una fattura che contiene una maggiorazione a livello di documento (BG-21) in cui il codice categoria IVA della maggiorazione (BT-102) è "IPSI" DEVE contenere l'identificativo IVA del venditore (BT-31), l'identificativo di registrazione fiscale del venditore (BT-32) e/o l'identificativo IVA del rappresentante fiscale del venditore (BT-63).
+BR-IP-05	In una riga di fattura (BG-25) in cui il codice categoria IVA dell'articolo fatturato (BT-151) è "IPSI" l'aliquota IVA dell'articolo fatturato (BT-152) DEVE essere 0 (zero) o maggiore di zero.
+BR-IP-06	In uno sconto a livello di documento (BG-20) in cui il codice categoria IVA dello sconto (BT-95) è "IPSI" l'aliquota IVA dello sconto (BT-96) DEVE essere 0 (zero) o maggiore di zero.
+BR-IP-07	In una maggiorazione a livello di documento (BG-21) in cui il codice categoria IVA della maggiorazione (BT-102) è "IPSI" l'aliquota IVA della maggiorazione (BT-103) DEVE essere 0 (zero) o maggiore di zero.
+BR-IP-08	Per ogni diverso valore di aliquota della categoria IVA (BT-119) con codice categoria IVA (BT-118) "IPSI", l'imponibile della categoria IVA (BT-116) in un riepilogo IVA (BG-23) DEVE essere uguale alla somma degli importi netti di riga (BT-131) più la somma delle maggiorazioni a livello di documento (BT-99) meno la somma degli sconti a livello di documento (BT-92), dove il codice categoria IVA (BT-151, BT-102, BT-95) è "IPSI" e l'aliquota IVA (BT-152, BT-103, BT-96) è uguale all'aliquota della categoria IVA (BT-119).
+BR-IP-09	L'importo dell'imposta della categoria IVA (BT-117) in un riepilogo IVA (BG-23) con codice categoria IVA (BT-118) "IPSI" DEVE essere uguale all'imponibile della categoria IVA (BT-116) moltiplicato per l'aliquota della categoria IVA (BT-119).
+BR-IP-10	Un riepilogo IVA (BG-23) con codice categoria IVA (BT-118) "IPSI" NON DEVE avere un codice del motivo di esenzione IVA (BT-121) né un testo del motivo di esenzione IVA (BT-120).
+BR-O-01	Una fattura che contiene una riga (BG-25), uno sconto a livello di documento (BG-20) o una maggiorazione a livello di documento (BG-21) con codice categoria IVA (BT-151, BT-95 o BT-102) "non soggetto a IVA" DEVE contenere nel riepilogo IVA (BG-23) esattamente un codice categoria IVA (BT-118) uguale a "non soggetto a IVA".
+BR-O-02	Una fattura che contiene una riga di fattura (BG-25) in cui il codice categoria IVA dell'articolo fatturato (BT-151) è "non soggetto a IVA" NON DEVE contenere l'identificativo IVA del venditore (BT-31), l'identificativo IVA del rappresentante fiscale del venditore (BT-63) o l'identificativo IVA dell'acquirente (BT-48).
+BR-O-03	Una fattura che contiene uno sconto a livello di documento (BG-20) in cui il codice categoria IVA dello sconto (BT-95) è "non soggetto a IVA" NON DEVE contenere l'identificativo IVA del venditore (BT-31), l'identificativo IVA del rappresentante fiscale del venditore (BT-63) o l'identificativo IVA dell'acquirente (BT-48).
+BR-O-04	Una fattura che contiene una maggiorazione a livello di documento (BG-21) in cui il codice categoria IVA della maggiorazione (BT-102) è "non soggetto a IVA" NON DEVE contenere l'identificativo IVA del venditore (BT-31), l'identificativo IVA del rappresentante fiscale del venditore (BT-63) o l'identificativo IVA dell'acquirente (BT-48).
+BR-O-05	Una riga di fattura (BG-25) in cui il codice categoria IVA (BT-151) è "non soggetto a IVA" NON DEVE contenere un'aliquota IVA dell'articolo fatturato (BT-152).
+BR-O-06	Uno sconto a livello di documento (BG-20) in cui il codice categoria IVA (BT-95) è "non soggetto a IVA" NON DEVE contenere un'aliquota IVA dello sconto (BT-96).
+BR-O-07	Una maggiorazione a livello di documento (BG-21) in cui il codice categoria IVA (BT-102) è "non soggetto a IVA" NON DEVE contenere un'aliquota IVA della maggiorazione (BT-103).
+BR-O-08	In un riepilogo IVA (BG-23) in cui il codice categoria IVA (BT-118) è "non soggetto a IVA" l'imponibile della categoria IVA (BT-116) DEVE essere uguale alla somma degli importi netti di riga (BT-131) meno la somma degli sconti a livello di documento (BT-92) più la somma delle maggiorazioni a livello di documento (BT-99), dove i codici categoria IVA (BT-151, BT-95, BT-102) sono "non soggetto a IVA".
+BR-O-09	L'importo dell'imposta della categoria IVA (BT-117) in un riepilogo IVA (BG-23) in cui il codice categoria IVA (BT-118) è "non soggetto a IVA" DEVE essere 0 (zero).
+BR-O-10	Un riepilogo IVA (BG-23) con codice categoria IVA (BT-118) "non soggetto a IVA" DEVE avere un codice del motivo di esenzione IVA (BT-121) che significhi "non soggetto a IVA" oppure il testo del motivo di esenzione IVA (BT-120) "non soggetto a IVA" (o il testo standard equivalente in un'altra lingua).
+BR-S-01	Una fattura che contiene una riga (BG-25), uno sconto a livello di documento (BG-20) o una maggiorazione a livello di documento (BG-21) con codice categoria IVA (BT-151, BT-95 o BT-102) "aliquota ordinaria" DEVE contenere nel riepilogo IVA (BG-23) almeno un codice categoria IVA (BT-118) uguale a "aliquota ordinaria".
+BR-S-02	Una fattura che contiene una riga di fattura (BG-25) in cui il codice categoria IVA dell'articolo fatturato (BT-151) è "aliquota ordinaria" DEVE contenere l'identificativo IVA del venditore (BT-31), l'identificativo di registrazione fiscale del venditore (BT-32) e/o l'identificativo IVA del rappresentante fiscale del venditore (BT-63).
+BR-S-03	Una fattura che contiene uno sconto a livello di documento (BG-20) in cui il codice categoria IVA dello sconto (BT-95) è "aliquota ordinaria" DEVE contenere l'identificativo IVA del venditore (BT-31), l'identificativo di registrazione fiscale del venditore (BT-32) e/o l'identificativo IVA del rappresentante fiscale del venditore (BT-63).
+BR-S-04	Una fattura che contiene una maggiorazione a livello di documento (BG-21) in cui il codice categoria IVA della maggiorazione (BT-102) è "aliquota ordinaria" DEVE contenere l'identificativo IVA del venditore (BT-31), l'identificativo di registrazione fiscale del venditore (BT-32) e/o l'identificativo IVA del rappresentante fiscale del venditore (BT-63).
+BR-S-05	In una riga di fattura (BG-25) in cui il codice categoria IVA dell'articolo fatturato (BT-151) è "aliquota ordinaria" l'aliquota IVA dell'articolo fatturato (BT-152) DEVE essere maggiore di zero.
+BR-S-06	In uno sconto a livello di documento (BG-20) in cui il codice categoria IVA dello sconto (BT-95) è "aliquota ordinaria" l'aliquota IVA dello sconto (BT-96) DEVE essere maggiore di zero.
+BR-S-07	In una maggiorazione a livello di documento (BG-21) in cui il codice categoria IVA della maggiorazione (BT-102) è "aliquota ordinaria" l'aliquota IVA della maggiorazione (BT-103) DEVE essere maggiore di zero.
+BR-S-08	Per ogni diverso valore di aliquota della categoria IVA (BT-119) con codice categoria IVA (BT-118) "aliquota ordinaria", l'imponibile della categoria IVA (BT-116) in un riepilogo IVA (BG-23) DEVE essere uguale alla somma degli importi netti di riga (BT-131) più la somma delle maggiorazioni a livello di documento (BT-99) meno la somma degli sconti a livello di documento (BT-92), dove il codice categoria IVA (BT-151, BT-102, BT-95) è "aliquota ordinaria" e l'aliquota IVA (BT-152, BT-103, BT-96) è uguale all'aliquota della categoria IVA (BT-119).
+BR-S-09	L'importo dell'imposta della categoria IVA (BT-117) in un riepilogo IVA (BG-23) con codice categoria IVA (BT-118) "aliquota ordinaria" DEVE essere uguale all'imponibile della categoria IVA (BT-116) moltiplicato per l'aliquota della categoria IVA (BT-119).
+BR-S-10	Un riepilogo IVA (BG-23) con codice categoria IVA (BT-118) "aliquota ordinaria" NON DEVE avere un codice del motivo di esenzione IVA (BT-121) né un testo del motivo di esenzione IVA (BT-120).
+BR-Z-01	Una fattura che contiene una riga (BG-25), uno sconto a livello di documento (BG-20) o una maggiorazione a livello di documento (BG-21) con codice categoria IVA (BT-151, BT-95 o BT-102) "aliquota zero" DEVE contenere nel riepilogo IVA (BG-23) esattamente un codice categoria IVA (BT-118) uguale a "aliquota zero".
+BR-Z-02	Una fattura che contiene una riga di fattura (BG-25) in cui il codice categoria IVA dell'articolo fatturato (BT-151) è "aliquota zero" DEVE contenere l'identificativo IVA del venditore (BT-31), l'identificativo di registrazione fiscale del venditore (BT-32) e/o l'identificativo IVA del rappresentante fiscale del venditore (BT-63).
+BR-Z-03	Una fattura che contiene uno sconto a livello di documento (BG-20) in cui il codice categoria IVA dello sconto (BT-95) è "aliquota zero" DEVE contenere l'identificativo IVA del venditore (BT-31), l'identificativo di registrazione fiscale del venditore (BT-32) e/o l'identificativo IVA del rappresentante fiscale del venditore (BT-63).
+BR-Z-04	Una fattura che contiene una maggiorazione a livello di documento (BG-21) in cui il codice categoria IVA della maggiorazione (BT-102) è "aliquota zero" DEVE contenere l'identificativo IVA del venditore (BT-31), l'identificativo di registrazione fiscale del venditore (BT-32) e/o l'identificativo IVA del rappresentante fiscale del venditore (BT-63).
+BR-Z-05	In una riga di fattura (BG-25) in cui il codice categoria IVA dell'articolo fatturato (BT-151) è "aliquota zero" l'aliquota IVA dell'articolo fatturato (BT-152) DEVE essere 0 (zero).
+BR-Z-06	In uno sconto a livello di documento (BG-20) in cui il codice categoria IVA dello sconto (BT-95) è "aliquota zero" l'aliquota IVA dello sconto (BT-96) DEVE essere 0 (zero).
+BR-Z-07	In una maggiorazione a livello di documento (BG-21) in cui il codice categoria IVA della maggiorazione (BT-102) è "aliquota zero" l'aliquota IVA della maggiorazione (BT-103) DEVE essere 0 (zero).
+BR-Z-08	In un riepilogo IVA (BG-23) in cui il codice categoria IVA (BT-118) è "aliquota zero" l'imponibile della categoria IVA (BT-116) DEVE essere uguale alla somma degli importi netti di riga (BT-131) meno la somma degli sconti a livello di documento (BT-92) più la somma delle maggiorazioni a livello di documento (BT-99), dove i codici categoria IVA (BT-151, BT-95, BT-102) sono "aliquota zero".
+BR-Z-09	L'importo dell'imposta della categoria IVA (BT-117) in un riepilogo IVA (BG-23) in cui il codice categoria IVA (BT-118) è "aliquota zero" DEVE essere 0 (zero).
+BR-Z-10	Un riepilogo IVA (BG-23) con codice categoria IVA (BT-118) "aliquota zero" NON DEVE avere un codice del motivo di esenzione IVA (BT-121) né un testo del motivo di esenzione IVA (BT-120).
+BR-IC-11	In una fattura con un riepilogo IVA (BG-23) in cui il codice categoria IVA (BT-118) è "cessione intracomunitaria", la data di consegna effettiva (BT-72) o il periodo di fatturazione (BG-14) NON DEVE essere vuoto.
+BR-IC-12	In una fattura con un riepilogo IVA (BG-23) in cui il codice categoria IVA (BT-118) è "cessione intracomunitaria", il codice paese di consegna (BT-80) NON DEVE essere vuoto.
+BR-O-11	Una fattura che contiene un riepilogo IVA (BG-23) con codice categoria IVA (BT-118) "non soggetto a IVA" NON DEVE contenere altri riepiloghi IVA (BG-23).
+BR-O-12	Una fattura che contiene un riepilogo IVA (BG-23) con codice categoria IVA (BT-118) "non soggetto a IVA" NON DEVE contenere una riga di fattura (BG-25) in cui il codice categoria IVA dell'articolo fatturato (BT-151) non è "non soggetto a IVA".
+BR-O-13	Una fattura che contiene un riepilogo IVA (BG-23) con codice categoria IVA (BT-118) "non soggetto a IVA" NON DEVE contenere sconti a livello di documento (BG-20) in cui il codice categoria IVA dello sconto (BT-95) non è "non soggetto a IVA".
+BR-O-14	Una fattura che contiene un riepilogo IVA (BG-23) con codice categoria IVA (BT-118) "non soggetto a IVA" NON DEVE contenere maggiorazioni a livello di documento (BG-21) in cui il codice categoria IVA della maggiorazione (BT-102) non è "non soggetto a IVA".
+BR-B-01	Una fattura in cui il codice categoria IVA (BT-151, BT-95 o BT-102) è “Split payment” DEVE essere una fattura nazionale italiana.
+BR-B-02	Una fattura che contiene una riga (BG-25), uno sconto a livello di documento (BG-20) o una maggiorazione a livello di documento (BG-21) con codice categoria IVA (BT-151, BT-95, BT-118 o BT-102) “Split payment” NON DEVE contenere una riga (BG-25), uno sconto (BG-20) o una maggiorazione (BG-21) con codice categoria IVA (BT-151, BT-95, BT-118 o BT-102) “aliquota ordinaria”.
+BR-52	Ogni documento di supporto aggiuntivo (BG-24) DEVE contenere un riferimento al documento di supporto (BT-122).
+BR-51	In conformità con gli standard di sicurezza dei pagamenti con carta, una fattura non dovrebbe mai includere il numero completo della carta (BT-87). Al momento il PCI Security Standards Council ha stabilito che il massimo di cifre da mostrare sono le prime 6 e le ultime 4.
+BR-31	Ogni sconto a livello di documento (BG-20) DEVE avere un importo dello sconto a livello di documento (BT-92).
+BR-32	Ogni sconto a livello di documento (BG-20) DEVE avere un codice categoria IVA dello sconto a livello di documento (BT-95).
+BR-33	Ogni sconto a livello di documento (BG-20) DEVE avere un motivo dello sconto a livello di documento (BT-97) o un codice del motivo dello sconto a livello di documento (BT-98).
+BR-CO-05	Il codice del motivo dello sconto a livello di documento (BT-98) e il motivo dello sconto a livello di documento (BT-97) DEVONO indicare lo stesso tipo di sconto.
+BR-CO-21	Ogni sconto a livello di documento (BG-20) DEVE contenere un motivo dello sconto a livello di documento (BT-97) o un codice del motivo dello sconto a livello di documento (BT-98), o entrambi.
+BR-DEC-01	Il numero massimo di decimali per l'importo dello sconto a livello di documento (BT-92) è 2.
+BR-DEC-02	Il numero massimo di decimali per l'importo base dello sconto a livello di documento (BT-93) è 2.
+BR-36	Ogni maggiorazione a livello di documento (BG-21) DEVE avere un importo della maggiorazione a livello di documento (BT-99).
+BR-37	Ogni maggiorazione a livello di documento (BG-21) DEVE avere un codice categoria IVA della maggiorazione a livello di documento (BT-102).
+BR-38	Ogni maggiorazione a livello di documento (BG-21) DEVE avere un motivo della maggiorazione a livello di documento (BT-104) o un codice del motivo della maggiorazione a livello di documento (BT-105).
+BR-CO-06	Il codice del motivo della maggiorazione a livello di documento (BT-105) e il motivo della maggiorazione a livello di documento (BT-104) DEVONO indicare lo stesso tipo di maggiorazione.
+BR-CO-22	Ogni maggiorazione a livello di documento (BG-21) DEVE contenere un motivo della maggiorazione a livello di documento (BT-104) o un codice del motivo della maggiorazione a livello di documento (BT-105), o entrambi.
+BR-DEC-05	Il numero massimo di decimali per l'importo della maggiorazione a livello di documento (BT-99) è 2.
+BR-DEC-06	Il numero massimo di decimali per l'importo base della maggiorazione a livello di documento (BT-100) è 2.
+BR-12	Una fattura DEVE avere la somma degli importi netti delle righe (BT-106).
+BR-13	Una fattura DEVE avere l'importo totale della fattura senza IVA (BT-109).
+BR-14	Una fattura DEVE avere l'importo totale della fattura con IVA (BT-112).
+BR-15	Una fattura DEVE avere l'importo dovuto per il pagamento (BT-115).
+BR-CO-10	Somma degli importi netti delle righe (BT-106) = Σ importi netti di riga (BT-131).
+BR-CO-11	Somma degli sconti a livello di documento (BT-107) = Σ importi degli sconti a livello di documento (BT-92).
+BR-CO-12	Somma delle maggiorazioni a livello di documento (BT-108) = Σ importi delle maggiorazioni a livello di documento (BT-99).
+BR-CO-13	Importo totale della fattura senza IVA (BT-109) = Σ importi netti di riga (BT-131) - somma degli sconti a livello di documento (BT-107) + somma delle maggiorazioni a livello di documento (BT-108).
+BR-CO-16	Importo dovuto per il pagamento (BT-115) = importo totale della fattura con IVA (BT-112) - importo pagato (BT-113) + importo di arrotondamento (BT-114).
+BR-DEC-09	Il numero massimo di decimali per la somma degli importi netti delle righe (BT-106) è 2.
+BR-DEC-11	Il numero massimo di decimali per la somma delle maggiorazioni a livello di documento (BT-108) è 2.
+BR-DEC-12	Il numero massimo di decimali per l'importo totale della fattura senza IVA (BT-109) è 2.
+BR-DEC-14	Il numero massimo di decimali per l'importo totale della fattura con IVA (BT-112) è 2.
+BR-DEC-16	Il numero massimo di decimali per l'importo pagato (BT-113) è 2.
+BR-DEC-17	Il numero massimo di decimali per l'importo di arrotondamento (BT-114) è 2.
+BR-DEC-18	Il numero massimo di decimali per l'importo dovuto per il pagamento (BT-115) è 2.
+BR-53	Se è presente il codice valuta di contabilizzazione IVA (BT-6), DEVE essere indicato l'importo totale IVA della fattura nella valuta di contabilizzazione (BT-111).
+BR-CO-15	Importo totale della fattura con IVA (BT-112) = importo totale della fattura senza IVA (BT-109) + importo totale IVA della fattura (BT-110).
+BR-CO-18	Una fattura DEVE avere almeno un gruppo di riepilogo IVA (BG-23).
+BR-DEC-13	Il numero massimo di decimali per l'importo totale IVA della fattura (BT-110) è 2.
+BR-DEC-15	Il numero massimo di decimali per l'importo totale IVA della fattura nella valuta di contabilizzazione (BT-111) è 2.
+BR-21	Ogni riga di fattura (BG-25) DEVE avere un identificativo di riga (BT-126).
+BR-22	Ogni riga di fattura (BG-25) DEVE avere una quantità fatturata (BT-129).
+BR-23	Una riga di fattura (BG-25) DEVE avere un codice unità di misura della quantità fatturata (BT-130).
+BR-24	Ogni riga di fattura (BG-25) DEVE avere un importo netto di riga (BT-131).
+BR-25	Ogni riga di fattura (BG-25) DEVE contenere il nome dell'articolo (BT-153).
+BR-26	Ogni riga di fattura (BG-25) DEVE contenere il prezzo netto dell'articolo (BT-146).
+BR-27	Il prezzo netto dell'articolo (BT-146) NON DEVE essere negativo.
+BR-28	Il prezzo lordo dell'articolo (BT-148) NON DEVE essere negativo.
+BR-CO-04	Ogni riga di fattura (BG-25) DEVE essere classificata con un codice categoria IVA dell'articolo fatturato (BT-151).
+BR-DEC-23	Il numero massimo di decimali per l'importo netto di riga (BT-131) è 2.
+BR-41	Ogni sconto di riga (BG-27) DEVE avere un importo dello sconto di riga (BT-136).
+BR-42	Ogni sconto di riga (BG-27) DEVE avere un motivo dello sconto di riga (BT-139) o un codice del motivo dello sconto di riga (BT-140).
+BR-CO-07	Il codice del motivo dello sconto di riga (BT-140) e il motivo dello sconto di riga (BT-139) DEVONO indicare lo stesso tipo di motivo.
+BR-CO-23	Ogni sconto di riga (BG-27) DEVE contenere un motivo dello sconto di riga (BT-139) o un codice del motivo dello sconto di riga (BT-140), o entrambi.
+BR-DEC-24	Il numero massimo di decimali per l'importo dello sconto di riga (BT-136) è 2.
+BR-DEC-25	Il numero massimo di decimali per l'importo base dello sconto di riga (BT-137) è 2.
+BR-43	Ogni maggiorazione di riga (BG-28) DEVE avere un importo della maggiorazione di riga (BT-141).
+BR-44	Ogni maggiorazione di riga DEVE avere un motivo della maggiorazione di riga o un codice del motivo dello sconto di riga.
+BR-CO-08	Il codice del motivo della maggiorazione di riga (BT-145) e il motivo della maggiorazione di riga (BT-144) DEVONO indicare lo stesso tipo di motivo.
+BR-CO-24	Ogni maggiorazione di riga (BG-28) DEVE contenere un motivo della maggiorazione di riga (BT-144) o un codice del motivo della maggiorazione di riga (BT-145), o entrambi.
+BR-DEC-27	Il numero massimo di decimali per l'importo della maggiorazione di riga (BT-141) è 2.
+BR-DEC-28	Il numero massimo di decimali per l'importo base della maggiorazione di riga (BT-142) è 2.
+BR-30	Se sono indicate sia la data di inizio (BT-134) sia la data di fine (BT-135) del periodo di riga, la data di fine (BT-135) DEVE essere successiva o uguale alla data di inizio (BT-134).
+BR-CO-20	Se è usato il periodo della riga di fattura (BG-26), la data di inizio (BT-134) o la data di fine (BT-135) del periodo DEVE essere valorizzata, o entrambe.
+BR-54	Ogni attributo dell'articolo (BG-32) DEVE contenere un nome (BT-160) e un valore (BT-161) dell'attributo.
+BR-CO-26	Perché l'acquirente possa identificare automaticamente un fornitore, DEVONO essere presenti l'identificativo del venditore (BT-29), l'identificativo di registrazione legale del venditore (BT-30) e/o l'identificativo IVA del venditore (BT-31).
+BR-19	L'indirizzo postale del rappresentante fiscale del venditore (BG-12) DEVE essere indicato nella fattura, se il venditore (BG-4) ha un rappresentante fiscale (BG-11).
+BR-56	Ogni rappresentante fiscale del venditore (BG-11) DEVE avere un identificativo IVA del rappresentante fiscale (BT-63).
+BR-20	L'indirizzo postale del rappresentante fiscale del venditore (BG-12) DEVE contenere il codice paese del rappresentante fiscale (BT-69), se il venditore (BG-4) ha un rappresentante fiscale (BG-11).
+BR-CO-14	Importo totale IVA della fattura (BT-110) = Σ importi dell'imposta per categoria IVA (BT-117).
+BR-45	Ogni riepilogo IVA (BG-23) DEVE avere un imponibile della categoria IVA (BT-116).
+BR-46	Ogni riepilogo IVA (BG-23) DEVE avere un importo dell'imposta della categoria IVA (BT-117).
+BR-47	Ogni riepilogo IVA (BG-23) DEVE essere definito da un codice categoria IVA (BT-118).
+BR-48	Ogni riepilogo IVA (BG-23) DEVE avere un'aliquota della categoria IVA (BT-119), tranne se la fattura non è soggetta a IVA.
+BR-CO-17	Importo dell'imposta della categoria IVA (BT-117) = imponibile della categoria IVA (BT-116) x (aliquota della categoria IVA (BT-119) / 100), arrotondato a due decimali.
+BR-DEC-19	Il numero massimo di decimali per l'imponibile della categoria IVA (BT-116) è 2.
+BR-DEC-20	Il numero massimo di decimali per l'importo dell'imposta della categoria IVA (BT-117) è 2.
+BR-CO-09	L'identificativo IVA del venditore (BT-31), l'identificativo IVA del rappresentante fiscale del venditore (BT-63) e l'identificativo IVA dell'acquirente (BT-48) DEVONO avere un prefisso conforme al codice ISO 3166-1 alpha-2 che identifichi il paese di emissione. La Grecia può comunque usare il prefisso ‘EL’.
+BR-CL-07	Lo schema di identificazione dell'identificativo dell'oggetto DEVE essere codificato con un sottoinsieme di UNTDID 1153.
+BR-CL-10	Qualsiasi identificativo dello schema di identificazione DEVE essere codificato con la lista ISO 6523 ICD.
+BR-CL-11	Qualsiasi identificativo dello schema di identificazione di registrazione DEVE essere codificato con la lista ISO 6523 ICD.
+BR-CL-13	Lo schema dell'identificativo di classificazione dell'articolo DEVE essere codificato con la lista UNTDID 7143.
+BR-CL-19	I motivi di sconto codificati DEVONO appartenere alla lista di codici UNCL 5189
+BR-CL-21	Lo schema dell'identificativo standard dell'articolo DEVE appartenere alla lista di codici ISO 6523 ICD
+BR-CL-22	Lo schema del codice del motivo di esenzione fiscale DEVE appartenere alla lista di codici CEF VATEX
+BR-CL-25	Lo schema dell'identificativo dell'indirizzo elettronico DEVE appartenere alla lista di codici CEF EAS
+BR-CL-26	Lo schema dell'identificativo del luogo di consegna DEVE appartenere alla lista di codici ISO 6523 ICD

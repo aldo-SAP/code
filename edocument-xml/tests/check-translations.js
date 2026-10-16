@@ -24,10 +24,10 @@ const { open } = require("./lib/engine");
     const out = [];
     for (const [text, id] of list) {
       if (/\(detail\)$/.test(id)) continue;   // details are numbers and names: not checked here
-      I18N.set("it"); const it = I18N.tr(text);
-      I18N.set("en"); const en = I18N.tr(text);
-      if (it === text) out.push("no Italian: " + id + " | " + text.slice(0, 90));
-      if (en === text && !/\b(the|must|MUST|shall|should|and)\b/.test(text) && /[äöüßéèàçôûâî]|\b(muss|müssen|sollen|soll|doit|Lorsque|Valeur actuelle|Si le)\b/.test(text)) out.push("no English: " + id + " | " + text.slice(0, 90));
+      I18N.set("it"); const it = I18N.tr(text, 0, true);
+      I18N.set("en"); const en = I18N.tr(text, 0, true);
+      if (it === null) out.push("no Italian: " + id + " | " + text.slice(0, 90));
+      if (en === null && !/\b(the|must|MUST|shall|should|and)\b/.test(text) && /[äöüßéèàçôûâî]|\b(muss|müssen|sollen|soll|doit|Lorsque|Valeur actuelle|Si le)\b/.test(text)) out.push("no English: " + id + " | " + text.slice(0, 90));
     }
     return out;
   }, Array.from(seen));

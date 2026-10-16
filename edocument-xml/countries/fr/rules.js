@@ -43,10 +43,11 @@
       byPath(R, "Note").some((n) => raw(n).includes("#BAR#")),
     // the EN 16931 rules the EXTENDED-CTC-FR profile leaves out
     off: (R) => (isExtended(R) ? new Set(window.FR_EXT_OFF) : null),
-    run(c) {
+    run(c) { for (const _ of this.steps(c)); },
+    *steps(c) {
       const { R, rule, each, has, txt, seller, buyer, allEls } = c;
-      brFr.run(c);
-      if (isExtended(R)) brFrExt.run(c);
+      yield* brFr.steps(c);
+      if (isExtended(R)) yield* brFrExt.steps(c);
       const notes = byPath(R, "Note").map(raw), allNotes = notes.join("#");
       const bar = allNotes.includes("#BAR#") ? noteValue(allNotes, "BAR") : null;
       const sirenOf = (party, path) => byPath(party, path || "PartyLegalEntity/CompanyID").filter((e) => e.getAttribute("schemeID") === "0002");

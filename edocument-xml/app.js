@@ -13,8 +13,8 @@
   setDisplayNames();
 
   // ---------- State ----------
-  const state = { root: null, kind: null, name: "", size: 0, wrapped: "", showEmpty: false, showTags: false, raw: false, foldPassing: false, openCards: new Set(), closedCards: new Set(), flaggedRules: new Set(), secFlag: {}, atts: [], attIndex: new Map(), cache: new Map() };
-  try { state.showEmpty = localStorage.getItem("edocxml.showEmpty") === "1"; state.showTags = localStorage.getItem("edocxml.showTags") === "1"; state.raw = localStorage.getItem("edocxml.raw") === "1"; state.foldPassing = localStorage.getItem("edocxml.foldPassing") === "1"; } catch (e) {}
+  const state = { root: null, kind: null, name: "", size: 0, wrapped: "", showEmpty: false, showTags: false, raw: false, foldPassing: false, showPassed: false, openCards: new Set(), closedCards: new Set(), flaggedRules: new Set(), secFlag: {}, atts: [], attIndex: new Map(), cache: new Map() };
+  try { state.showEmpty = localStorage.getItem("edocxml.showEmpty") === "1"; state.showTags = localStorage.getItem("edocxml.showTags") === "1"; state.raw = localStorage.getItem("edocxml.raw") === "1"; state.foldPassing = localStorage.getItem("edocxml.foldPassing") === "1"; state.showPassed = localStorage.getItem("edocxml.showPassed") === "1"; } catch (e) {}
 
   // ---------- Helpers ----------
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -670,6 +670,7 @@
   // Status dot: green when no rule fails in the block, red on a failure, amber on a warning only.
   function dot(id) {
     let bad = [], warn = [];
+    if (state.checking) return '<span class="dot" title="' + esc(T("Checking the rules…")) + '"></span>';
     if (id === "checks") {
       bad = state.checks.filter((c) => !c.ok && !c.warn).map((c) => c.id);
       warn = state.checks.filter((c) => !c.ok && c.warn).map((c) => c.id);
@@ -690,7 +691,8 @@
       (go ? ' data-act="goerr" data-check="' + state.checks.indexOf(x) + '" role="button" tabindex="0" title="' + esc(T("Show where it fails")) + '"' : "") + ">" +
       '<span class="rid">' + esc(x.id) + (go ? '<span class="arrow" aria-hidden="true">↘</span>' : "") + "</span><span>" +
       (x.ok ? "✓ " : x.warn ? "! " : "✗ ") + esc(I18N.tr(x.text)) +
-      (x.detail && (inList || !/^Fails on /.test(x.detail)) ? "<small>" + esc(I18N.tr(x.detail)) + "</small>" : "") + "</span></li>";
+      (x.detail && (inList || !/^Fails on /.test(x.detail)) ? "<small>" + esc(I18N.tr(x.detail)) + "</small>" : "") +
+      (!x.ok && window.EdocHelp && EdocHelp.get(x.id) ? '<small class="help"><b>' + esc(T("How to fix")) + ":</b> " + esc(EdocHelp.get(x.id)) + "</small>" : "") + "</span></li>";
   };
   // Jump to a failed check: its line (the next one on each click when it fails on several) or else its block.
   function goToCheck(c) {
@@ -728,14 +730,19 @@
       Object.keys(EN16931.sets).map((id) => '<label' + (state.ruleSets.includes(id) ? ' class="on"' : "") + '><input type="checkbox" data-ruleset="' + id + '"' +
         (state.ruleSets.includes(id) ? " checked" : "") + "> " + esc(T(EN16931.sets[id].name)) + (detected.includes(id) ? " <small>" + T("detected") + "</small>" : "") + "</label>").join("") + "</div>";
     if (bad.length || warn.length) h += '<ul class="checks">' + bad.concat(warn).map(li).join("") + "</ul>";
-    if (ok.length) h += '<details class="passed"><summary>' + (ok.length > 1 ? T("{n} rules pass", { n: ok.length }) : T("1 rule passes")) +
-      '</summary><ul class="checks">' + ok.map(li).join("") + "</ul></details>";
+    // the passing rules are only written into the page when asked for (a few hundred lines), and then folded
+    const passText = ok.length > 1 ? T("{n} rules pass", { n: ok.length }) : T("1 rule passes");
+    if (ok.length) h += state.showPassed
+      ? '<details class="passed"><summary>' + passText + '</summary><ul class="checks">' + ok.map(li).join("") + "</ul></details>"
+      : '<p class="passed-note">' + passText + "</p>";
     return h;
   }
 
   // Verdict first: one banner at the very top says whether the document follows the rules, and where it does not.
   function renderVerdict() {
     const el = $("verdict"), checks = state.checks;
+    if (state.checking) { el.hidden = false; el.className = "verdict pending"; el.innerHTML = '<span class="spin" aria-hidden="true"></span><b>' + esc(T("Checking the rules…")) + "</b>"; return; }
+    if (state.checkError) { el.hidden = false; el.className = "verdict bad"; el.innerHTML = "<b>" + esc(T("The rules could not be run on this document")) + "</b> <span>" + esc(state.checkError) + "</span>"; return; }
     if (!checks.length) { el.hidden = true; el.innerHTML = ""; return; }
     const bad = checks.filter((c) => !c.ok && !c.warn).length, warn = checks.filter((c) => !c.ok && c.warn).length;
     const lvl = bad ? "bad" : warn ? "warn" : "ok";
@@ -930,8 +937,31 @@
       : '<div class="sheet"><div class="none">' + T("This document has no embedded attachments.") + "</div></div>";
   }
 
+  // A long document is checked in slices: the invoice is drawn at once with "Checking the rules…" where the verdict goes, and drawn again when the
+  // rules are done. A short one is checked in one go (below this many elements). The result is kept until the document, the rule sets or the language change.
+  const SLICE_ELEMENTS = 2500;
+  let checkRun = 0;
   function render() {
-    state.checks = computeChecks();
+    const run = ++checkRun, key = [state.root, state.kind, (state.ruleSets || []).join(","), I18N.lang];
+    state.checking = false; state.checkError = "";
+    if (state.ckey && state.ckey.every((v, i) => v === key[i])) return drawAll();
+    if (state.root.getElementsByTagName("*").length < SLICE_ELEMENTS) { state.checks = computeChecks(); state.ckey = key; return drawAll(); }
+    state.checks = []; state.ckey = null; state.checking = true;
+    drawAll();
+    EN16931.checkAsync(state.root, state.kind, state.ruleSets).then((res) => {
+      if (run !== checkRun) return;   // another document, or another change, in the meantime
+      state.checks = res; state.ckey = key; state.checking = false;
+      const tab = document.querySelector('.tab[aria-selected="true"]'), y = window.scrollY;
+      drawAll();
+      showTab(tab ? tab.dataset.tab : "fields");
+      window.scrollTo(0, y);
+    }).catch((e) => {
+      if (run !== checkRun) return;
+      state.checking = false; state.checkError = String(e && e.message || e);
+      drawAll();
+    });
+  }
+  function drawAll() {
     state.issues = mapIssues(state.checks);
     state.failed = state.checks.filter((c) => !c.ok).map((c) => ({ c, at: c.at, bts: new Set(c.only || c.text.match(/\bB[TG]-\d+\b/g) || []) }));
     collectAttachments();
@@ -946,6 +976,7 @@
     $("showTags").checked = state.showTags;
     $("showRaw").checked = state.raw;
     $("showFold").checked = state.foldPassing;
+    $("showPassed").checked = state.showPassed;
     updateFilterBadge();
     updateIssues();
     $("out").hidden = false;
@@ -996,7 +1027,7 @@
 
   // Phones: the filter box and the checkboxes sit behind a Filters button (see style.css); the badge counts what is switched on.
   function updateFilterBadge() {
-    const toggles = (state.showEmpty ? 1 : 0) + (state.showTags ? 1 : 0) + (state.raw ? 1 : 0) + (state.foldPassing ? 1 : 0);
+    const toggles = (state.showEmpty ? 1 : 0) + (state.showTags ? 1 : 0) + (state.raw ? 1 : 0) + (state.foldPassing ? 1 : 0) + (state.showPassed ? 1 : 0);
     const n = ($("filter").value.trim() ? 1 : 0) + toggles;
     const c = $("filtersCount"), d = $("displayCount");
     c.textContent = n; c.hidden = !n;
@@ -1019,6 +1050,11 @@
   });
   document.addEventListener("click", (e) => { if (!e.target.closest("#display")) { $("display").classList.remove("open"); $("displayBtn").setAttribute("aria-expanded", "false"); } });
   document.addEventListener("keydown", (e) => { if (e.key === "Escape") { $("display").classList.remove("open"); $("displayBtn").setAttribute("aria-expanded", "false"); } });
+  $("showPassed").addEventListener("change", (e) => {
+    state.showPassed = e.target.checked;
+    try { localStorage.setItem("edocxml.showPassed", state.showPassed ? "1" : "0"); } catch (err) {}
+    if (state.root) render();
+  });
   $("showFold").addEventListener("change", (e) => {
     state.foldPassing = e.target.checked;
     state.openCards.clear(); state.closedCards.clear();   // the checkbox decides again, block by block
@@ -1340,7 +1376,8 @@
   function clearAll() {
     closeViewer();
     state.cache.forEach((c) => c.url && URL.revokeObjectURL(c.url));
-    Object.assign(state, { root: null, kind: null, json: null, atts: [], attIndex: new Map(), cache: new Map() });
+    Object.assign(state, { root: null, kind: null, json: null, atts: [], attIndex: new Map(), cache: new Map(), ckey: null, checking: false });
+    checkRun++;
     $("out").hidden = true; $("intro").hidden = false;
     ["content", "hero", "verdict", "pAtts", "rawXml"].forEach((id) => { $(id).innerHTML = ""; });
     $("filter").value = "";

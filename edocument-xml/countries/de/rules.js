@@ -27,6 +27,6 @@
   });
 
   const runner = EdocSchematron.runner(DATA, { skip: (id, ctx) => ctx.reported && ctx.reported(id) });
-  EN16931.register("de", { label: "XRechnung", name: "XRechnung (Germany)", detect: isDE, run: runner.run });
+  EN16931.register("de", { label: "XRechnung", name: "XRechnung (Germany)", detect: isDE, run: runner.run, steps: runner.steps });
   window.XRechnung = { ids: runner.ids, version: DATA.version, detect: isDE };
 })();

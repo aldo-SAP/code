@@ -23,7 +23,8 @@
     name: "PINT AE (UAE)",
     standalone: true,
     detect: isAE,
-    run: runner.run
+    run: runner.run,
+    steps: runner.steps
   });
   window.PintAE = { ids: runner.ids, version: DATA.version, detect: isAE };
 })();

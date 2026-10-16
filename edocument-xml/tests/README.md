@@ -12,6 +12,7 @@ something shows up before it reaches the page. Nothing here is needed to use the
 | Example invoices | the three repositories' own examples | the engine and the official stylesheet must report the same rules |
 | French examples | `fnfempe/France_RFE` (XP Z12-012 / Z12-014 annex examples) | the viewer runs the official `BR-FR-` asserts (and for EXTENDED-CTC-FR the `BR-FREXT-` ones) themselves; same comparison with the official stylesheets, on the examples and on mutants |
 | E-reporting (Flux 10) | `fnfempe/France_RFE` `Flux10/Flux10.xslt` and `Flux10/xsd` | the UBL is turned into a Flux 10 report (`ereport-gen.js`); the official schematron checks that report and must report the same rules as the engine, on the examples and on mutants |
+| UBL 2.1 schema | the OASIS UBL 2.1 XSDs, run with libxml2 | the viewer's structure check and libxml2 agree on every document (see below) |
 | Mutated invoices | the example invoices, randomly broken (`mutate.py`) | same, on documents with missing or wrong data |
 | XRechnung (Germany) | KoSIT `xrechnung-schematron` 2.6.0 (XRechnung 3.0.2) with the Peppol rules it integrates, and the `xrechnung-testsuite` | the viewer runs the 77 official asserts themselves, compared with the official stylesheet on the test suite, aimed documents and mutants (see below) |
 | PINT AE (UAE) | the official Peppol PINT AE 1.0.4 package (billing and self-billing): schematron, compiled XSLT, examples | the viewer runs the 302 official asserts themselves; every assert must be present, and the failures must equal the official stylesheet's on the examples, on documents aimed at single rules, on documents with one change each and on random breaks; a coverage count shows which asserts the documents reach |
@@ -27,6 +28,8 @@ Needs `git`, `java`, `curl`, `unzip`, `python3` with `lxml`, and Node with Playw
 cd edocument-xml/tests
 ./run.sh            # everything; first run downloads the artefacts into .cache/ (about 100 MB)
 ./run.sh quick      # unit tests and examples only
+./run.sh par        # the same in four parts at the same time (EN 16931 + Peppol, France, UAE, Germany); logs in .cache/log-<part>.txt
+SECTIONS="ae de" ./run.sh   # only some parts (en, fr, ae, de)
 MUTANTS=1500 SEED=7 ./run.sh   # more or different mutants
 ```
 
@@ -35,6 +38,41 @@ Output ends with `ALL CONFORMANT` (exit code 0) or `DIFFERENCES FOUND`. A differ
 changes made to the mutant that caused it.
 
 `run-unit.js`, `differential.js` (also `--workers=N` to use several browser tabs), `ereport-gen.js`, `ereport-differential.js`, `check-rules.js`, `check-translations.js`, `gen-schematron.py` and `coverage.py` can also be run alone; their headers say how.
+
+## UBL 2.1 schema (the structure of the document)
+
+The official validators check a document against the OASIS UBL 2.1 XML Schema before any business rule; the business rules do not look at the order of the elements, so a
+document with its elements in the wrong place passes them. `../rules/ubl-schema.js` does that check in the browser: `gen-ubl-schema.py` turns the OASIS schemas (taken from the
+KoSIT XRechnung validator configuration release, checked by `fetch-artefacts.sh` against a fixed SHA-256, because docs.oasis-open.org is not reachable from here) into
+`../rules/ubl-schema-data.js`, the content model of every element of an invoice and credit note. It reports six rules, `UBL-XSD-01` to `UBL-XSD-06` (an element out of place or unknown, a
+required element missing, too many of one, a value of the wrong form, an attribute missing or not allowed, text next to elements).
+
+1. `run.sh` regenerates the data and compares it with the committed file.
+2. `xsd-verdicts.py` asks libxml2 (through lxml) whether each document is valid; `xsd-differential.js` runs the viewer's check on the same documents. They must agree on every one,
+   on the examples of every country and on `mutate-xsd.py` documents: from the examples, one change each of the kinds the schema is about (two neighbours swapped, an element
+   repeated, removed or unknown, text or an element in the wrong place, and every leaf value replaced by good and bad forms of its type: numbers, dates, times, true/false, base64,
+   languages, URIs). About 30,000 documents were compared while building it: the only difference found was the year 0000, which XML Schema 1.0 does not allow (fixed).
+3. Known limit: libxml2 is stricter than the Java validators about `anyURI` (a lone `%`, an open `[`); the viewer does not check URIs, and such errors are not counted in the comparison.
+   libxml2 is also the only schema validator used here: a second one (Xerces, as in KoSIT's validator) would be a further check.
+
+## EN 16931 and PEPPOL
+
+Same approach as every other rule set: the viewer does not re-write the rules. `../rules/en16931-rules.js` holds the 981 asserts of the CEN EN 16931 UBL schematron
+(`ConnectingEurope/eInvoicing-EN16931`, tag `validation-1.3.17`: the business rules `BR-`, `BR-CO-`, `BR-DEC-`, the VAT category rules, the syntax rules `UBL-CR/DT/SR` and the code
+lists `BR-CL-`) and `../rules/peppol-rules.js` the 159 of Peppol BIS Billing 3.0 (`OpenPEPPOL/peppol-bis-invoice-3`, tag `v3.0.20`: `PEPPOL-EN16931-`, `PEPPOL-COMMON-` and the
+national rules). `gen-en16931.py` writes both from the schematron; `lib/schematron.js` evaluates them. `../rules/en16931.js` keeps the viewer's own `CHK-` consistency checks
+and, for the failed amount rules, adds the calculation with its numbers to the detail ("BT-106 … ≠ …").
+
+1. `check-rules.js EN16931` and `check-rules.js PeppolRules`: the viewer has every official assert id, and no other.
+2. `run-unit.js`: the official unit tests (1,131 EN 16931 documents; the Peppol and national ones), each naming the rule that must or must not fail.
+3. `differential.js --sets=peppol`: the official stylesheets and the viewer report the same rules on the example invoices and on 600 mutants of them, with nothing left out.
+4. `gen-en-messages.js` rebuilds `../rules/messages.js` from `en-it.tsv` and `pp-it.tsv`; `check-all-translations.js` fails when any message of any rule set has no Italian text.
+
+## How to fix lines
+
+`../lib/help.js` shows a plain-language "how to fix" line under each failed rule, in English and Italian. The lines are data: `tests/help-<set>.tsv` (`id<TAB>English<TAB>Italian`) and
+`gen-help.js`, which also writes the generic line for the 678 `UBL-CR-` rules ("delete X: EN 16931 has no field for it"). They are written from the assert's test and message, not
+invented; a rule whose message already names its field and value has none. `check-help.js` fails for a line that belongs to no rule or lacks one of the languages.
 
 ## PINT AE (UAE)
 
@@ -84,27 +122,22 @@ The viewer adds its own `FR-CHK-` warnings (check digits and legal mentions of F
 
 Listed at the top of `run.sh` and left out of the comparison on purpose:
 
-- National PEPPOL rule sets this tool does not implement: Germany, Greece, Iceland, Italy, and Denmark/Sweden beyond the first rules.
-- `BR-CO-09`: the official list rejects the Greek VAT prefix `EL`; the viewer accepts it, as it is the EU prefix.
-- PINT AE: documents on which the official stylesheet stops with a type error (for example two seller names, where a rule expects one) are skipped; the viewer reports the same documents with a failed rule that says it could not be evaluated.
-- France: the multi-vendor and sub-line rules of the extended profiles (`BR-FR-MV-`, `BR-FR-BD-`).
-- France, `extended-ctc-fr` invoices: they are compared with that profile's own schematron. Its replacement rules (`BR-FREXT-`, `UBL-FREXT-`) are not implemented.
-  The viewer applies only one relaxation of that profile, the line-level order, despatch, receipt and previous-invoice references (`UBL-CR-528` to `531`);
-  the other rules the profile switches off (for example `UBL-SR-16`, one buyer identifier) stay on, on purpose.
-- Mutants only: a VAT tax category written **without** the VAT scheme. The primary rules (`BR-CO-04`, `BR-32`, `BR-37`,
-  `BR-47`, `BR-48`) match; the secondary S/B/O/IG/IP rules treat it differently in a few documents.
+- France: the French copy of the EN 16931 schematron is older than CEN's 1.3.17, so `UBL-SR-25`, `UBL-SR-58`, `UBL-SR-59` and `BR-CO-09` differ. The viewer follows 1.3.17
+  (the CEN stylesheet, run on the same documents, agrees with the viewer).
+- PINT AE: `ibr-011-ae` and `ibr-013-ae` have an attribute as context, which the compiled official stylesheets never visit; the viewer's own check of them is tested separately.
+- Documents on which an official stylesheet stops with a type error (two seller names where a rule expects one, say) are skipped and counted in the output. A rule whose context
+  cannot be evaluated on a node does not match it, as in XSLT.
 
 ## Generated files
 
-`../rules/codelists.js` and `../rules/ubl-structure.js` are generated from the official stylesheets; edit the generators
-(`gen-codelists.py`, `gen-ubl-structure.py`, `ubl-structure.tmpl.js`), not the output:
+`../rules/en16931-rules.js`, `../rules/peppol-rules.js`, `../countries/*/…-rules.js`, the `messages.js` files and `../rules/help.js` are generated; edit the sources, not the output:
 
 ```
-python3 gen-codelists.py .cache/en16931/ubl/xslt/EN16931-UBL-validation.xslt .cache/peppol/rules/sch/PEPPOL-EN16931-UBL.sch
-python3 gen-ubl-structure.py .cache/en16931/ubl/xslt/EN16931-UBL-validation.xslt
+python3 gen-en16931.py .cache                          # both the EN 16931 and the Peppol data file
+node gen-en-messages.js && node gen-help.js
 ```
 
-When the official artefacts are updated, delete `.cache/`, run `./run.sh`, regenerate the two files, and look at what differs.
+When the official artefacts are updated, change the pinned tags in `fetch-artefacts.sh`, delete `.cache/`, run `./run.sh par`, regenerate, and look at what differs.
 
 ## Screen regression snapshot
 

@@ -66,6 +66,7 @@
             <label title="Show every BT number and the XML path of each field"><input type="checkbox" id="showTags"> <span data-i18n>Show BT numbers and XML paths</span></label>
             <label title="Dates and amounts exactly as written in the XML, for comparing with SAP"><input type="checkbox" id="showRaw"> <span data-i18n>Raw values (as in XML)</span></label>
             <label title="Fold the blocks that have no problem to one line; the arrow on a block folds it by hand"><input type="checkbox" id="showFold"> <span data-i18n>Fold passing blocks</span></label>
+            <label title="List the rules that pass as well, folded under the failed ones"><input type="checkbox" id="showPassed"> <span data-i18n>Show passing rules</span></label>
           </div>
         </div>
       </div>
@@ -119,20 +120,27 @@
 
 <script src="../shared/table-cards.js"></script>
 <script src="i18n.js"></script>
-<script src="rules/codelists.js"></script>
-<script src="rules/ubl-structure.js"></script>
-<script src="rules/en16931.js"></script>
-<script src="rules/peppol.js"></script>
 <script src="lib/vendor/fontoxpath.js"></script>
 <script src="lib/schematron.js"></script>
+<script src="lib/help.js"></script>
+<script src="rules/ubl-schema-data.js"></script>
+<script src="rules/ubl-schema.js"></script>
+<script src="rules/en16931-rules.js"></script>
+<script src="rules/peppol-rules.js"></script>
+<script src="rules/en16931.js"></script>
+<script src="rules/peppol.js"></script>
+<script src="rules/messages.js"></script>
+<script src="rules/help.js"></script>
 <script src="countries/fr/br-fr-rules.js"></script>
 <script src="countries/fr/frext-rules.js"></script>
 <script src="countries/fr/rules.js"></script>
 <script src="countries/fr/messages.js"></script>
+<script src="countries/fr/help.js"></script>
 <script src="countries/fr/ereport.js"></script>
 <script src="countries/ae/pint-ae-rules.js"></script>
 <script src="countries/ae/rules.js"></script>
 <script src="countries/ae/it-messages.js"></script>
+<script src="countries/ae/help.js"></script>
 <script src="countries/ae/it.js"></script>
 <script src="countries/ae/sample.js"></script>
 <script src="lib/codes.js"></script>
@@ -144,6 +152,7 @@
 <script src="countries/de/xrechnung-rules.js"></script>
 <script src="countries/de/rules.js"></script>
 <script src="countries/de/messages.js"></script>
+<script src="countries/de/help.js"></script>
 <script src="countries/de/it.js"></script>
 <script src="countries/de/sample.js"></script>
 <script src="countries/de/profile.js"></script>
