@@ -691,8 +691,9 @@
       (go ? ' data-act="goerr" data-check="' + state.checks.indexOf(x) + '" role="button" tabindex="0" title="' + esc(T("Show where it fails")) + '"' : "") + ">" +
       '<span class="rid">' + esc(x.id) + (go ? '<span class="arrow" aria-hidden="true">↘</span>' : "") + "</span><span>" +
       (x.ok ? "✓ " : x.warn ? "! " : "✗ ") + esc(I18N.tr(x.text)) +
-      (x.detail && (inList || !/^Fails on /.test(x.detail)) ? "<small>" + esc(I18N.tr(x.detail)) + "</small>" : "") +
-      (!x.ok && window.EdocHelp && EdocHelp.get(x.id) ? '<small class="help"><b>' + esc(T("How to fix")) + ":</b> " + esc(EdocHelp.get(x.id)) + "</small>" : "") + "</span></li>";
+      (x.detail && (inList || !/^Fails on /.test(x.detail)) ? "<small>" + esc(I18N.tr(x.detail)) + "</small>" : "") + "</span>" +
+      // the fix goes on its own line under the message: its label in the column of the rule id, the solution next to it
+      (!x.ok && window.EdocHelp && EdocHelp.get(x.id) ? '<span class="help-l">' + esc(T("How to fix")) + '</span><span class="help-t">' + esc(EdocHelp.get(x.id)) + "</span>" : "") + "</li>";
   };
   // Jump to a failed check: its line (the next one on each click when it fails on several) or else its block.
   function goToCheck(c) {

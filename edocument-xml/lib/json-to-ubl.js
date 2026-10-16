@@ -208,7 +208,8 @@
         C("AdditionalItemProperty", [B("Name", v(r, "LineItemAttributeName")), B("Value", v(r, "LineItemAttributeValue"))]));
       const hasVat = has(L, "LineVATCategory");
       if (hasVat) assume("Line VAT category: the tax scheme (VAT) is written as a constant, the JSON has no field for it.");
-      if (has(L, "LinePurchaseOrderReference")) assume("LinePurchaseOrderReference goes to OrderLineReference/OrderReference/ID.");
+      if (has(L, "LinePurchaseOrderReference")) assume("LinePurchaseOrderReference is the purchase order line reference (BT-132): it goes to OrderLineReference/LineID.");
+      if (has(L, "BuyerOrderID")) assume("BuyerOrderID is the order the line belongs to: it goes to OrderLineReference/OrderReference/ID.");
       if (has(L, "InvoiceLineActualDeliveryDate") || has(L, "InvoiceLineDeliveryLocationID") || has(L, "LineDeliveryCity") || has(L, "InvoiceLineDeliveryPlaceName")) assume("Line delivery fields go to the line's Delivery group.");
       const lineDelivery = C("Delivery", [B("ActualDeliveryDate", v(L, "InvoiceLineActualDeliveryDate")),
         C("DeliveryLocation", [B("ID", v(L, "InvoiceLineDeliveryLocationID"), { schemeID: v(L, "InvoiceLineDeliveryLocation_Scheme") }), B("Name", v(L, "InvoiceLineDeliveryPlaceName")), address(L, "LineDelivery")])]);
@@ -217,7 +218,7 @@
         B(qtyTag, v(L, "LineQuantity"), { unitCode: v(L, "LineUOMCode") }), M("LineExtensionAmount", v(L, "LineNetAmount")),
         B("AccountingCost", v(L, "LineBuyerAccountingReference")),
         C("InvoicePeriod", [B("StartDate", v(L, "LineStartDate")), B("EndDate", v(L, "LineEndDate")), B("DescriptionCode", v(L, "VATDueDateCode"))]),
-        C("OrderLineReference", [B("LineID", v(L, "BuyerOrderID")), C("OrderReference", [B("ID", v(L, "LinePurchaseOrderReference"))])]),
+        C("OrderLineReference", [B("LineID", v(L, "LinePurchaseOrderReference")), C("OrderReference", [B("ID", v(L, "BuyerOrderID"))])]),
         has(L, "InvoiceLineObjectID") ? C("DocumentReference", [B("ID", v(L, "InvoiceLineObjectID"), { schemeID: v(L, "InvoiceLineObjectID_Scheme") }), B("DocumentTypeCode", "130")]) : "",
         lineDelivery,
         ...acs,

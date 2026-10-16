@@ -394,12 +394,12 @@ table.tot tr.due td.cur { border-radius: 0 8px 8px 0; }
 .checks li { font-size: 0.84rem; padding: 5px 9px; border-radius: 7px; }
 .checks li.ok { background: var(--ok-bg); color: var(--ok); }
 .checks li.bad { background: var(--err-bg); color: var(--err); }
-.checks li { display: flex; gap: 10px; align-items: baseline; }
+.checks li { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 3px 10px; align-items: baseline; }
 .checks li.warn { background: var(--to-soft); color: var(--to); }
 .checks .rid { flex: none; min-width: 6.4em; font: 0.75rem/1.4 "JetBrains Mono", ui-monospace, Consolas, monospace; opacity: 0.85; }
 .checks li small { display: block; opacity: 0.85; font-size: 0.78rem; overflow-wrap: anywhere; }
-.checks li small.help { opacity: 1; margin-top: 3px; color: var(--ink); }
-.checks li small.help b { font-weight: 700; }
+.checks .help-l { font: 700 0.75rem/1.4 "JetBrains Mono", ui-monospace, Consolas, monospace; color: var(--ink); }
+.checks .help-t { font-size: 0.8rem; color: var(--ink); overflow-wrap: anywhere; }
 details.passed { margin-top: 8px; }
 details.passed summary { cursor: pointer; font-size: 0.86rem; color: var(--muted); padding: 4px 2px; }
 
