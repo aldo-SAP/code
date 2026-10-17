@@ -1,3 +1,6 @@
+/* The two fonts are part of the page (fonts/, SIL Open Font License): nothing is loaded from another site, and it works offline. */
+@font-face { font-family: "Instrument Sans"; src: url("fonts/instrument-sans.woff2") format("woff2"); font-weight: 400 700; font-stretch: 75% 100%; font-style: normal; font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; src: url("fonts/jetbrains-mono.woff2") format("woff2"); font-weight: 100 800; font-style: normal; font-display: swap; }
 :root {
   --bg: #F3F1EC;
   --paper: #FFFFFF;
@@ -619,6 +622,11 @@ td > .dl .xtag { display: none; }
   #toolsNav h1 .short { display: inline; }
 }
 
+.v-report { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; margin-top: 6px; }
+.v-report button { font-size: 0.8rem; padding: 4px 10px; border-radius: 7px; border: 1px solid currentColor; background: transparent; color: inherit; cursor: pointer; }
+.json-trace { margin-top: 14px; }
+.json-trace summary { cursor: pointer; font-weight: 600; margin-bottom: 6px; }
+.json-trace tr.guess td { color: var(--to); }
 /* Several files at once: one row per file with its result */
 .batch { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin: 10px 0; }
 .batch-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; margin-bottom: 8px; }
@@ -882,3 +890,9 @@ table.ac-calc td.bt-col { width: 1%; white-space: nowrap; text-align: right; pad
 code.txn { font: 0.85em/1 "JetBrains Mono", ui-monospace, Consolas, monospace; letter-spacing: 0.08em; margin-right: 4px; }
 
 .passed-note { margin: 8px 0 0; font-size: 0.85rem; color: var(--muted); }
+
+/* a row that is hidden stays hidden, whatever display the phone layout gives rows */
+table.tc tr[hidden] { display: none !important; }
+
+.help-src { display: block; margin-top: 2px; color: var(--muted); }
+.help-src a { color: var(--accent); }

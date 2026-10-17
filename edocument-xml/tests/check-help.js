@@ -21,6 +21,7 @@ for (const [id, h] of Object.entries(H)) {
   if (!Array.isArray(h) || h.length !== 2 || !h[0] || !h[1]) { console.log("help needs English and Italian:", id); bad++; }
   else if (/\$|\{|REVIEW|\t/.test(h[0] + h[1])) { console.log("leftover in help:", id, h); bad++; }
 }
+for (const id of EdocHelp.linkIds()) if (!ids.has(id)) { console.log("official-list link for an unknown rule:", id); bad++; }
 for (const id of ids) if (!H[id]) without.push(id);
 console.log(Object.keys(H).length + " help lines for " + ids.size + " rules; " + without.length + " rules without one" + (without.length ? ": " + without.join(", ") : ""));
 process.exit(bad ? 1 : 0);

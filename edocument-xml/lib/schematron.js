@@ -374,6 +374,7 @@
 
     // The work is a generator that yields after every node it has checked, so a page can run it in slices (EN16931.checkAsync) and stay responsive;
     // run() runs it to the end.
+    const CHUNK = 12;
     function* steps(ctx) {
       const R = ctx.R, doc = R.ownerDocument, rule = ctx.rule;
       const alt = opts.variant ? opts.variant(R) : null;     // e.g. the self-billing text of an assert
@@ -396,7 +397,16 @@
             if (!asserts.length) continue;
             const t0 = window.EDOC_PROFILE ? performance.now() : 0;   // the tests can set window.EDOC_PROFILE = new Map() to see where the time goes
             if (node === R && !rootIndex) rootIndex = indexOf(R);
-            const oks = evalAll(asserts, locals, node, node === R ? rootIndex : null);
+            // a context with many asserts (the document element has hundreds) is evaluated a few at a time, so that a page can run between the parts
+            let oks;
+            if (asserts.length <= CHUNK) oks = evalAll(asserts, locals, node, node === R ? rootIndex : null);
+            else {
+              oks = [];
+              for (let k = 0; k < asserts.length; k += CHUNK) {
+                oks.push(...evalAll(asserts.slice(k, k + CHUNK), locals, node, node === R ? rootIndex : null));
+                yield;
+              }
+            }
             if (window.EDOC_PROFILE) { const e = window.EDOC_PROFILE.get(r.c.slice(0, 60)) || [0, 0]; e[0] += performance.now() - t0; e[1]++; window.EDOC_PROFILE.set(r.c.slice(0, 60), e); }
             asserts.forEach((a, k) => {
               let res = results.get(a[0]);

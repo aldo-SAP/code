@@ -693,7 +693,7 @@
       (x.ok ? "✓ " : x.warn ? "! " : "✗ ") + esc(I18N.tr(x.text)) +
       (x.detail && (inList || !/^Fails on /.test(x.detail)) ? "<small>" + esc(I18N.tr(x.detail)) + "</small>" : "") + "</span>" +
       // the fix goes on its own line under the message: its label in the column of the rule id, the solution next to it
-      (!x.ok && window.EdocHelp && EdocHelp.get(x.id) ? '<span class="help-l">' + esc(T("How to fix")) + '</span><span class="help-t">' + esc(EdocHelp.get(x.id)) + "</span>" : "") + "</li>";
+      (!x.ok && window.EdocHelp && EdocHelp.get(x.id) ? '<span class="help-l">' + esc(T("How to fix")) + '</span><span class="help-t">' + esc(EdocHelp.get(x.id)) + helpLink(x.id) + "</span>" : "") + "</li>";
   };
   // Jump to a failed check: its line (the next one on each click when it fails on several) or else its block.
   function goToCheck(c) {
@@ -762,7 +762,53 @@
         ? state.ruleSets.map((id) => esc(T(EN16931.sets[id].name))).join(" · ") : "EN 16931" + state.ruleSets.map((id) => " · " + esc(T(EN16931.sets[id].name))).join("")) + "</button></div></div>" +
       '<div class="v-issues" id="vIssues"></div>' +
       (chips ? '<div class="v-chips">' + chips + "</div>" : "") +
-      (bad || warn ? '<button type="button" class="v-btn" data-act="checks">' + T("Show all {n} rules", { n: checks.length }) + "</button>" : "");
+      (bad || warn ? '<button type="button" class="v-btn" data-act="checks">' + T("Show all {n} rules", { n: checks.length }) + "</button>" : "") +
+      '<div class="v-report"><button type="button" data-act="report-save">' + esc(T("Download report")) + "</button></div>";
+  }
+
+  // The result of the check as a report to send on: the failed rules with their message, detail and how to fix, in the language of the screen.
+  // "Official list: …" under a code-list rule, a link to the list the value must come from
+  function helpLink(id) {
+    const l = window.EdocHelp && EdocHelp.link(id);
+    if (!l) return "";
+    return ' <span class="help-src">' + esc(T("Official list")) + ': <a href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(T(l.name)) + "</a></span>";
+  }
+  function buildReport() {
+    const checks = state.checks, bad = checks.filter((c) => !c.ok && !c.warn), warn = checks.filter((c) => !c.ok && c.warn), R = state.root;
+    const sets = (state.ruleSets.some((id) => EN16931.sets[id] && EN16931.sets[id].standalone) ? [] : ["EN 16931"]).concat(state.ruleSets.map((id) => T(EN16931.sets[id].name))).join(" · ");
+    const result = bad.length ? T("✗ {bad} of {n} rules fail", { bad: bad.length, n: checks.length }).replace(/^✗\s*/, "") : T("✓ {n} rules pass", { n: checks.length }).replace(/^✓\s*/, "");
+    const sub = warn.length ? " · " + T(warn.length > 1 ? "{n} warnings" : "{n} warning", { n: warn.length }) : "";
+    const code = R ? val(R, state.kind === "CreditNote" ? "CreditNoteTypeCode" : "InvoiceTypeCode") : "";
+    const number = (R && val(R, "ID")) || "";
+    const blocks = [{ text: T("Check report"), size: 14, bold: true }];
+    blocks.push({ cols: [
+      { label: T("Document number"), value: number || T("missing") },
+      { label: T("Document type"), value: code ? code + (DOC_TYPES[code] ? " · " + T(DOC_TYPES[code]) : "") : T("missing") },
+      { label: T("Issue date"), value: (R && val(R, "IssueDate")) || T("missing") }
+    ], gap: 6 });
+    blocks.push({ text: T("Result") + ": " + result + sub, size: 12, bold: true, gap: 10, after: 4, color: bad.length ? "#B3261E" : "#1B7F3B" });
+    const items = bad.concat(warn);
+    items.forEach((c) => {
+      const w = c.warn, bar = w ? "#B26A00" : "#B3261E", fill = w ? "#FFF4E0" : "#FBEDEC";
+      const detail = c.detail ? I18N.tr(c.detail) : "", fix = (window.EdocHelp && EdocHelp.get(c.id)) || "", l = window.EdocHelp && EdocHelp.link(c.id);
+      blocks.push({ text: c.id + "  ·  " + (w ? T("Warning") : T("Error")), size: 10, bold: true, bar, fill, gap: 8 });
+      blocks.push({ text: I18N.tr(c.text), size: 10, bar, fill });
+      if (detail) blocks.push({ text: detail, size: 9, bar, fill, color: "#5B616B" });
+      if (fix) blocks.push({ text: T("How to fix") + ": " + fix, size: 9.5, bar, fill });
+      if (l) { blocks.push({ text: T("Official list") + ": " + T(l.name), size: 9, bar, fill }); blocks.push({ text: l.url, size: 8, bar, fill, link: l.url }); }
+    });
+    if (!items.length) blocks.push({ text: T("No rule fails."), size: 11 });
+    const title = T("Check report") + " · " + (number || T("missing"));
+    return { title, bytes: EdocPdf.build({ title, footer: "eDocument XML Viewer · " + T("Page {n} of {m}"), blocks }) };
+  }
+  function downloadReport() {
+    const r = buildReport();
+    // the invoice number; without one the name of the file, and without that "missing"
+    const base = ((state.root && val(state.root, "ID")) || (state.name || "").replace(/\.(xml|json)$/i, "") || "missing").replace(/[\\/:*?"<>|\s]+/g, "_");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([r.bytes], { type: "application/pdf" }));
+    a.download = "report-" + base + ".pdf";
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   }
 
   // Phone summary: the figures to match against SAP in one compact card (the wide hero and fact tiles are hidden there).
@@ -970,7 +1016,8 @@
     renderFieldsTab();
     renderVerdict();
     renderAttachments();
-    $("rawXml").innerHTML = xmlHtml(state.root.ownerDocument);
+    state.rawDirty = true; $("rawXml").innerHTML = "";    // the raw XML is drawn when its tab is opened (it is a large part of the work for a long invoice)
+    if (!$("pRaw").hidden) ensureRaw();
     renderEreport();
     renderJson();
     $("showEmpty").checked = state.showEmpty;
@@ -985,6 +1032,18 @@
   }
 
   // A JSON request converted to UBL: its own tab with the XML, the fields that found no place, and the readings the conversion assumed.
+  // Where each JSON field went: the field, its value, the XML element; the ones the converter had to guess are marked.
+  function traceHtml(j) {
+    if (!j.trace || !j.trace.length) return "";
+    const key = (f) => f.replace(/\[\d+\]/g, "").split(".").pop();
+    const guessed = (f) => j.assumptions.some((a) => new RegExp("\\b" + key(f).replace(/[^\w]/g, "") + "\\b").test(a));
+    const short = (x) => (x.length > 60 ? x.slice(0, 60) + "…" : x);
+    const rows = j.trace.map((t) => { const g = guessed(t.field);
+      return '<tr' + (g ? ' class="guess"' : "") + "><td><code>" + esc(t.field) + "</code></td><td>" + esc(short(t.value)) + "</td><td><code>" + esc(t.xml) + "</code></td><td>" + (g ? esc(T("assumed")) : "") + "</td></tr>"; }).join("");
+    return '<details class="json-trace"><summary>' + esc(T("Where each field went")) + " · " + j.trace.length + "</summary>" +
+      (j.used > j.trace.length ? '<p class="small">' + esc(T("{n} more fields were placed, but their element is not traced here.", { n: j.used - j.trace.length })) + "</p>" : "") +
+      '<div class="tablewrap"><table class="ac"><thead><tr><th>' + esc(T("JSON field")) + "</th><th>" + esc(T("Value")) + "</th><th>" + esc(T("XML element")) + "</th><th></th></tr></thead><tbody>" + rows + "</tbody></table></div></details>";
+  }
   function renderJson() {
     const j = state.json;
     $("tab-json").hidden = !j;
@@ -996,7 +1055,7 @@
       (rows ? '<div class="tablewrap"><table class="ac"><thead><tr><th>' + esc(T("JSON field")) + "</th><th>" + esc(T("Value")) + "</th><th>" + esc(T("Why")) + "</th></tr></thead><tbody>" + rows + "</tbody></table></div>"
         : '<p class="none">' + esc(T("Every field with a value was placed.")) + "</p>") +
       "<h3>" + esc(T("Placed by reading the field name")) + " · " + j.assumptions.length + "</h3>" +
-      "<ul class=\"json-notes\">" + j.assumptions.map((a) => "<li>" + esc(a) + "</li>").join("") + "</ul>";
+      "<ul class=\"json-notes\">" + j.assumptions.map((a) => "<li>" + esc(a) + "</li>").join("") + "</ul>" + traceHtml(j);
     $("jsonDownload").addEventListener("click", () => {
       const a = document.createElement("a");
       a.href = URL.createObjectURL(new Blob([j.xml], { type: "application/xml" }));
@@ -1012,6 +1071,10 @@
     try { $("ereportXml").textContent = EReport.build(state.root, state.kind).xml; } catch (e) { $("ereportXml").textContent = String(e.message || e); }
   }
   $("ereportCopy").addEventListener("click", () => { try { navigator.clipboard.writeText($("ereportXml").textContent); } catch (e) {} });
+  function ensureRaw() {
+    if (!state.rawDirty || !state.root) return;
+    $("rawXml").innerHTML = xmlHtml(state.root.ownerDocument); state.rawDirty = false;
+  }
   function showTab(name) {
     document.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", t.dataset.tab === name ? "true" : "false"));
     $("pFields").hidden = name !== "fields";
@@ -1019,6 +1082,7 @@
     $("pRaw").hidden = name !== "raw";
     $("pEreport").hidden = name !== "ereport";
     $("pJson").hidden = name !== "json";
+    if (name === "raw") ensureRaw();
     $("fieldTools").hidden = name !== "fields";
     $("filtersBtn").hidden = name !== "fields";
     syncIssueChrome();
@@ -1279,6 +1343,7 @@
       }
       else if (act === "gosec") { showTab("fields"); flash($("sec-" + btn.dataset.sec)); }
       else if (act === "goerr") goToCheck(state.checks[+btn.dataset.check]);
+      else if (act === "report-save") downloadReport();
       else if (act === "expand" || act === "collapse") $("content").querySelectorAll("tr.line:not([hidden])").forEach((tr) => setLine(tr, act === "expand"));
       return;
     }

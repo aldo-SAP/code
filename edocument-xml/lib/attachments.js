@@ -63,6 +63,9 @@ window.EdocAttachments = function (h) {
     const a = state.atts[i];
     let c;
     try { c = attBytes(i); } catch (e) { alert(T("This attachment isn't valid Base64, so it can't be opened.")); return; }
+    // iPhone and iPad draw a PDF in a frame as one still page: there the file opens in Safari's own viewer (all pages, scrolling, zoom)
+    const iOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    if (c.type === "application/pdf" && iOS && window.open(c.url, "_blank")) return;
     viewing = i;
     $("vTitle").textContent = a.filename + " · " + formatSize(c.u8.length);
     $("vOpen").href = c.url;

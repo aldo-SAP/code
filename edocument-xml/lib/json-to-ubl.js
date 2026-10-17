@@ -45,12 +45,22 @@
     if (!inv || typeof inv !== "object") throw new Error("No invoice found in the JSON (expected { \"req\": [ { … } ] }).");
 
     const used = new WeakMap();
+    // the path of every object of the request, to name the fields that are read (the same names as in the list of what was not placed)
+    const where = new WeakMap();
+    (function name(o, p) {
+      if (Array.isArray(o)) { o.forEach((x, i) => name(x, p + "[" + (i + 1) + "]")); return; }
+      if (!o || typeof o !== "object") return;
+      where.set(o, p);
+      Object.keys(o).forEach((k) => { if (o[k] && typeof o[k] === "object") name(o[k], p ? p + "." + k : k); });
+    })(inv, "");
+    JsonTrace.reset();
     // read a field and remember that it was used; "" when it is missing or empty
     const v = (o, k) => {
       if (!o || typeof o !== "object") return "";
       if (!used.has(o)) used.set(o, new Set());
       used.get(o).add(k);
       const x = o[k];
+      if (x !== undefined && x !== null && typeof x !== "object") JsonTrace.read((where.get(o) ? where.get(o) + "." : "") + k, x);
       return x === undefined || x === null ? "" : String(x);
     };
     const has = (o, k) => o && o[k] !== undefined && o[k] !== null && String(o[k]) !== "";
@@ -63,7 +73,10 @@
     const taxCur = v(inv, "VATCurrencyCode");
 
     // element builders (cbc = text, cac = group); nothing is written when there is no content
-    const B = (name, text, a) => (text === "" || text === undefined ? "" : "<cbc:" + name + attrs(a) + ">" + esc(text) + "</cbc:" + name + ">");
+    const B = (name, text, a) => {
+      const m = JsonTrace.mark(text, a);
+      return text === "" || text === undefined ? "" : "<cbc:" + name + attrs(a) + ">" + esc(text) + m + "</cbc:" + name + ">";
+    };
     const C = (name, kids, a) => { const k = kids.filter(Boolean); return k.length ? "<cac:" + name + attrs(a) + ">" + k.join("") + "</cac:" + name + ">" : ""; };
     const M = (name, text, c) => B(name, text, { currencyID: c === undefined ? cur : c });
 
@@ -302,7 +315,8 @@
     };
     walk(inv, "");
 
-    return { xml: pretty(raw), kind: root, notMapped, assumptions, total: list.length };
+    const traced = JsonTrace.extract(raw);
+    return { xml: pretty(traced.xml), kind: root, notMapped, assumptions, total: list.length, trace: traced.trace };
   }
 
   window.JsonToUbl = { convert };

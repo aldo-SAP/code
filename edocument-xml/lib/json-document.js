@@ -35,6 +35,7 @@
     const d = docs[0];
     if (!d || typeof d !== "object") throw new Error("No invoice found in the JSON (expected { \"document\": [ { … } ] }).");
 
+    JsonTrace.reset();
     const used = new Set();    // "path" of every field that was read
     const path = (o, k) => (o.__path || "document[0]") + "." + k;
     const assumptions = [];
@@ -42,7 +43,7 @@
 
     // ---- reading fields: s = text, dt = date, n = number (zero: keep a 0), b = true only
     const tag = (o, p) => { if (o && typeof o === "object" && !o.__path) Object.defineProperty(o, "__path", { value: p, enumerable: false }); return o; };
-    const raw = (o, k) => { if (!o || typeof o !== "object") return undefined; used.add(path(o, k)); return o[k]; };
+    const raw = (o, k) => { if (!o || typeof o !== "object") return undefined; used.add(path(o, k)); if (o[k] !== undefined && o[k] !== null && typeof o[k] !== "object") JsonTrace.read(path(o, k), o[k]); return o[k]; };
     const s = (o, k) => { const x = raw(o, k); return x === undefined || x === null ? "" : String(x); };
     const dt = (o, k) => { const x = s(o, k); return x === EMPTY_DATE ? "" : x; };
     const n = (o, k, zero) => { const x = raw(o, k); if (x === undefined || x === null || x === "") return ""; if (!zero && Number(x) === 0) return ""; return String(x); };
@@ -52,7 +53,7 @@
     const list = (o, k) => (Array.isArray(raw(o, k)) ? o[k] : []).map((e, i) => tag(e, path(o, k) + "[" + i + "]")).filter((e) => !blank(e));
 
     // ---- element builders; nothing is written when there is no content
-    const B = (name, text, a) => (text === "" || text === undefined ? null : { name: "cbc:" + name, a: Object.assign({}, a), t: text });
+    const B = (name, text, a) => { const m = JsonTrace.mark(text, a); return text === "" || text === undefined ? null : { name: "cbc:" + name, a: Object.assign({}, a), t: text, m }; };
     const C = (name, kids, a) => { const k = (kids || []).filter(Boolean); return k.length ? { name: "cac:" + name, a: Object.assign({}, a), k } : null; };
     const scheme = (v, a) => (v === "" ? {} : a);
 
@@ -311,9 +312,10 @@
       const pad = "  ".repeat(ind), nsAttrs = ind === 0
         ? ' xmlns:' + (credit ? "cn" : "ubl") + '="' + (credit ? NS.cn : NS.inv) + '" xmlns:cac="' + NS.cac + '" xmlns:cbc="' + NS.cbc + '"' : "";
       if (x.k) { out.push(pad + "<" + x.name + nsAttrs + attrText(x.a) + ">"); x.k.forEach((c) => w(c, ind + 1)); out.push(pad + "</" + x.name + ">"); }
-      else out.push(pad + "<" + x.name + attrText(x.a) + ">" + esc(x.t) + "</" + x.name + ">");
+      else out.push(pad + "<" + x.name + attrText(x.a) + ">" + esc(x.t) + (x.m || "") + "</" + x.name + ">");
     })(root, 0);
-    const xml = '<?xml version="1.0" encoding="UTF-8"?>\n' + out.join("\n") + "\n";
+    const traced = JsonTrace.extract('<?xml version="1.0" encoding="UTF-8"?>\n' + out.join("\n") + "\n");
+    const xml = traced.xml;
 
     // ---- what was not placed: every field with a value that was never read
     const notMapped = [];
@@ -326,7 +328,7 @@
       if (used.has(p)) usedCount++;
       else notMapped.push({ path: p, value: String(o), reason: "no place in the XML for this field yet" });
     })(d, "document[0]");
-    return { xml, kind: credit ? "CreditNote" : "Invoice", notMapped, assumptions, total: docs.length, used: usedCount, fields: total, ruleSets: "detect" };
+    return { xml, kind: credit ? "CreditNote" : "Invoice", notMapped, assumptions, total: docs.length, used: usedCount, fields: total, ruleSets: "detect", trace: traced.trace.map((t) => Object.assign(t, { field: t.field.replace(/^document\[0\]\./, "") })) };
   }
 
   window.JsonDocument = { convert };

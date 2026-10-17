@@ -4,9 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>eDocument XML Viewer</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#0F766E">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="XML Viewer">
 <script>try { var t = localStorage.getItem("tools.theme"); if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t); } catch (e) {}</script>
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="../shared/nav.css">
@@ -128,6 +130,7 @@
 <script src="lib/vendor/fontoxpath.js"></script>
 <script src="lib/schematron.js"></script>
 <script src="lib/help.js"></script>
+<script src="lib/pdf.js"></script>
 <script src="rules/ubl-schema-data.js"></script>
 <script src="rules/ubl-schema.js"></script>
 <script src="rules/en16931-rules.js"></script>
@@ -161,8 +164,13 @@
 <script src="countries/de/it.js"></script>
 <script src="countries/de/sample.js"></script>
 <script src="countries/de/profile.js"></script>
+<script src="lib/json-trace.js"></script>
 <script src="lib/json-document.js"></script>
 <script src="lib/json-to-ubl.js"></script>
 <script src="app.js"></script>
+<script>
+// Works offline once it has been opened: sw.js keeps the page's own files (never a document you open) and serves them when there is no network.
+if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+</script>
 </body>
 </html>
