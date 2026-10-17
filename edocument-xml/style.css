@@ -619,6 +619,19 @@ td > .dl .xtag { display: none; }
   #toolsNav h1 .short { display: inline; }
 }
 
+/* Several files at once: one row per file with its result */
+.batch { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; margin: 10px 0; }
+.batch-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; margin-bottom: 8px; }
+.batch-sum { color: var(--muted); font-size: 0.85rem; flex: 1 1 auto; }
+.batch-list { display: grid; gap: 4px; max-height: 46vh; overflow: auto; }
+.brow { display: grid; grid-template-columns: 1.4em minmax(0, 1fr) auto auto; gap: 4px 10px; align-items: baseline; text-align: left; width: 100%; padding: 6px 9px; border-radius: 7px; border: 1px solid transparent; font: inherit; font-size: 0.85rem; cursor: pointer; background: var(--chip); color: var(--ink); }
+.brow:hover, .brow:focus-visible { border-color: currentColor; }
+.brow.active { outline: 2px solid var(--accent); outline-offset: -2px; }
+.brow.ok { background: var(--ok-bg); color: var(--ok); } .brow.bad { background: var(--err-bg); color: var(--err); } .brow.warn { background: var(--to-soft); color: var(--to); }
+.brow.unreadable { background: var(--err-bg); color: var(--err); opacity: 0.85; }
+.bname { overflow-wrap: anywhere; font-weight: 500; } .bkind { font-size: 0.7rem; opacity: 0.8; letter-spacing: 0.04em; } .bres { font-weight: 600; text-align: right; }
+@media (max-width: 560px) { .brow { grid-template-columns: 1.4em minmax(0, 1fr) auto; } .bres { grid-column: 2 / -1; text-align: left; } }
+
 /* Phones: filter box and checkboxes fold behind a Filters button so the sticky top stays small. */
 .filters-btn { display: none; }
 @media (max-width: 720px) {

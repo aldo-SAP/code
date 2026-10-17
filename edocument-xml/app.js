@@ -1313,15 +1313,17 @@
     lbMsg.className = "lb-msg" + (bad ? " bad" : "");
   }
 
-  function load(text, name) {
-    text = String(text || "").replace(/^﻿/, "").trim();
-    if (!text) return false;
-    // A JSON request is converted to UBL first, then checked like any XML (France rules only).
+  // Reads a text (an XML, a JSON request, a Base64 XML) into a document: { root, kind, wrapped, text, ruleSets, json, dashes, amps };
+  // { error: () => html } when it cannot be read; null for an empty text. Nothing is shown here.
+  function prepare(text) {
+    text = String(text || "").replace(/^\uFEFF/, "").trim();
+    if (!text) return null;
+    // A JSON request is converted to UBL first, then checked like any XML.
     let fromJson = null;
     if (/^[\[{]/.test(text)) {
       let parsed = null;
-      try { parsed = JSON.parse(text); } catch (e) { setMsg(() => "<b>" + esc(T("Not valid JSON.")) + "</b> " + esc(String(e.message || e)), true); return false; }
-      try { fromJson = JsonToUbl.convert(parsed); } catch (e) { setMsg(() => "<b>" + esc(String(e.message || e)) + "</b>", true); return false; }
+      try { parsed = JSON.parse(text); } catch (e) { return { error: () => "<b>" + esc(T("Not valid JSON.")) + "</b> " + esc(String(e.message || e)) }; }
+      try { fromJson = JsonToUbl.convert(parsed); } catch (e) { return { error: () => "<b>" + esc(String(e.message || e)) + "</b>" }; }
       text = fromJson.xml;
     }
     // XML copied from a browser's tree view has a "-" before each expandable tag (-<cac:Party>); drop it.
@@ -1334,7 +1336,7 @@
       // Accept a Base64-encoded XML too.
       try {
         const bin = atob(text.replace(/\s+/g, ""));
-        const dec = new TextDecoder("utf-8").decode(Uint8Array.from(bin, (ch) => ch.charCodeAt(0))).replace(/^﻿/, "").trim();
+        const dec = new TextDecoder("utf-8").decode(Uint8Array.from(bin, (ch) => ch.charCodeAt(0))).replace(/^\uFEFF/, "").trim();
         if (dec.startsWith("<")) text = dec;
       } catch (e) {}
     }
@@ -1342,8 +1344,7 @@
     const err = doc.getElementsByTagName("parsererror")[0];
     if (err) {
       const why = esc((err.textContent || "").split("\n").filter(Boolean)[0] || "");
-      setMsg(() => "<b>" + T("Not valid XML.") + "</b> " + why, true);
-      return false;
+      return { error: () => "<b>" + T("Not valid XML.") + "</b> " + why };
     }
     let root = doc.documentElement, wrapped = "";
     const kinds = ["Invoice", "CreditNote"];
@@ -1351,26 +1352,40 @@
       const found = Array.from(root.getElementsByTagName("*")).find((e) => kinds.includes(e.localName));
       if (!found) {
         const name = root.localName, cii = /CrossIndustryInvoice/.test(name);
-        setMsg(() => "<b>" + T("No UBL Invoice or CreditNote found.") + "</b> " + esc(T("Root element is <{name}>.", { name })) +
-          (cii ? " " + T("This is a CII (UN/CEFACT) invoice; this viewer reads UBL.") : ""), true);
-        return false;
+        return { error: () => "<b>" + T("No UBL Invoice or CreditNote found.") + "</b> " + esc(T("Root element is <{name}>.", { name })) +
+          (cii ? " " + T("This is a CII (UN/CEFACT) invoice; this viewer reads UBL.") : "") };
       }
       wrapped = root.localName; root = found;
     }
     // Extra rule sets (PEPPOL, France …) start from what the CustomizationID says; the Checks card can change them.
-    Object.assign(state, { root, kind: root.localName, name: name || "", size: text.length, wrapped, text, ruleSets: fromJson ? (fromJson.ruleSets === "detect" ? EN16931.detect(root) : ["fr"]) : EN16931.detect(root), json: fromJson });
+    return { root, kind: root.localName, wrapped, text, json: fromJson, dashes, amps,
+      ruleSets: fromJson ? (fromJson.ruleSets === "detect" ? EN16931.detect(root) : ["fr"]) : EN16931.detect(root) };
+  }
+
+  // Shows a prepared document; `checks` is the result of the rules when they have been run already (a file of a batch).
+  function showPrepared(r, name, checks) {
+    Object.assign(state, { root: r.root, kind: r.kind, name: name || "", size: r.text.length, wrapped: r.wrapped, text: r.text, ruleSets: r.ruleSets, json: r.json });
+    if (checks) { state.checks = checks; state.ckey = [r.root, r.kind, r.ruleSets.join(","), I18N.lang]; }
     $("filter").value = "";
     render();
     showTab("fields");
     drop.classList.add("loaded");
-    const size = formatSize(new Blob([text]).size);
+    const size = formatSize(new Blob([r.text]).size);
     setMsg(() => "<b>" + esc(state.name || T("Pasted XML")) + "</b> · " + size + " · " +
       T(state.kind === "CreditNote" ? "credit note" : "invoice") +
-      (dashes ? " · " + T("removed {n} leading “-” from tags", { n: dashes }) : "") +
-      (amps ? " · " + esc(T("escaped {n} bare “&”", { n: amps })) : ""));
+      (r.dashes ? " · " + T("removed {n} leading “-” from tags", { n: r.dashes }) : "") +
+      (r.amps ? " · " + esc(T("escaped {n} bare “&”", { n: r.amps })) : ""));
     $("clearBtn").hidden = false;
     sampleBtns.forEach((b) => { b.hidden = true; });
     pasteArea.hidden = true; pasteArea.value = ""; pasteBtn.setAttribute("aria-expanded", "false");
+  }
+
+  function load(text, name) {
+    const r = prepare(text);
+    if (!r) return false;
+    batchStop(true);    // a single document replaces a list of files
+    if (r.error) { setMsg(r.error, true); return false; }
+    showPrepared(r, name);
     return true;
   }
 
@@ -1378,7 +1393,7 @@
     closeViewer();
     state.cache.forEach((c) => c.url && URL.revokeObjectURL(c.url));
     Object.assign(state, { root: null, kind: null, json: null, atts: [], attIndex: new Map(), cache: new Map(), ckey: null, checking: false });
-    checkRun++;
+    checkRun++; batchStop(true);
     $("out").hidden = true; $("intro").hidden = false;
     ["content", "hero", "verdict", "pAtts", "rawXml"].forEach((id) => { $(id).innerHTML = ""; });
     $("filter").value = "";
@@ -1400,6 +1415,81 @@
     sampleBtns.push(b);
   });
   $("sampleBtn").addEventListener("click", () => load(window.EDOC_SAMPLE_XML, "sample-invoice.xml"));
+  // ---------- Several files at once: a list with the result of each, a click shows that file as usual ----------
+  const batch = { items: [], active: -1, run: 0 };
+  const plain = (html) => { const d = document.createElement("div"); d.innerHTML = html; return d.textContent; };
+  const readText = (f) => new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result)); r.onerror = () => no(r.error); r.readAsText(f); });
+  function batchStop(hide) {
+    batch.run++;
+    if (hide) { batch.items = []; batch.active = -1; renderBatch(); }
+  }
+  const batchStatus = (it) => (it.state === "ok" ? T("Success")
+    : it.state === "warn" ? (it.warn === 1 ? T("{n} warning", { n: 1 }) : T("{n} warnings", { n: it.warn }))
+    : it.state === "bad" ? (it.bad === 1 ? T("{n} error", { n: 1 }) : T("{n} errors", { n: it.bad })) + (it.warn ? " · " + (it.warn === 1 ? T("{n} warning", { n: 1 }) : T("{n} warnings", { n: it.warn })) : "")
+    : it.state === "unreadable" ? T("Not readable") : T("Checking…"));
+  function renderBatch() {
+    const box = $("batch"), items = batch.items;
+    box.hidden = !items.length;
+    if (!items.length) { $("batchList").innerHTML = ""; return; }
+    const n = (st) => items.filter((i) => i.state === st).length, pending = items.filter((i) => i.state === "pending" || i.state === "checking").length;
+    $("batchTitle").textContent = T("{n} files", { n: items.length });
+    $("batchSum").textContent = pending ? T("Checking {done} of {total}…", { done: items.length - pending, total: items.length })
+      : [n("ok") ? T("{n} succeeded", { n: n("ok") }) : "", n("bad") ? T("{n} with errors", { n: n("bad") }) : "", n("warn") ? T("{n} with warnings only", { n: n("warn") }) : "",
+        n("unreadable") ? T("{n} not readable", { n: n("unreadable") }) : ""].filter(Boolean).join(" · ");
+    const icon = { ok: "✓", warn: "!", bad: "✗", unreadable: "⊘", pending: "·", checking: "…" };
+    $("batchList").innerHTML = items.map((it, i) =>
+      '<button type="button" class="brow ' + it.state + (i === batch.active ? " active" : "") + '" data-i="' + i + '"' + (it.error ? ' title="' + esc(it.error) + '"' : "") + ">" +
+      '<span class="bst" aria-hidden="true">' + icon[it.state] + '</span><span class="bname">' + esc(it.name) + '</span>' +
+      '<span class="bkind">' + (it.isJson ? "JSON" : "XML") + '</span><span class="bres">' + esc(batchStatus(it)) + (it.state === "unreadable" && it.error ? ": " + esc(it.error.length > 90 ? it.error.slice(0, 90) + "…" : it.error) : "") + "</span></button>").join("");
+  }
+  async function runBatch(files) {
+    const run = ++batch.run;
+    batch.items = files.map((f) => ({ name: f.name, isJson: /\.json$/i.test(f.name), state: "pending" }));
+    batch.active = -1; renderBatch();
+    drop.classList.add("loaded"); $("clearBtn").hidden = false; sampleBtns.forEach((b) => { b.hidden = true; });
+    setMsg(() => "<b>" + esc(T("{n} files", { n: files.length })) + "</b>");
+    for (let i = 0; i < files.length; i++) {
+      if (run !== batch.run) return;
+      const it = batch.items[i];
+      it.state = "checking"; renderBatch();
+      let text;
+      try { text = await readText(files[i]); } catch (e) { it.state = "unreadable"; it.error = T("Couldn't read {name}.", { name: it.name }); renderBatch(); continue; }
+      const r = prepare(text);
+      if (run !== batch.run) return;
+      if (!r || r.error) { it.state = "unreadable"; it.error = r ? plain(r.error()) : T("Empty file."); renderBatch(); continue; }
+      it.prep = r; it.isJson = !!r.json;
+      try {
+        const res = await EN16931.checkAsync(r.root, r.kind, r.ruleSets);
+        if (run !== batch.run) return;
+        it.checks = res; it.bad = res.filter((x) => !x.ok && !x.warn).length; it.warn = res.filter((x) => !x.ok && x.warn).length;
+        it.state = it.bad ? "bad" : it.warn ? "warn" : "ok";
+      } catch (e) { it.state = "unreadable"; it.error = String(e && e.message || e); }
+      renderBatch();
+    }
+  }
+  function openBatchItem(i) {
+    const it = batch.items[i];
+    if (!it || it.state === "pending" || it.state === "checking") return;
+    batch.active = i; renderBatch();
+    if (it.prep) {
+      showPrepared(it.prep, it.name, it.checks);
+      const y = $("out").getBoundingClientRect().top;
+      if (y > window.innerHeight * 0.7) $("out").scrollIntoView({ behavior: "smooth", block: "start" });
+    } else {      // not readable: the reason is the message; there is nothing to show
+      checkRun++; state.root = null; state.ckey = null; $("out").hidden = true;
+      setMsg(() => "<b>" + esc(it.name) + "</b> · " + esc(it.error || T("Not readable")), true);
+    }
+  }
+  $("batchList").addEventListener("click", (e) => { const b = e.target.closest(".brow"); if (b) openBatchItem(+b.dataset.i); });
+  $("batchCopy").addEventListener("click", () => {
+    const text = batch.items.map((it) => [it.name, it.isJson ? "JSON" : "XML", it.state, it.bad || 0, it.warn || 0, it.error || ""].join("\t")).join("\n");
+    try { navigator.clipboard.writeText("file\ttype\tresult\terrors\twarnings\tnote\n" + text); } catch (e) {}
+    const b = $("batchCopy"), old = b.textContent; b.textContent = T("Copied"); setTimeout(() => { b.textContent = old; }, 1400);
+  });
+  function loadFiles(list) {
+    const files = Array.from(list || []);
+    if (files.length > 1) runBatch(files); else if (files.length) loadFile(files[0]);
+  }
   function loadFile(f) {
     if (!f) return;
     const r = new FileReader();
@@ -1409,7 +1499,7 @@
   }
 
   $("pickBtn").addEventListener("click", () => $("file").click());
-  $("file").addEventListener("change", (e) => { loadFile(e.target.files[0]); e.target.value = ""; });
+  $("file").addEventListener("change", (e) => { loadFiles(e.target.files); e.target.value = ""; });
   $("clearBtn").addEventListener("click", clearAll);
   pasteBtn.addEventListener("click", async () => {
     // One tap: read straight from the clipboard and replace whatever is open (the browser may show its own
@@ -1437,7 +1527,7 @@
     if (tgt === pasteArea || (tgt && (tgt.tagName === "INPUT" || tgt.tagName === "TEXTAREA" || tgt.isContentEditable))) return;
     const dt = e.clipboardData;
     if (!dt) return;
-    if (dt.files && dt.files.length) { e.preventDefault(); loadFile(dt.files[0]); return; }
+    if (dt.files && dt.files.length) { e.preventDefault(); loadFiles(dt.files); return; }
     const text = dt.getData("text");
     if (text && text.trim()) { e.preventDefault(); load(text, ""); }
   });
@@ -1476,6 +1566,7 @@
     markLang();
     setDisplayNames();
     if (lastMsg) lbMsg.innerHTML = lastMsg();
+    renderBatch();
     if (!state.root) return;
     const tab = document.querySelector('.tab[aria-selected="true"]');
     const y = window.scrollY;
@@ -1496,7 +1587,7 @@
   window.addEventListener("dragover", (e) => e.preventDefault());
   window.addEventListener("drop", (e) => {
     e.preventDefault(); depth = 0; drop.classList.remove("dragging");
-    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-    if (f) loadFile(f);
+    const fs = e.dataTransfer && e.dataTransfer.files;
+    if (fs && fs.length) loadFiles(fs);
   });
 })();
