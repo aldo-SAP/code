@@ -1056,12 +1056,16 @@
         : '<p class="none">' + esc(T("Every field with a value was placed.")) + "</p>") +
       "<h3>" + esc(T("Placed by reading the field name")) + " · " + j.assumptions.length + "</h3>" +
       "<ul class=\"json-notes\">" + j.assumptions.map((a) => "<li>" + esc(a) + "</li>").join("") + "</ul>" + traceHtml(j);
-    $("jsonDownload").addEventListener("click", () => {
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(new Blob([j.xml], { type: "application/xml" }));
-      a.download = (state.name || "invoice").replace(/\.json$/i, "") + ".xml";
-      a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-    });
+    $("jsonDownload").addEventListener("click", () => downloadXml(j.xml));
+  }
+  // The XML as a file named after the invoice number (without one: the name of the file it came from, else "invoice").
+  function downloadXml(text) {
+    const number = state.root && val(state.root, "ID");
+    const name = (number || (state.name || "").replace(/\.(xml|json)$/i, "") || "invoice").replace(/[\\/:*?"<>|\s]+/g, "_");
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type: "application/xml" }));
+    a.download = name + ".xml";
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   }
   // The Flux 10 report built from the invoice, shown on its own tab while the E-reporting rule set is on.
   function renderEreport() {
@@ -1249,6 +1253,8 @@
         const parent = n.parentElement.closest(".node");
         setFold(n, !!parent && !parent.parentElement.closest(".node"));
       });
+    } else if (b.dataset.xml === "download") {
+      downloadXml(state.text || "");
     } else if (b.dataset.xml === "copy") {
       const label = b.textContent;
       try { await navigator.clipboard.writeText(state.text || ""); b.textContent = T("Copied"); }
