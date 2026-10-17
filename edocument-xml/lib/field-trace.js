@@ -1,5 +1,5 @@
 /*
- * Where did each JSON field go? The converters (json-to-ubl.js, json-document.js) read a field, then build the element with its value; JsonTrace notes the
+ * Where did each field go? The converters (request-to-ubl.js, request-document.js) read a field, then build the element with its value; FieldTrace notes the
  * reads, and the element that is built next with a value (or an attribute value) equal to a read one gets a marker comment that names the field. extract()
  * turns the markers into a list { field, value, xml } and returns the XML without them.
  */
@@ -19,7 +19,7 @@
     return parts.join("/");
   }
 
-  window.JsonTrace = {
+  window.FieldTrace = {
     reset() { pending = []; },
     read(path, value) { if (value !== undefined && value !== null && String(value) !== "") pending.push({ path, value: String(value) }); },
     // called by an element builder with the text and attributes it was given: the marker to put inside the element ("" when nothing matches)

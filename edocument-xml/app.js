@@ -804,7 +804,7 @@
   function downloadReport() {
     const r = buildReport();
     // the invoice number; without one the name of the file, and without that "missing"
-    const base = ((state.root && val(state.root, "ID")) || (state.name || "").replace(/\.(xml|json)$/i, "") || "missing").replace(/[\\/:*?"<>|\s]+/g, "_");
+    const base = ((state.root && val(state.root, "ID")) || (state.name || "").replace(/\.[A-Za-z0-9]{1,5}$/i, "") || "missing").replace(/[\\/:*?"<>|\s]+/g, "_");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([r.bytes], { type: "application/pdf" }));
     a.download = "report-" + base + ".pdf";
@@ -1019,7 +1019,7 @@
     state.rawDirty = true; $("rawXml").innerHTML = "";    // the raw XML is drawn when its tab is opened (it is a large part of the work for a long invoice)
     if (!$("pRaw").hidden) ensureRaw();
     renderEreport();
-    renderJson();
+    renderConv();
     $("showEmpty").checked = state.showEmpty;
     $("showTags").checked = state.showTags;
     $("showRaw").checked = state.raw;
@@ -1031,8 +1031,8 @@
     $("intro").hidden = true;
   }
 
-  // A JSON request converted to UBL: its own tab with the XML, the fields that found no place, and the readings the conversion assumed.
-  // Where each JSON field went: the field, its value, the XML element; the ones the converter had to guess are marked.
+  // A request converted to UBL: its own tab with the XML, the fields that found no place, and the readings the conversion assumed.
+  // Where each field went: the field, its value, the XML element; the ones the converter had to guess are marked.
   function traceHtml(j) {
     if (!j.trace || !j.trace.length) return "";
     const key = (f) => f.replace(/\[\d+\]/g, "").split(".").pop();
@@ -1040,28 +1040,28 @@
     const short = (x) => (x.length > 60 ? x.slice(0, 60) + "…" : x);
     const rows = j.trace.map((t) => { const g = guessed(t.field);
       return '<tr' + (g ? ' class="guess"' : "") + "><td><code>" + esc(t.field) + "</code></td><td>" + esc(short(t.value)) + "</td><td><code>" + esc(t.xml) + "</code></td><td>" + (g ? esc(T("assumed")) : "") + "</td></tr>"; }).join("");
-    return '<details class="json-trace"><summary>' + esc(T("Where each field went")) + " · " + j.trace.length + "</summary>" +
+    return '<details class=conv-trace><summary>' + esc(T("Where each field went")) + " · " + j.trace.length + "</summary>" +
       (j.used > j.trace.length ? '<p class="small">' + esc(T("{n} more fields were placed, but their element is not traced here.", { n: j.used - j.trace.length })) + "</p>" : "") +
-      '<div class="tablewrap"><table class="ac"><thead><tr><th>' + esc(T("JSON field")) + "</th><th>" + esc(T("Value")) + "</th><th>" + esc(T("XML element")) + "</th><th></th></tr></thead><tbody>" + rows + "</tbody></table></div></details>";
+      '<div class="tablewrap"><table class="ac"><thead><tr><th>' + esc(T("Source field")) + "</th><th>" + esc(T("Value")) + "</th><th>" + esc(T("XML element")) + "</th><th></th></tr></thead><tbody>" + rows + "</tbody></table></div></details>";
   }
-  function renderJson() {
-    const j = state.json;
-    $("tab-json").hidden = !j;
-    if (!j) { $("jsonInfo").innerHTML = ""; if (!$("pJson").hidden) showTab("fields"); return; }
+  function renderConv() {
+    const j = state.conv;
+    $("tab-conv").hidden = !j;
+    if (!j) { $("convInfo").innerHTML = ""; if (!$("pConv").hidden) showTab("fields"); return; }
     const rows = j.notMapped.map((m) => "<tr><td><code>" + esc(m.path) + "</code></td><td>" + esc(m.value) + "</td><td>" + esc(m.reason || "") + "</td></tr>").join("");
-    $("jsonInfo").innerHTML =
-      '<p class="json-sum"><span>' + esc(T("Built from the JSON request")) + (j.total > 1 ? " · " + esc(T("first of {n} invoices", { n: j.total })) : "") + '</span><button type="button" id="jsonDownload">' + esc(T("Download XML")) + "</button></p>" +
+    $("convInfo").innerHTML =
+      '<p class="conv-sum"><span>' + esc(T("Converted to XML")) + (j.total > 1 ? " · " + esc(T("first of {n} invoices", { n: j.total })) : "") + '</span><button type="button" id="convDownload">' + esc(T("Download XML")) + "</button></p>" +
       "<h3>" + esc(T("Not placed in the XML")) + " · " + j.notMapped.length + "</h3>" +
-      (rows ? '<div class="tablewrap"><table class="ac"><thead><tr><th>' + esc(T("JSON field")) + "</th><th>" + esc(T("Value")) + "</th><th>" + esc(T("Why")) + "</th></tr></thead><tbody>" + rows + "</tbody></table></div>"
+      (rows ? '<div class="tablewrap"><table class="ac"><thead><tr><th>' + esc(T("Source field")) + "</th><th>" + esc(T("Value")) + "</th><th>" + esc(T("Why")) + "</th></tr></thead><tbody>" + rows + "</tbody></table></div>"
         : '<p class="none">' + esc(T("Every field with a value was placed.")) + "</p>") +
       "<h3>" + esc(T("Placed by reading the field name")) + " · " + j.assumptions.length + "</h3>" +
-      "<ul class=\"json-notes\">" + j.assumptions.map((a) => "<li>" + esc(a) + "</li>").join("") + "</ul>" + traceHtml(j);
-    $("jsonDownload").addEventListener("click", () => downloadXml(j.xml));
+      "<ul class=\"conv-notes\">" + j.assumptions.map((a) => "<li>" + esc(a) + "</li>").join("") + "</ul>" + traceHtml(j);
+    $("convDownload").addEventListener("click", () => downloadXml(j.xml));
   }
   // The XML as a file named after the invoice number (without one: the name of the file it came from, else "invoice").
   function downloadXml(text) {
     const number = state.root && val(state.root, "ID");
-    const name = (number || (state.name || "").replace(/\.(xml|json)$/i, "") || "invoice").replace(/[\\/:*?"<>|\s]+/g, "_");
+    const name = (number || (state.name || "").replace(/\.[A-Za-z0-9]{1,5}$/i, "") || "invoice").replace(/[\\/:*?"<>|\s]+/g, "_");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([text], { type: "application/xml" }));
     a.download = name + ".xml";
@@ -1085,7 +1085,7 @@
     $("pAtts").hidden = name !== "atts";
     $("pRaw").hidden = name !== "raw";
     $("pEreport").hidden = name !== "ereport";
-    $("pJson").hidden = name !== "json";
+    $("pConv").hidden = name !== "conv";
     if (name === "raw") ensureRaw();
     $("fieldTools").hidden = name !== "fields";
     $("filtersBtn").hidden = name !== "fields";
@@ -1384,18 +1384,18 @@
     lbMsg.className = "lb-msg" + (bad ? " bad" : "");
   }
 
-  // Reads a text (an XML, a JSON request, a Base64 XML) into a document: { root, kind, wrapped, text, ruleSets, json, dashes, amps };
+  // Reads a text (an XML, a request, a Base64 XML) into a document: { root, kind, wrapped, text, ruleSets, conv, dashes, amps };
   // { error: () => html } when it cannot be read; null for an empty text. Nothing is shown here.
   function prepare(text) {
     text = String(text || "").replace(/^\uFEFF/, "").trim();
     if (!text) return null;
-    // A JSON request is converted to UBL first, then checked like any XML.
-    let fromJson = null;
+    // A request is converted to UBL first, then checked like any XML.
+    let converted = null;
     if (/^[\[{]/.test(text)) {
       let parsed = null;
-      try { parsed = JSON.parse(text); } catch (e) { return { error: () => "<b>" + esc(T("Not valid JSON.")) + "</b> " + esc(String(e.message || e)) }; }
-      try { fromJson = JsonToUbl.convert(parsed); } catch (e) { return { error: () => "<b>" + esc(String(e.message || e)) + "</b>" }; }
-      text = fromJson.xml;
+      try { parsed = JSON.parse(text); } catch (e) { return { error: () => "<b>" + esc(T("Could not read the document.")) + "</b>" }; }
+      try { converted = RequestToUbl.convert(parsed); } catch (e) { return { error: () => "<b>" + esc(String(e.message || e)) + "</b>" }; }
+      text = converted.xml;
     }
     // XML copied from a browser's tree view has a "-" before each expandable tag (-<cac:Party>); drop it.
     let dashes = 0;
@@ -1429,13 +1429,13 @@
       wrapped = root.localName; root = found;
     }
     // Extra rule sets (PEPPOL, France …) start from what the CustomizationID says; the Checks card can change them.
-    return { root, kind: root.localName, wrapped, text, json: fromJson, dashes, amps,
-      ruleSets: fromJson ? (fromJson.ruleSets === "detect" ? EN16931.detect(root) : ["fr"]) : EN16931.detect(root) };
+    return { root, kind: root.localName, wrapped, text, conv: converted, dashes, amps,
+      ruleSets: converted ? (converted.ruleSets === "detect" ? EN16931.detect(root) : ["fr"]) : EN16931.detect(root) };
   }
 
   // Shows a prepared document; `checks` is the result of the rules when they have been run already (a file of a batch).
   function showPrepared(r, name, checks) {
-    Object.assign(state, { root: r.root, kind: r.kind, name: name || "", size: r.text.length, wrapped: r.wrapped, text: r.text, ruleSets: r.ruleSets, json: r.json });
+    Object.assign(state, { root: r.root, kind: r.kind, name: name || "", size: r.text.length, wrapped: r.wrapped, text: r.text, ruleSets: r.ruleSets, conv: r.conv });
     if (checks) { state.checks = checks; state.ckey = [r.root, r.kind, r.ruleSets.join(","), I18N.lang]; }
     $("filter").value = "";
     render();
@@ -1463,7 +1463,7 @@
   function clearAll() {
     closeViewer();
     state.cache.forEach((c) => c.url && URL.revokeObjectURL(c.url));
-    Object.assign(state, { root: null, kind: null, json: null, atts: [], attIndex: new Map(), cache: new Map(), ckey: null, checking: false });
+    Object.assign(state, { root: null, kind: null, conv: null, atts: [], attIndex: new Map(), cache: new Map(), ckey: null, checking: false });
     checkRun++; batchStop(true);
     $("out").hidden = true; $("intro").hidden = false;
     ["content", "hero", "verdict", "pAtts", "rawXml"].forEach((id) => { $(id).innerHTML = ""; });
@@ -1511,11 +1511,11 @@
     $("batchList").innerHTML = items.map((it, i) =>
       '<button type="button" class="brow ' + it.state + (i === batch.active ? " active" : "") + '" data-i="' + i + '"' + (it.error ? ' title="' + esc(it.error) + '"' : "") + ">" +
       '<span class="bst" aria-hidden="true">' + icon[it.state] + '</span><span class="bname">' + esc(it.name) + '</span>' +
-      '<span class="bkind">' + (it.isJson ? "JSON" : "XML") + '</span><span class="bres">' + esc(batchStatus(it)) + (it.state === "unreadable" && it.error ? ": " + esc(it.error.length > 90 ? it.error.slice(0, 90) + "…" : it.error) : "") + "</span></button>").join("");
+      '<span class="bkind">' + ("XML") + '</span><span class="bres">' + esc(batchStatus(it)) + (it.state === "unreadable" && it.error ? ": " + esc(it.error.length > 90 ? it.error.slice(0, 90) + "…" : it.error) : "") + "</span></button>").join("");
   }
   async function runBatch(files) {
     const run = ++batch.run;
-    batch.items = files.map((f) => ({ name: f.name, isJson: /\.json$/i.test(f.name), state: "pending" }));
+    batch.items = files.map((f) => ({ name: f.name, state: "pending" }));
     batch.active = -1; renderBatch();
     drop.classList.add("loaded"); $("clearBtn").hidden = false; sampleBtns.forEach((b) => { b.hidden = true; });
     setMsg(() => "<b>" + esc(T("{n} files", { n: files.length })) + "</b>");
@@ -1528,7 +1528,7 @@
       const r = prepare(text);
       if (run !== batch.run) return;
       if (!r || r.error) { it.state = "unreadable"; it.error = r ? plain(r.error()) : T("Empty file."); renderBatch(); continue; }
-      it.prep = r; it.isJson = !!r.json;
+      it.prep = r;
       try {
         const res = await EN16931.checkAsync(r.root, r.kind, r.ruleSets);
         if (run !== batch.run) return;
@@ -1553,7 +1553,7 @@
   }
   $("batchList").addEventListener("click", (e) => { const b = e.target.closest(".brow"); if (b) openBatchItem(+b.dataset.i); });
   $("batchCopy").addEventListener("click", () => {
-    const text = batch.items.map((it) => [it.name, it.isJson ? "JSON" : "XML", it.state, it.bad || 0, it.warn || 0, it.error || ""].join("\t")).join("\n");
+    const text = batch.items.map((it) => [it.name, "XML", it.state, it.bad || 0, it.warn || 0, it.error || ""].join("\t")).join("\n");
     try { navigator.clipboard.writeText("file\ttype\tresult\terrors\twarnings\tnote\n" + text); } catch (e) {}
     const b = $("batchCopy"), old = b.textContent; b.textContent = T("Copied"); setTimeout(() => { b.textContent = old; }, 1400);
   });

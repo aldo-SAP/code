@@ -1,14 +1,14 @@
 /*
- * JSON → UBL. The requests SAP sends as JSON ({ "req": [ { InvoiceNumber, … } ] }) are turned into a UBL Invoice or CreditNote,
+ * Request → UBL. The requests SAP sends ({ "req": [ { InvoiceNumber, … } ] }) are turned into a UBL Invoice or CreditNote,
  * which then goes through the same rules as any XML.
  *
  * Rules of the conversion:
- *  - Values go in exactly as they are in the JSON: no trimming, no fixing, no defaults. An empty field ("") is left out.
+ *  - Values go in exactly as they are in the request: no trimming, no fixing, no defaults. An empty field ("") is left out.
  *  - Only the first entry of "req" is converted.
  *  - Every field that has a value but no place in the XML is listed in `notMapped`, so nothing disappears silently.
- *  - `assumptions` lists the placements that are a reading of the field name rather than something the JSON states.
+ *  - `assumptions` lists the placements that are a reading of the field name rather than something the request states.
  *
- * JsonToUbl.convert(parsedJson) → { xml, kind, notMapped: [{ path, value, reason }], assumptions: [string], total, used }
+ * RequestToUbl.convert(parsedInput) → { xml, kind, notMapped: [{ path, value, reason }], assumptions: [string], total, used }
  */
 (function () {
   "use strict";
@@ -38,11 +38,11 @@
   }
 
   function convert(input) {
-    // the document request ({ id, document: [ … ] }) has its own converter (lib/json-document.js)
-    if (input && !Array.isArray(input.req) && Array.isArray(input.document) && window.JsonDocument) return window.JsonDocument.convert(input);
+    // the document request ({ id, document: [ … ] }) has its own converter (lib/request-document.js)
+    if (input && !Array.isArray(input.req) && Array.isArray(input.document) && window.RequestDocument) return window.RequestDocument.convert(input);
     const list = input && Array.isArray(input.req) ? input.req : Array.isArray(input) ? input : [input];
     const inv = list[0];
-    if (!inv || typeof inv !== "object") throw new Error("No invoice found in the JSON (expected { \"req\": [ { … } ] }).");
+    if (!inv || typeof inv !== "object") throw new Error("No invoice found in the request (expected { \"req\": [ { … } ] }).");
 
     const used = new WeakMap();
     // the path of every object of the request, to name the fields that are read (the same names as in the list of what was not placed)
@@ -53,14 +53,14 @@
       where.set(o, p);
       Object.keys(o).forEach((k) => { if (o[k] && typeof o[k] === "object") name(o[k], p ? p + "." + k : k); });
     })(inv, "");
-    JsonTrace.reset();
+    FieldTrace.reset();
     // read a field and remember that it was used; "" when it is missing or empty
     const v = (o, k) => {
       if (!o || typeof o !== "object") return "";
       if (!used.has(o)) used.set(o, new Set());
       used.get(o).add(k);
       const x = o[k];
-      if (x !== undefined && x !== null && typeof x !== "object") JsonTrace.read((where.get(o) ? where.get(o) + "." : "") + k, x);
+      if (x !== undefined && x !== null && typeof x !== "object") FieldTrace.read((where.get(o) ? where.get(o) + "." : "") + k, x);
       return x === undefined || x === null ? "" : String(x);
     };
     const has = (o, k) => o && o[k] !== undefined && o[k] !== null && String(o[k]) !== "";
@@ -74,7 +74,7 @@
 
     // element builders (cbc = text, cac = group); nothing is written when there is no content
     const B = (name, text, a) => {
-      const m = JsonTrace.mark(text, a);
+      const m = FieldTrace.mark(text, a);
       return text === "" || text === undefined ? "" : "<cbc:" + name + attrs(a) + ">" + esc(text) + m + "</cbc:" + name + ">";
     };
     const C = (name, kids, a) => { const k = kids.filter(Boolean); return k.length ? "<cac:" + name + attrs(a) + ">" + k.join("") + "</cac:" + name + ">" : ""; };
@@ -192,7 +192,7 @@
       const lineNotes = rows.filter((r) => has(r, "LineNote")).map((r) => B("Note", v(r, "LineNote")));
       const acs = [];
       // Quantity × net price already gives the line net amount: the line allowance only explains how the net price came about
-      // (the JSON lists it next to LineItemDiscount, which is the same amount), so writing it as a line allowance would count it twice.
+      // (the request lists it next to LineItemDiscount, which is the same amount), so writing it as a line allowance would count it twice.
       const qtyN = num(L.LineQuantity), netN = num(L.LineNetAmount), priceN = num(L.LineItemNetPrice), baseN = has(L, "LineItemBaseQuantity") ? num(L.LineItemBaseQuantity) : 1;
       const sumOf = (ks) => rows.reduce((t, r) => t + ks.reduce((u, k) => u + (num(r[k]) || 0), 0), 0);
       const allowN = sumOf(["LineAllowanceAmount"]), chargeN = sumOf(["LineChargeAmount"]);
@@ -220,7 +220,7 @@
       const props = rows.filter((r) => has(r, "LineItemAttributeName") || has(r, "LineItemAttributeValue")).map((r) =>
         C("AdditionalItemProperty", [B("Name", v(r, "LineItemAttributeName")), B("Value", v(r, "LineItemAttributeValue"))]));
       const hasVat = has(L, "LineVATCategory");
-      if (hasVat) assume("Line VAT category: the tax scheme (VAT) is written as a constant, the JSON has no field for it.");
+      if (hasVat) assume("Line VAT category: the tax scheme (VAT) is written as a constant, the request has no field for it.");
       if (has(L, "LinePurchaseOrderReference")) assume("LinePurchaseOrderReference is the purchase order line reference (BT-132): it goes to OrderLineReference/LineID.");
       if (has(L, "BuyerOrderID")) assume("BuyerOrderID is the order the line belongs to: it goes to OrderLineReference/OrderReference/ID.");
       if (has(L, "InvoiceLineActualDeliveryDate") || has(L, "InvoiceLineDeliveryLocationID") || has(L, "LineDeliveryCity") || has(L, "InvoiceLineDeliveryPlaceName")) assume("Line delivery fields go to the line's Delivery group.");
@@ -315,9 +315,9 @@
     };
     walk(inv, "");
 
-    const traced = JsonTrace.extract(raw);
+    const traced = FieldTrace.extract(raw);
     return { xml: pretty(traced.xml), kind: root, notMapped, assumptions, total: list.length, trace: traced.trace };
   }
 
-  window.JsonToUbl = { convert };
+  window.RequestToUbl = { convert };
 })();

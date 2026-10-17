@@ -38,7 +38,7 @@
       <button id="sampleBtn" type="button" data-i18n>Try a sample invoice</button>
       <button id="clearBtn" type="button" hidden data-i18n>Clear</button>
     </div>
-    <input type="file" id="file" multiple accept=".xml,.json,text/xml,application/xml,application/json">
+    <input type="file" id="file" multiple >
   </div>
   <textarea id="pasteArea" hidden spellcheck="false" aria-label="XML input" data-i18n-aria="XML input" placeholder="Paste the XML here; it is read as soon as it's complete." data-i18n-ph="Paste the XML here; it is read as soon as it's complete."></textarea>
 
@@ -57,7 +57,7 @@
         <button class="tab" role="tab" id="tab-fields" data-tab="fields" aria-selected="true" aria-controls="pFields" data-i18n>Invoice</button>
         <button class="tab" role="tab" id="tab-atts" data-tab="atts" aria-selected="false" aria-controls="pAtts"><span data-i18n>Attachments</span><span class="n" id="attCount">0</span></button>
         <button class="tab" role="tab" id="tab-raw" data-tab="raw" aria-selected="false" aria-controls="pRaw" data-i18n>Raw XML</button>
-        <button class="tab" role="tab" id="tab-json" data-tab="json" aria-selected="false" aria-controls="pJson" hidden data-i18n>From JSON</button>
+        <button class="tab" role="tab" id="tab-conv" data-tab="conv" aria-selected="false" aria-controls="pConv" hidden data-i18n>Converted</button>
         <button class="tab" role="tab" id="tab-ereport" data-tab="ereport" aria-selected="false" aria-controls="pEreport" hidden data-i18n>E-report</button>
       </div>
       <button type="button" class="filters-btn" id="filtersBtn" aria-expanded="false" aria-controls="fieldTools" aria-label="Filters" data-i18n-aria="Filters" title="Filters" hidden>
@@ -93,8 +93,8 @@
       <div id="content"></div>
     </div>
     <div class="tabpanel" id="pAtts" role="tabpanel" aria-labelledby="tab-atts" hidden></div>
-    <div class="tabpanel" id="pJson" role="tabpanel" aria-labelledby="tab-json" hidden>
-      <div id="jsonInfo"></div>
+    <div class="tabpanel" id="pConv" role="tabpanel" aria-labelledby="tab-conv" hidden>
+      <div id="convInfo"></div>
     </div>
     <div class="tabpanel" id="pEreport" role="tabpanel" aria-labelledby="tab-ereport" hidden>
       <div class="xmlbar">
@@ -165,9 +165,9 @@
 <script src="countries/de/it.js"></script>
 <script src="countries/de/sample.js"></script>
 <script src="countries/de/profile.js"></script>
-<script src="lib/json-trace.js"></script>
-<script src="lib/json-document.js"></script>
-<script src="lib/json-to-ubl.js"></script>
+<script src="lib/field-trace.js"></script>
+<script src="lib/request-document.js"></script>
+<script src="lib/request-to-ubl.js"></script>
 <script src="app.js"></script>
 <script>
 // Works offline once it has been opened: sw.js keeps the page's own files (never a document you open) and serves them when there is no network.

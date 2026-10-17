@@ -1,19 +1,19 @@
 /*
- * JSON → UBL for the SAP document request ({ "id": …, "document": [ { invNum, invIssueDate, … } ] }, the German and the UAE template).
+ * Request → UBL for the SAP document request ({ "id": …, "document": [ { invNum, invIssueDate, … } ] }, the German and the UAE template).
  *
  * The placements below come from the field NAMES and from the official rules (EN 16931 business terms, the PINT AE rules for the UAE fields); there is no
  * mapping document yet. Every placement that is a reading of a name rather than something the rules state is a GUESS: it is listed in `assumptions` (when the
- * JSON has a value for it), so it can be found and replaced when the real mapping arrives. The table is `F` below, one line per field.
+ * request has a value for it), so it can be found and replaced when the real mapping arrives. The table is `F` below, one line per field.
  *
- * Rules of the conversion (as in json-to-ubl.js):
- *  - Values go in as they are in the JSON: no trimming, no fixing. An empty field ("") is left out.
+ * Rules of the conversion (as in request-to-ubl.js):
+ *  - Values go in as they are in the request: no trimming, no fixing. An empty field ("") is left out.
  *  - The empty form carries "2001-12-31" for a date and 0 for a number: a date of 2001-12-31 is left out, and so is a group (a payment means, an allowance …)
  *    in which nothing is filled. A 0 is left out where the field is optional (allowance totals, prepaid amount …) and written where it is a total.
  *  - Only the first entry of "document" is converted.
  *  - Every field that has a value but no place in the XML is listed in `notMapped`.
  *  - The children of every element are put in the order the UBL 2.1 schema gives (rules/ubl-schema-data.js).
  *
- * JsonDocument.convert(parsedJson) → { xml, kind, notMapped, assumptions, total, used, ruleSets: "detect" }
+ * RequestDocument.convert(parsedInput) → { xml, kind, notMapped, assumptions, total, used, ruleSets: "detect" }
  */
 (function () {
   "use strict";
@@ -33,9 +33,9 @@
   function convert(input) {
     const docs = input && Array.isArray(input.document) ? input.document : [];
     const d = docs[0];
-    if (!d || typeof d !== "object") throw new Error("No invoice found in the JSON (expected { \"document\": [ { … } ] }).");
+    if (!d || typeof d !== "object") throw new Error("No invoice found in the request (expected { \"document\": [ { … } ] }).");
 
-    JsonTrace.reset();
+    FieldTrace.reset();
     const used = new Set();    // "path" of every field that was read
     const path = (o, k) => (o.__path || "document[0]") + "." + k;
     const assumptions = [];
@@ -43,7 +43,7 @@
 
     // ---- reading fields: s = text, dt = date, n = number (zero: keep a 0), b = true only
     const tag = (o, p) => { if (o && typeof o === "object" && !o.__path) Object.defineProperty(o, "__path", { value: p, enumerable: false }); return o; };
-    const raw = (o, k) => { if (!o || typeof o !== "object") return undefined; used.add(path(o, k)); if (o[k] !== undefined && o[k] !== null && typeof o[k] !== "object") JsonTrace.read(path(o, k), o[k]); return o[k]; };
+    const raw = (o, k) => { if (!o || typeof o !== "object") return undefined; used.add(path(o, k)); if (o[k] !== undefined && o[k] !== null && typeof o[k] !== "object") FieldTrace.read(path(o, k), o[k]); return o[k]; };
     const s = (o, k) => { const x = raw(o, k); return x === undefined || x === null ? "" : String(x); };
     const dt = (o, k) => { const x = s(o, k); return x === EMPTY_DATE ? "" : x; };
     const n = (o, k, zero) => { const x = raw(o, k); if (x === undefined || x === null || x === "") return ""; if (!zero && Number(x) === 0) return ""; return String(x); };
@@ -53,7 +53,7 @@
     const list = (o, k) => (Array.isArray(raw(o, k)) ? o[k] : []).map((e, i) => tag(e, path(o, k) + "[" + i + "]")).filter((e) => !blank(e));
 
     // ---- element builders; nothing is written when there is no content
-    const B = (name, text, a) => { const m = JsonTrace.mark(text, a); return text === "" || text === undefined ? null : { name: "cbc:" + name, a: Object.assign({}, a), t: text, m }; };
+    const B = (name, text, a) => { const m = FieldTrace.mark(text, a); return text === "" || text === undefined ? null : { name: "cbc:" + name, a: Object.assign({}, a), t: text, m }; };
     const C = (name, kids, a) => { const k = (kids || []).filter(Boolean); return k.length ? { name: "cac:" + name, a: Object.assign({}, a), k } : null; };
     const scheme = (v, a) => (v === "" ? {} : a);
 
@@ -246,7 +246,7 @@
     const profile = uae
       ? { customization: "urn:peppol:pint:billing-1@ae-1", profileId: "urn:peppol:bis:billing" }
       : { customization: "urn:cen.eu:en16931:2017#compliant#urn:xeinkauf.de:kosit:xrechnung_3.0", profileId: "urn:fdc:peppol.eu:2017:poacc:billing:01:1.0" };
-    guess("CustomizationID / ProfileID", "the JSON carries neither: " + (uae ? "the PINT AE" : "the XRechnung 3.0") + " identifiers are written as constants.");
+    guess("CustomizationID / ProfileID", "the request carries neither: " + (uae ? "the PINT AE" : "the XRechnung 3.0") + " identifiers are written as constants.");
     if (s(d, "invTransTypeCode")) guess("invTransTypeCode", "the transaction type flags (BTAE-02) go into ProfileExecutionID, as the PINT AE rules ibr-007-ae and ibr-154-ae read them.");
     if (s(d, "freqBilling")) guess("freqBilling", "the billing frequency (BTAE-06) goes into InvoicePeriod/DescriptionCode, as rules ibr-005-ae and ibr-160-ae read it.");
     if (s(d, "taxDateCode")) guess("taxDateCode", "the VAT point date code (BT-8) goes into InvoicePeriod/DescriptionCode.");
@@ -254,7 +254,7 @@
     if (s(d, "cusRefNum")) guess("cusRefNum", "the customer reference number goes into OrderReference/CustomerReference (the name is the only hint).");
     if (s(d, "ctrValue")) guess("ctrValue", "the contract value goes into ContractDocumentReference/DocumentDescription (the name is the only hint).");
     if (s(d, "invIssueTime")) guess("invIssueTime", "the issue time goes into IssueTime.");
-    if (list(d, "addDocRefs").some((e) => s(e, "addDocRefAttId"))) guess("addDocRefs[].addDocRefAttId", "taken for the identifier of the attached file and written as the document reference's UUID (the file itself cannot be in the JSON).");
+    if (list(d, "addDocRefs").some((e) => s(e, "addDocRefAttId"))) guess("addDocRefs[].addDocRefAttId", "taken for the identifier of the attached file and written as the document reference's UUID (the file itself cannot be in the request).");
     if (credit && dt(d, "payDueDate")) guess("payDueDate", "credit note: the due date goes to PaymentMeans/PaymentDueDate (a UBL credit note has no document-level due date).");
 
     const periodCode = s(d, "taxDateCode") || s(d, "freqBilling");
@@ -314,7 +314,7 @@
       if (x.k) { out.push(pad + "<" + x.name + nsAttrs + attrText(x.a) + ">"); x.k.forEach((c) => w(c, ind + 1)); out.push(pad + "</" + x.name + ">"); }
       else out.push(pad + "<" + x.name + attrText(x.a) + ">" + esc(x.t) + (x.m || "") + "</" + x.name + ">");
     })(root, 0);
-    const traced = JsonTrace.extract('<?xml version="1.0" encoding="UTF-8"?>\n' + out.join("\n") + "\n");
+    const traced = FieldTrace.extract('<?xml version="1.0" encoding="UTF-8"?>\n' + out.join("\n") + "\n");
     const xml = traced.xml;
 
     // ---- what was not placed: every field with a value that was never read
@@ -331,5 +331,5 @@
     return { xml, kind: credit ? "CreditNote" : "Invoice", notMapped, assumptions, total: docs.length, used: usedCount, fields: total, ruleSets: "detect", trace: traced.trace.map((t) => Object.assign(t, { field: t.field.replace(/^document\[0\]\./, "") })) };
   }
 
-  window.JsonDocument = { convert };
+  window.RequestDocument = { convert };
 })();
