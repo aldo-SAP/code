@@ -559,7 +559,7 @@ td > .dl .xtag { display: none; }
 
   /* B. detail: every field, label and BT number on the left, value at the right end of the row */
   table.tc > tbody > tr.detail { border: 0; padding: 0; margin: 0 0 8px; }
-  #sec-lines table.tc > tbody > tr.detail > td { display: block; padding: 2px 12px 8px; border: 0; border-radius: 0 0 10px 10px; background: var(--paper); }
+  #sec-lines table.tc > tbody > tr.detail > td { display: block; padding: 2px 12px 8px 22px; border: 0; border-radius: 0 0 10px 10px; background: var(--paper); }
   #sec-lines .detail-grid { display: block; }
   #sec-lines .detail-grid .row { grid-template-columns: minmax(88px, 40%) minmax(0, 1fr); gap: 2px 10px; padding: 5px 0; }
   #sec-lines .detail-grid .row > .k { display: block; }
@@ -819,7 +819,7 @@ table.ac th .thc { flex-wrap: wrap; row-gap: 0; }
   #sec-lines tr.line.open > td:first-child { box-shadow: inset 3px 0 0 var(--accent), inset 0 2px 0 var(--line); }
   #sec-lines tr.line.has-err.open > td { background: var(--err-bg); }
   #sec-lines tr.line.has-err.open > td:first-child { box-shadow: inset 3px 0 0 var(--err), inset 0 2px 0 var(--line); }
-  #sec-lines tr.detail:not([hidden]) > td { background: var(--bg); box-shadow: inset 3px 0 0 var(--accent), inset 0 -2px 0 var(--line); padding: 10px 14px 16px; }
+  #sec-lines tr.detail:not([hidden]) > td { background: var(--bg); box-shadow: inset 3px 0 0 var(--accent), inset 0 -2px 0 var(--line); padding: 10px 14px 16px 30px; }   /* the details sit a little in from the line */
   #sec-lines tr.line.has-err.open + tr.line-err + tr.detail > td, #sec-lines tr.line.has-err.open + tr.detail > td { box-shadow: inset 3px 0 0 var(--err), inset 0 -2px 0 var(--line); }
 }
 /* phone cards: the open card keeps its border and the details continue it, so the card does not change shape when opened */
