@@ -70,9 +70,11 @@
     const rateOf = (o, k, id) => (id === "O" ? "" : n(o, k, true));
 
     // ---------- parties ----------
-    const address = (o, p) => C("PostalAddress", [
-      B("StreetName", s(o, p + "Addr1")), B("AdditionalStreetName", s(o, p + "Addr2")), B("CityName", s(o, p + "City")), B("PostalZone", s(o, p + "PostCode")),
-      B("CountrySubentity", s(o, p + "CountrySub")), C("AddressLine", [B("Line", s(o, p + "Addr3"))]), C("Country", [B("IdentificationCode", s(o, p + "CountryCode"))])
+    // a party's address is cac:PostalAddress; under a delivery location or a bank branch UBL calls it cac:Address. The payment service provider names its
+    // street lines AddrL1 to AddrL3, the others Addr1 to Addr3.
+    const address = (o, p, tag, l) => C(tag || "PostalAddress", [
+      B("StreetName", s(o, p + (l ? "AddrL1" : "Addr1"))), B("AdditionalStreetName", s(o, p + (l ? "AddrL2" : "Addr2"))), B("CityName", s(o, p + "City")), B("PostalZone", s(o, p + "PostCode")),
+      B("CountrySubentity", s(o, p + "CountrySub")), C("AddressLine", [B("Line", s(o, p + (l ? "AddrL3" : "Addr3")))]), C("Country", [B("IdentificationCode", s(o, p + "CountryCode"))])
     ]);
     // the legal registration id: scheme, and for the UAE the type (schemeAgencyID) and the authority or passport country (schemeAgencyName)
     const legalId = (o, p) => {
@@ -116,7 +118,7 @@
     if (s(d, "delivPartyID")) guess("delivPartyID", "the deliver-to party's id goes into Delivery/DeliveryParty/PartyIdentification.");
     const delivery = C("Delivery", [
       B("ActualDeliveryDate", dt(d, "actDelivDate")),
-      C("DeliveryLocation", [B("ID", s(d, "delivLocID"), scheme(s(d, "delivLocID"), { schemeID: s(d, "delivLocIDScheme") })), address(d, "deliv")]),
+      C("DeliveryLocation", [B("ID", s(d, "delivLocID"), scheme(s(d, "delivLocID"), { schemeID: s(d, "delivLocIDScheme") })), address(d, "deliv", "Address")]),
       C("DeliveryParty", [C("PartyIdentification", [B("ID", s(d, "delivPartyID"))]), C("PartyName", [B("Name", s(d, "delivPartyName"))])])
     ]);
     if (s(d, "incoterms")) guess("incoterms", "the Incoterms (BTAE-22) go into DeliveryTerms/ID, as rule ibr-196-ae reads it.");
@@ -126,7 +128,7 @@
     if (list(d, "payMeans").some((e) => dt(e, "payMeansDueDate"))) guess("payMeans[].payMeansDueDate", "written as PaymentMeans/PaymentDueDate (EN 16931 has no such field; rule UBL-CR-412 warns).");
     const payMeans = list(d, "payMeans").map((e) => {
       const acc = s(e, "payAccID");
-      const branch = C("FinancialInstitutionBranch", [B("ID", s(e, "payServiceProvID")), address(e, "payServiceProv")]);
+      const branch = C("FinancialInstitutionBranch", [B("ID", s(e, "payServiceProvID")), address(e, "payServiceProv", "Address", true)]);
       const mandate = C("PaymentMandate", [B("ID", s(e, "mandateRefID")), C("PayerFinancialAccount", [B("ID", s(e, "debitedAccID"))])]);
       return C("PaymentMeans", [
         B("ID", s(e, "payInstrID")),
@@ -156,7 +158,7 @@
       return C("AllowanceCharge", [
         B("ChargeIndicator", isCharge ? "true" : "false"), B("AllowanceChargeReasonCode", s(e, pre + "ReasonCode")), B("AllowanceChargeReason", s(e, pre + "Reason")),
         B("MultiplierFactorNumeric", n(e, pre + "Pct")), M("Amount", n(e, pre + "Amt", true)), M("BaseAmount", n(e, pre + "BaseAmt")),
-        taxCat(catId, rateOf(e, pre + "TaxRate", catId), s(e, pre + "TaxExemptReasonCode"), s(e, pre + "TaxExemptReasonText"))
+        taxCat(catId, rateOf(e, pre + "TaxRate", catId), s(e, pre + "TaxExemptReasonCode") || s(e, pre + "taxExemptReasonCode"), s(e, pre + "TaxExemptReasonText") || s(e, pre + "taxExemptReasonText"))
       ]);
     });
     if (list(d, "allows").concat(list(d, "charges")).some((e) => Object.keys(e).some((k) => /TaxExemptReason/.test(k) && e[k])))
@@ -174,12 +176,12 @@
     if (taxAmt !== "" || subtotals.length) taxTotals.push(C("TaxTotal", [M("TaxAmount", taxAmt), flag(d, "invTotalTaxIncludedInd") ? B("TaxIncludedIndicator", "true") : null, ...subtotals]));
     if (taxCur && n(d, "invTotalTaxAmtAccCurr", true) !== "") taxTotals.push(C("TaxTotal", [M("TaxAmount", n(d, "invTotalTaxAmtAccCurr", true), taxCur)]));
     else n(d, "invTotalTaxAmtAccCurr", true);
-    if (s(d, "localCrcyTotalInclTax")) guess("localCrcyTotalInclTax", "the total in the local currency (AED) goes into LegalMonetaryTotal/PayableAlternativeAmount.");
+    // the invoice total in AED (BTAE-20) is a document reference of type aedtotal-incl-vat, as in the official PINT AE examples (rule ibr-175-ae)
+    if (s(d, "localCrcyTotalInclTax")) guess("localCrcyTotalInclTax", "the request holds the amount only: the document reference gets the VAT accounting currency (taxAccCurr, else AED) as its id and in front of the amount, as in the official PINT AE examples ('AED 913621.44').");
     const monetary = C("LegalMonetaryTotal", [
       M("LineExtensionAmount", n(d, "sumInvLineNetAmt", true)), M("TaxExclusiveAmount", n(d, "invTotalAmtNoTax", true)), M("TaxInclusiveAmount", n(d, "invTotalAmtWithTax", true)),
       M("AllowanceTotalAmount", n(d, "sumAllowancesDocLevel")), M("ChargeTotalAmount", n(d, "sumChargesDocLevel")), M("PrepaidAmount", n(d, "paidAmt")),
-      M("PayableRoundingAmount", n(d, "roundingAmt")), M("PayableAmount", n(d, "amtDueForPay", true)),
-      M("PayableAlternativeAmount", s(d, "localCrcyTotalInclTax"), LOCAL)
+      M("PayableRoundingAmount", n(d, "roundingAmt")), M("PayableAmount", n(d, "amtDueForPay", true))
     ]);
     const exch = n(d, "exchRateCalcRate");
     if (exch) guess("exchRateCalcRate", "written as TaxExchangeRate/CalculationRate, from the invoice currency to the VAT accounting currency (rule ibr-153-ae).");
@@ -250,9 +252,7 @@
     if (s(d, "invTransTypeCode")) guess("invTransTypeCode", "the transaction type flags (BTAE-02) go into ProfileExecutionID, as the PINT AE rules ibr-007-ae and ibr-154-ae read them.");
     if (s(d, "freqBilling")) guess("freqBilling", "the billing frequency (BTAE-06) goes into InvoicePeriod/DescriptionCode, as rules ibr-005-ae and ibr-160-ae read it.");
     if (s(d, "taxDateCode")) guess("taxDateCode", "the VAT point date code (BT-8) goes into InvoicePeriod/DescriptionCode.");
-    if (s(d, "CNReasonCode")) guess("CNReasonCode", "the credit note reason (BTAE-03) goes into DiscrepancyResponse/ResponseCode (credit notes only).");
-    if (s(d, "cusRefNum")) guess("cusRefNum", "the customer reference number goes into OrderReference/CustomerReference (the name is the only hint).");
-    if (s(d, "ctrValue")) guess("ctrValue", "the contract value goes into ContractDocumentReference/DocumentDescription (the name is the only hint).");
+    if (s(d, "ctrValue")) guess("ctrValue", "the request holds the amount only: the invoice currency code is put in front of it, as in the official PINT AE example (AED200000).");
     if (s(d, "invIssueTime")) guess("invIssueTime", "the issue time goes into IssueTime.");
     if (list(d, "addDocRefs").some((e) => s(e, "addDocRefAttId"))) guess("addDocRefs[].addDocRefAttId", "taken for the identifier of the attached file and written as the document reference's UUID (the file itself cannot be in the request).");
     if (credit && dt(d, "payDueDate")) guess("payDueDate", "credit note: the due date goes to PaymentMeans/PaymentDueDate (a UBL credit note has no document-level due date).");
@@ -262,6 +262,7 @@
     if (s(d, "invObjID")) docRefs.push(C("AdditionalDocumentReference", [B("ID", s(d, "invObjID"), scheme(s(d, "invObjID"), { schemeID: s(d, "invObjIDScheme") })), B("DocumentTypeCode", "130")]));
     list(d, "addDocRefs").forEach((e) => docRefs.push(C("AdditionalDocumentReference", [
       B("ID", s(e, "suppDocRef")), B("UUID", s(e, "addDocRefAttId")), B("DocumentDescription", s(e, "suppDocDesc")), C("Attachment", [C("ExternalReference", [B("URI", s(e, "extDocLoc"))])])])));
+    if (s(d, "localCrcyTotalInclTax")) docRefs.push(C("AdditionalDocumentReference", [B("ID", taxCur || LOCAL), B("DocumentTypeCode", "aedtotal-incl-vat"), B("DocumentDescription", (taxCur || LOCAL) + " " + s(d, "localCrcyTotalInclTax"))]));
     const dueInMeans = credit && dt(d, "payDueDate");
     const root = {
       name: (credit ? "cn:" : "ubl:") + (credit ? "CreditNote" : "Invoice"), a: {}, k: [
@@ -272,10 +273,11 @@
         B("AccountingCost", s(d, "buyAccRef")), B("BuyerReference", s(d, "buyRef")),
         C("InvoicePeriod", [B("StartDate", dt(d, "invPerSDate")), B("EndDate", dt(d, "invPerEDate")), B("DescriptionCode", periodCode)]),
         credit ? C("DiscrepancyResponse", [B("ResponseCode", s(d, "CNReasonCode"))]) : null,
-        C("OrderReference", [B("ID", s(d, "purOrdRef")), B("SalesOrderID", s(d, "saleOrdRef")), B("CustomerReference", s(d, "cusRefNum"))]),
+        C("OrderReference", [B("ID", s(d, "purOrdRef")), B("SalesOrderID", s(d, "saleOrdRef"))]),
         ...list(d, "precInvs").map((e) => C("BillingReference", [C("InvoiceDocumentReference", [B("ID", s(e, "preInvRef")), B("IssueDate", dt(e, "preInvIssRef"))])])),
         C("DespatchDocumentReference", [B("ID", s(d, "desAdvRef"))]), C("ReceiptDocumentReference", [B("ID", s(d, "recvAdvRef"))]),
-        C("OriginatorDocumentReference", [B("ID", s(d, "tenLotRef"))]), C("ContractDocumentReference", [B("ID", s(d, "ctrRef")), B("DocumentDescription", s(d, "ctrValue"))]),
+        C("StatementDocumentReference", [B("ID", s(d, "cusRefNum"))]),
+        C("OriginatorDocumentReference", [B("ID", s(d, "tenLotRef"))]), C("ContractDocumentReference", [B("ID", s(d, "ctrRef")), B("DocumentDescription", s(d, "ctrValue") === "" ? "" : cur + s(d, "ctrValue"))]),
         ...docRefs, C("ProjectReference", [B("ID", s(d, "projRef"))]),
         seller, buyer, payee, buyerCustomer, sellerSupplier, taxRep, delivery, deliveryTerms,
         ...payMeans, ...payTerms, ...acDoc("allows", "docAllow", false), ...acDoc("charges", "docCharge", true), taxExchange,
