@@ -276,7 +276,8 @@
     });
 
     // VAT breakdown
-    const subKey = (o) => (o.cat || "?") + (o.rate === null ? "" : " " + round(o.rate) + " %");
+    // category O (not subject to VAT) has no rate: a line must not carry one (BR-O-05) and a breakdown may carry 0
+    const subKey = (o) => (o.cat || "?") + (o.rate === null || o.cat === "O" ? "" : " " + round(o.rate) + " %");
     const subKeys = subs.map(subKey), dupSubs = subKeys.filter((k, i) => subKeys.indexOf(k) !== i);
     if (subs.length > 1) rule("CHK-12", subs.map((o) => o.el), !dupSubs.length, "Each VAT category and rate must have only one VAT breakdown", dupSubs.length ? "Repeated: " + names(dupSubs) : "");
     const usedKeys = taxedItems.filter((o) => o.cat).map(subKey).filter((k, i, a) => a.indexOf(k) === i);
