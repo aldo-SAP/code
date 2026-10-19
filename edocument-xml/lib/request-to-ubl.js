@@ -176,18 +176,17 @@
       }
     });
 
-    // The price discount (BT-147) is the LineItemDiscount of an InvoiceLineItemList row, as sent (it is per unit). The gross price (BT-148) goes with it
-    // as the base amount; a price AllowanceCharge with a base amount only is not valid, so without a discount the gross price is not written.
+    // The price discount (BT-147) is the LineItemDiscount of an InvoiceLineItemList row, as sent (it is per unit); every row gives one price AllowanceCharge and
+    // they are not summed, so a gross price that does not fit shows as an error. The gross price (BT-148) is the base amount of the first one; a price
+    // AllowanceCharge with a base amount only is not valid, so without a discount the gross price is not written.
     const priceAllowance = (L, rows) => {
       const withDiscount = rows.filter((r) => has(r, "LineItemDiscount"));
-      const d = withDiscount[0];
-      withDiscount.slice(1).forEach((r) => whyNot(r, "LineItemDiscount", "several LineItemDiscount rows on one line: only the first is used"));
       if (has(L, "LineItemDiscount")) whyNot(L, "LineItemDiscount", "not used on the line, only inside InvoiceLineItemList");
-      if (!d) {
+      if (!withDiscount.length) {
         if (has(L, "LineItemGrossPrice")) whyNot(L, "LineItemGrossPrice", "the gross price is only written with a LineItemDiscount in InvoiceLineItemList");
-        return "";
+        return [];
       }
-      return C("AllowanceCharge", [B("ChargeIndicator", "false"), M("Amount", v(d, "LineItemDiscount")), M("BaseAmount", v(L, "LineItemGrossPrice"))]);
+      return withDiscount.map((r, k) => C("AllowanceCharge", [B("ChargeIndicator", "false"), M("Amount", v(r, "LineItemDiscount")), k === 0 ? M("BaseAmount", v(L, "LineItemGrossPrice")) : ""]));
     };
 
     // ---------- lines ----------
@@ -237,7 +236,7 @@
           ...props
         ]),
         C("Price", [M("PriceAmount", v(L, "LineItemNetPrice")), B("BaseQuantity", v(L, "LineItemBaseQuantity"), { unitCode: v(L, "LineItemUoM") }),
-          priceAllowance(L, rows)])
+          ...priceAllowance(L, rows)])
       ]);
     });
 
