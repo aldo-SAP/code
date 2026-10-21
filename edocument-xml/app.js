@@ -1012,17 +1012,17 @@
   }
   // A short message when the checks of a document are done: with two documents that both pass, the screen looks the same and one cannot tell whether the new one is in.
   let toastTimer = 0;
-  function toast(text) {
+  function toast(text, kind) {
     let el = $("toast");
     if (!el) { el = document.createElement("div"); el.id = "toast"; el.setAttribute("role", "status"); el.setAttribute("aria-live", "polite"); document.body.appendChild(el); }
-    el.textContent = text; el.classList.add("show");
+    el.textContent = text; el.className = (kind || "") + " show";
     clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), 3600);
   }
   function announceChecks() {
-    const checks = state.checks || [], bad = checks.filter((c) => !c.ok && !c.warn).length;
+    const checks = state.checks || [], bad = checks.filter((c) => !c.ok && !c.warn).length, warn = checks.filter((c) => !c.ok && c.warn).length;
     const id = (state.root && val(state.root, "ID")) || state.name || "";
     const result = bad ? T("✗ {bad} of {n} rules fail", { bad, n: checks.length }).replace(/^✗\s*/, "") : T("✓ {n} rules pass", { n: checks.length }).replace(/^✓\s*/, "");
-    toast(T("Checks done") + (id ? " · " + id : "") + " · " + result);
+    toast(T("Checks done") + (id ? " · " + id : "") + " · " + result + (warn ? " · " + T(warn > 1 ? "{n} warnings" : "{n} warning", { n: warn }) : ""), bad ? "bad" : warn ? "warn" : "ok");   // red, yellow (warnings only) or green
   }
   function drawAll() {
     state.issues = mapIssues(state.checks);
