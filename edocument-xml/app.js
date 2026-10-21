@@ -1059,7 +1059,27 @@
     $("convDownload").addEventListener("click", () => downloadXml(j.xml));
   }
   // The XML as a file named after the invoice number (without one: the name of the file it came from, else "invoice").
+  // The same document with regular line breaks and indentation: blank lines between elements are removed and each element sits on its own line.
+  // Only white space between elements changes (text with content, comments and attributes stay); the download is always this form, so a signed document would no longer match its signature.
+  function tidyXml(text) {
+    const doc = new DOMParser().parseFromString(text, "application/xml");
+    if (doc.getElementsByTagName("parsererror").length) return text;
+    const blank = (n) => n.nodeType === 3 && !/\S/.test(n.nodeValue);
+    const walk = (el, depth) => {
+      const kids = Array.from(el.childNodes);
+      const structured = kids.some((n) => n.nodeType === 1 || n.nodeType === 7 || n.nodeType === 8) && !kids.some((n) => (n.nodeType === 3 || n.nodeType === 4) && /\S/.test(n.nodeValue));
+      if (!structured) { kids.forEach((n) => { if (n.nodeType === 1) walk(n, depth + 1); }); return; }
+      kids.forEach((n) => { if (blank(n)) el.removeChild(n); });
+      Array.from(el.childNodes).forEach((n) => { el.insertBefore(doc.createTextNode("\n" + "  ".repeat(depth + 1)), n); if (n.nodeType === 1) walk(n, depth + 1); });
+      el.appendChild(doc.createTextNode("\n" + "  ".repeat(depth)));
+    };
+    walk(doc.documentElement, 0);
+    const decl = /^\s*(<\?xml[^>]*\?>)/.exec(text);
+    return (decl ? decl[1] + "\n" : "") + new XMLSerializer().serializeToString(doc.documentElement) + "\n";
+  }
+  // the download is always the tidy form
   function downloadXml(text) {
+    text = tidyXml(text);
     const number = state.root && val(state.root, "ID");
     const name = (number || (state.name || "").replace(/\.[A-Za-z0-9]{1,5}$/i, "") || "invoice").replace(/[\\/:*?"<>|\s]+/g, "_");
     const a = document.createElement("a");
