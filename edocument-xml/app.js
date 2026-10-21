@@ -763,7 +763,8 @@
       '<div class="v-issues" id="vIssues"></div>' +
       (chips ? '<div class="v-chips">' + chips + "</div>" : "") +
       (bad || warn ? '<button type="button" class="v-btn" data-act="checks">' + T("Show all {n} rules", { n: checks.length }) + "</button>" : "") +
-      '<div class="v-report"><button type="button" data-act="report-save">' + esc(T("Download report")) + "</button></div>";
+      '<button type="button" class="v-dl" data-act="report-save" title="' + esc(T("Download report")) + '" aria-label="' + esc(T("Download report")) +
+        '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11"/><path d="M7 11l5 5 5-5"/><path d="M5 20h14"/></svg></button>';
   }
 
   // The result of the check as a report to send on: the failed rules with their message, detail and how to fix, in the language of the screen.
@@ -992,7 +993,7 @@
     const run = ++checkRun, key = [state.root, state.kind, (state.ruleSets || []).join(","), I18N.lang];
     state.checking = false; state.checkError = "";
     if (state.ckey && state.ckey.every((v, i) => v === key[i])) return drawAll();
-    if (state.root.getElementsByTagName("*").length < SLICE_ELEMENTS) { state.checks = computeChecks(); state.ckey = key; return drawAll(); }
+    if (state.root.getElementsByTagName("*").length < SLICE_ELEMENTS) { state.checks = computeChecks(); state.ckey = key; drawAll(); announceChecks(); return; }
     state.checks = []; state.ckey = null; state.checking = true;
     drawAll();
     EN16931.checkAsync(state.root, state.kind, state.ruleSets).then((res) => {
@@ -1002,11 +1003,26 @@
       drawAll();
       showTab(tab ? tab.dataset.tab : "fields");
       window.scrollTo(0, y);
+      announceChecks();
     }).catch((e) => {
       if (run !== checkRun) return;
       state.checking = false; state.checkError = String(e && e.message || e);
       drawAll();
     });
+  }
+  // A short message when the checks of a document are done: with two documents that both pass, the screen looks the same and one cannot tell whether the new one is in.
+  let toastTimer = 0;
+  function toast(text) {
+    let el = $("toast");
+    if (!el) { el = document.createElement("div"); el.id = "toast"; el.setAttribute("role", "status"); el.setAttribute("aria-live", "polite"); document.body.appendChild(el); }
+    el.textContent = text; el.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), 3600);
+  }
+  function announceChecks() {
+    const checks = state.checks || [], bad = checks.filter((c) => !c.ok && !c.warn).length;
+    const id = (state.root && val(state.root, "ID")) || state.name || "";
+    const result = bad ? T("✗ {bad} of {n} rules fail", { bad, n: checks.length }).replace(/^✗\s*/, "") : T("✓ {n} rules pass", { n: checks.length }).replace(/^✓\s*/, "");
+    toast(T("Checks done") + (id ? " · " + id : "") + " · " + result);
   }
   function drawAll() {
     state.issues = mapIssues(state.checks);
