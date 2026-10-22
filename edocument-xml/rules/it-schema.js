@@ -77,13 +77,13 @@
     const names = (m, out) => { if (m[0] === "e") out.add(m[1]); else if (m[0] === "x") out.add("ds:Signature"); else m[1].forEach((k) => names(k, out)); return out; };
     const kidName = (c) => nameOf(c);
 
-    function walk(el, tid) {
+    function walk(el, tid, hasDefault) {
       const T = S.types[tid];
       attributes(el, T);
       const kids = Array.from(el.children);
       if (T.v) {
         if (kids.length) add("06", el, nameOf(el) + " holds a value only, but contains the element " + nameOf(kids[0]));
-        const p = valueProblem(T.v, el.textContent);
+        const p = hasDefault && el.textContent === "" ? "" : valueProblem(T.v, el.textContent);
         if (p) problem(el, el.textContent, p);
         return;
       }
@@ -94,10 +94,10 @@
       function run(m) {
         const kind = m[0];
         if (kind === "e" || kind === "x") {
-          const [, name, t, mn, mx] = kind === "e" ? m : [0, m[1], null, m[2], m[3]];
+          const [, name, t, mn, mx, def] = kind === "e" ? m : [0, m[1], null, m[2], m[3]];
           let count = 0;
           while (i < kids.length && kidName(kids[i]) === name && (mx < 0 || count < mx)) {
-            if (kind === "e") walk(kids[i], t);
+            if (kind === "e") walk(kids[i], t, def);
             i++; count++;
           }
           if (count < mn) missing.push([name, nameOf(el) + " needs " + name]);

@@ -143,3 +143,9 @@ When the official artefacts are updated, change the pinned tags in `fetch-artefa
 
 `node snapshot.js OUT.json DIR…` loads the two sample invoices and the first six XML files of each folder, in English and Italian, and writes the
 rendered verdict, hero, fields and raw XML. Run it before and after a change that must not alter the screen (a refactoring) and compare the two files with `cmp`.
+
+## Italy (FatturaPA)
+
+- `gen-it-schema.py OUT.js XSD…` builds `rules/it-schema-data.js` from the official XSDs (`Schema_VFPA12_V1.2.3.xsd`, which is the same file as `Schema_VFPR12_v1.2.3.xsd`, and `Schema_VFSM10v_1.0.2.xsd`); keep them in `.cache/it-fatturapa/`.
+- `it/mutate.py` makes documents from a sample invoice with one change each and takes libxml2's schema verdict; `it/differential.js` compares the viewer's structure check (`rules/it-schema.js`) with it (needs the XSD with the XMLDSig import pointed at a local stub).
+- `it/check-spec.js` tests the specification rules (`rules/it-spec.js`, from the technical specification v1.4).

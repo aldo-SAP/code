@@ -767,7 +767,7 @@
     el.innerHTML = '<div class="v-main"><span class="v-icon" aria-hidden="true">' + (bad ? "✗" : "✓") + "</span><div><div class=\"v-text\">" +
       (bad ? T("✗ {bad} of {n} rules fail", { bad, n: checks.length }).replace(/^✗\s*/, "") : T("✓ {n} rules pass", { n: checks.length }).replace(/^✓\s*/, "")) + "</div>" +
       (warn ? '<div class="v-sub">' + T(warn > 1 ? "{n} warnings" : "{n} warning", { n: warn }) + "</div>" : "") +
-      (state.kind === "FatturaPA" ? '<button type="button" class="v-sets" data-act="checks">' + esc(T("Checks")) + ": " + esc(T("FatturaPA schema")) + "</button>" :
+      (state.kind === "FatturaPA" ? '<button type="button" class="v-sets" data-act="checks">' + esc(T("Checks")) + ": " + esc(T("FatturaPA rules")) + "</button>" :
       '<button type="button" class="v-sets" data-act="checks" title="' + esc(T("Change the rule sets")) + '">' + esc(T("Rule sets")) + ": " + (state.ruleSets.some((id) => EN16931.sets[id] && EN16931.sets[id].standalone)
         ? state.ruleSets.map((id) => esc(T(EN16931.sets[id].name))).join(" · ") : "EN 16931" + state.ruleSets.map((id) => " · " + esc(T(EN16931.sets[id].name))).join("")) + "</button>") + "</div></div>" +
       '<div class="v-issues" id="vIssues"></div>' +
@@ -1467,7 +1467,7 @@
       return { error: () => "<b>" + T("Not valid XML.") + "</b> " + why };
     }
     let root = doc.documentElement, wrapped = "";
-    if (root.localName === "FatturaElettronica" && window.ItView) return { root, kind: "FatturaPA", wrapped, text, conv: converted, dashes, amps, ruleSets: [] };
+    if (window.ItView && ItView.isIt(root)) return { root, kind: "FatturaPA", wrapped, text, conv: converted, dashes, amps, ruleSets: [] };
     const kinds = ["Invoice", "CreditNote"];
     if (!kinds.includes(root.localName)) {
       const found = Array.from(root.getElementsByTagName("*")).find((e) => kinds.includes(e.localName));

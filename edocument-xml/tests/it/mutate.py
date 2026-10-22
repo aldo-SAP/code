@@ -12,7 +12,7 @@ rnd = random.Random(int(opts.get("seed", 1))); per = int(opts.get("per-leaf", 14
 schema = etree.XMLSchema(etree.parse(xsd))
 data = json.loads(re.search(r"window\.IT_SCHEMA = (.*);\s*$", open(os.path.join(os.path.dirname(__file__), "..", "..", "rules", "it-schema-data.js")).read(), re.S).group(1))
 base = etree.parse(sample).getroot()
-NS = data["ns"]
+
 GENERIC = ["", " ", "x", "X", "0", "1", "-1", "00", "99", "100.00", "1.5", "1.50", "12.34", "0.00", "-0.00", "1234567890123.12", "123.123456789", "2026-01-01", "2026-02-30",
            "1969-12-31", "2026-13-01", "2026-1-1", "2026-01-01+01:00", "2026-01-01T10:00:00", "2026-01-01T10:00:00Z", "ä", "ÿ", "€", "日本", "a\tb", "a  b", " a ", "a\nb",
            "IT", "ZZ", "EUR", "TD01", "TD99", "RF01", "N1", "N9", "I", "D", "S", "MP05", "MP99", "TP02", "SC", "MG", "A@b.it", "a@b", "IT01234567890", "FPR12", "FPA12", "FPX",

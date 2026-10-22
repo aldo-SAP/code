@@ -8,14 +8,18 @@
   "use strict";
   let h = null;
   const init = (helpers) => { h = helpers; };
-  const ROOT = "FatturaElettronica";
-  const isIt = (root) => !!root && root.localName === ROOT;
+  const isIt = (root) => !!root && (root.localName === "FatturaElettronica" || root.localName === "FatturaElettronicaSemplificata");
+  const simple = (root) => !!root && root.localName === "FatturaElettronicaSemplificata";
   const kids = (el, name) => Array.from(el ? el.children : []).filter((k) => k.localName === name);
   const one = (el, name) => kids(el, name)[0] || null;
   const text = (el, path) => { let c = el; for (const s of path.split("/")) { c = one(c, s); if (!c) return ""; } return c.textContent.trim(); };
+  const at = (el, path) => { let c = el; for (const s of path.split("/")) { c = one(c, s); if (!c) return null; } return c; };
   const bodies = (root) => kids(root, "FatturaElettronicaBody");
   const nameOf = (anag) => text(anag, "Denominazione") || [text(anag, "Nome"), text(anag, "Cognome")].filter(Boolean).join(" ");
-  const partyName = (root, role) => nameOf(one(one(one(root, "FatturaElettronicaHeader"), role), "DatiAnagrafici") && one(one(one(one(root, "FatturaElettronicaHeader"), role), "DatiAnagrafici"), "Anagrafica"));
+  const partyName = (root, role) => simple(root) ? partyNameSimple(root, role) : nameOf(one(one(one(root, "FatturaElettronicaHeader"), role), "DatiAnagrafici") && one(one(one(one(root, "FatturaElettronicaHeader"), role), "DatiAnagrafici"), "Anagrafica"));
+
+  // the simplified invoice: the seller's name sits directly in CedentePrestatore, the buyer's in AltriDatiIdentificativi
+  const partyNameSimple = (root, role) => { const p = one(one(root, "FatturaElettronicaHeader"), role); return nameOf(role === "CedentePrestatore" ? p : one(p, "AltriDatiIdentificativi")); };
 
   // ---- the coded values: the schema's own description (Italian), and an English one
   const labelOf = (elName, code) => {
@@ -68,7 +72,49 @@
   const bodyTitle = (title, b, n) => (n > 1 ? title + " · " + (b + 1) + "/" + n : title);
   const wrapped = (html) => html;
 
+  const SIMPLE_SELLER = [["IdFiscaleIVA", "VAT number", "", { fmt: vatId }], ["CodiceFiscale", "Tax code", ""], ["Denominazione", "Name", ""], ["Nome", "First name", ""], ["Cognome", "Last name", ""], ["RegimeFiscale", "Tax regime", ""]]
+    .concat(["Indirizzo", "NumeroCivico", "CAP", "Comune", "Provincia", "Nazione"].map((n, i) => ["Sede/" + n, ["Street", "Number", "Postcode", "City", "Province", "Country"][i], ""]));
+  const SIMPLE_BUYER = [["IdentificativiFiscali/IdFiscaleIVA", "VAT number", "", { fmt: vatId }], ["IdentificativiFiscali/CodiceFiscale", "Tax code", ""], ["AltriDatiIdentificativi/Denominazione", "Name", ""],
+    ["AltriDatiIdentificativi/Nome", "First name", ""], ["AltriDatiIdentificativi/Cognome", "Last name", ""]]
+    .concat(["Indirizzo", "NumeroCivico", "CAP", "Comune", "Provincia", "Nazione"].map((n, i) => ["AltriDatiIdentificativi/Sede/" + n, ["Street", "Number", "Postcode", "City", "Province", "Country"][i], ""]));
+  const SIMPLE_DOC = [["TipoDocumento", "Document type", ""], ["Numero", "Document number", ""], ["Data", "Issue date", ""], ["Divisa", "Currency", ""], ["BolloVirtuale", "Virtual stamp duty", ""]];
+
+  // the simplified invoice (FatturaElettronicaSemplificata): header and parties, the document, each DatiBeniServizi as a row, attachments
+  function simpleSections() {
+    const R = h.state.root, out = [], hdr = one(R, "FatturaElettronicaHeader"), bs = bodies(R);
+    const push = (id, title, html, count) => out.push({ id, title, count: count || null, html });
+    const dt = one(hdr, "DatiTrasmissione"), ut = new Set();
+    push("transmission", "Transmission", h.card("transmission", "Transmission", dt ? h.renderFields(dt, TRANS_FIELDS, null, ut) + h.extras([dt], ut) : ""));
+    const party = (id, title, role, spec) => { const el = one(hdr, role); if (!el) return; const u = new Set(); push(id, title, h.card(id, title, h.renderFields(el, spec, null, u) + h.extras([el], u))); };
+    party("seller", "Seller", "CedentePrestatore", SIMPLE_SELLER);
+    party("buyer", "Buyer", "CessionarioCommittente", SIMPLE_BUYER);
+    party("issuer", "Issuer", "SoggettoEmittente", []);
+    bs.forEach((body, b) => {
+      const s = sfx(b), n = bs.length, ttl = (t) => bodyTitle(t, b, n);
+      const dgd = one(one(body, "DatiGenerali"), "DatiGeneraliDocumento"), u = new Set();
+      push("doc" + s, ttl("Document"), h.card("doc" + s, ttl("Document"), (dgd ? h.renderFields(dgd, SIMPLE_DOC, null, u) + h.extras([dgd], u) : "") + kids(one(body, "DatiGenerali"), "DatiFatturaRettificata").map((e) => h.sub("Corrected invoice", stripHead(h.extras([e], new Set())))).join("")));
+      const gs = kids(body, "DatiBeniServizi");
+      if (gs.length) {
+        const th = (label, tag, r) => "<th" + (r ? ' class="r"' : "") + ">" + h.T(label) + h.xtag("DatiBeniServizi/" + tag) + "</th>";
+        let html = '<div class="tablewrap"><table><thead><tr>' + th("Description", "Descrizione") + th("Amount", "Importo", true) + th("VAT", "DatiIVA/Imposta", true) + th("Rate", "DatiIVA/Aliquota", true) + th("Nature", "Natura") + th("Legal reference", "RiferimentoNormativo") + "</tr></thead><tbody>";
+        gs.forEach((g) => {
+          const v = (p) => { const e = at(g, p); return e ? h.renderValue(e) : "—"; };
+          html += '<tr class="frow"><td>' + (one(g, "Descrizione") ? h.esc(text(g, "Descrizione")) : "—") + '</td><td class="r">' + v("Importo") + '</td><td class="r">' + v("DatiIVA/Imposta") + '</td><td class="r">' + v("DatiIVA/Aliquota") + "</td><td>" + v("Natura") + "</td><td>" + (one(g, "RiferimentoNormativo") ? h.esc(text(g, "RiferimentoNormativo")) : "") + "</td></tr>";
+        });
+        push("goods" + s, ttl("Goods and services"), h.card("goods" + s, ttl("Goods and services"), html + "</tbody></table></div>", { full: true, count: gs.length > 1 ? gs.length : null }), gs.length > 1 ? gs.length : null);
+      }
+      const att = kids(body, "Allegati");
+      if (att.length) push("attachments" + s, ttl("Attachments"), h.card("attachments" + s, ttl("Attachments"), att.map((a, i) => h.sub(h.T("Attachment") + " " + (i + 1), stripHead(h.extras([a], new Set())))).join(""), { full: true }));
+    });
+    const rest = Array.from(R.children).filter((k) => !["FatturaElettronicaHeader", "FatturaElettronicaBody"].includes(k.localName));
+    if (rest.length) push("other", "Other elements", h.card("other", "Other elements", rest.map((e) => h.row(e.localName === "Signature" ? h.T("Signature") : e.localName, "", e.children.length ? '<span class="dec">' + h.T("(group)") + "</span>" : h.renderValue(e), "extra", h.tagPath(e))).join(""), { full: true }));
+    if (h.state.checks.length) { const bad = h.state.checks.filter((c) => !c.ok && !c.warn).length; push("checks", "Checks", h.card("checks", "Checks", h.checksHtml(h.state.checks), { count: bad ? h.T("{n} failing", { n: bad }) : h.T("all pass") })); }
+    const order = [].concat(...nav(R).map((g) => g[1]));
+    return out.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
+  }
+
   function sections() {
+    if (simple(h.state.root)) return simpleSections();
     const R = h.state.root, out = [], hdr = one(R, "FatturaElettronicaHeader"), bs = bodies(R);
     const push = (id, title, html, count) => out.push({ id, title, count: count || null, html });
     // header: transmission and parties
@@ -208,6 +254,7 @@
   // the left navigation: the ids of the sections that exist, in groups
   function nav(root) {
     const n = bodies(root).length, ids = (base) => Array.from({ length: n }, (_, b) => base + sfx(b));
+    if (simple(root)) return [["Document", ids("doc")], ["Parties", ["transmission", "seller", "buyer", "issuer"]], ["Lines", ids("goods")], ["Amounts", ["checks"]], ["More", ids("attachments").concat(["other"])]];
     return [["Document", ids("doc").concat(ids("refs"))], ["Parties", ["transmission", "seller", "buyer", "taxrep", "intermediary", "issuer"]], ["Payment", ids("payment")],
       ["Lines", ids("lines")], ["Amounts", ids("vat").concat(["checks"])], ["More", ids("vehicles").concat(ids("attachments"), ["other"])]];
   }
@@ -229,6 +276,7 @@
       if (el === top) return { sec: "doc" + s };
       let c = el; while (c.parentElement !== top) c = c.parentElement;
       const g = c.localName;
+      if (g === "DatiBeniServizi" && simple(R)) return { sec: "goods" + s };
       if (g === "DatiBeniServizi") {
         let d = el; while (d.parentElement !== c) d = d.parentElement;
         if (d.localName === "DettaglioLinee") {
@@ -241,6 +289,7 @@
         let d = el; while (d.parentElement !== c) d = d.parentElement;
         return { sec: d.localName === "DatiGeneraliDocumento" ? "doc" + s : "refs" + s };
       }
+      if (simple(R)) return { sec: (g === "Allegati" ? "attachments" : "doc") + s };
       return { sec: ({ DatiPagamento: "payment", DatiVeicoli: "vehicles", Allegati: "attachments" }[g] || "doc") + s };
     }
     return { sec: "other" };
@@ -249,27 +298,31 @@
   // ---- the checks, in the shape of the other countries' results: { id, text, ok, detail, at: [elements] }
   function checks(root) {
     if (!window.ItSchema) return [];
-    const found = ItSchema.check(root), out = [];
-    ItSchema.rules.forEach((id) => {
-      const n = id.slice(-2), mine = found.filter((f) => f.kind === n);
-      out.push({ id, text: ITEXT[n], ok: !mine.length, detail: mine.length ? mine[0].detail + (mine.length > 1 ? " (+" + (mine.length - 1) + ")" : "") : "", at: mine.length ? mine.map((f) => f.el) : [root] });
-    });
+    const out = [];
+    const run = (api, prefix) => {
+      const found = api.check(root);
+      api.texts.forEach(([n, text]) => {
+        const mine = found.filter((f) => f.kind === n);
+        out.push({ id: prefix + n, text, ok: !mine.length, detail: mine.length ? mine[0].detail + (mine.length > 1 ? " (+" + (mine.length - 1) + ")" : "") : "", at: mine.length ? mine.map((f) => f.el) : [root] });
+      });
+    };
+    run(ItSchema, "IT-XSD-");
+    if (window.ItSpec && !simple(root)) run(ItSpec, "IT-SPEC-");     // the specification's rules are for the ordinary invoice
     return out;
   }
-  const ITEXT = {};
-  (window.ItSchema ? ItSchema.texts : []).forEach(([n, t]) => { ITEXT[n] = t; });
 
   // ---- the top of the page
   function hero() {
-    const R = h.state.root, T = h.T, esc = h.esc;
+    const R = h.state.root, T = h.T, esc = h.esc, sim = simple(R);
     const body = bodies(R)[0], dg = one(body, "DatiGenerali"), dgd = one(dg, "DatiGeneraliDocumento");
     const code = text(dgd, "TipoDocumento"), cur = text(dgd, "Divisa"), total = text(dgd, "ImportoTotaleDocumento");
-    const credit = code === "TD04";
+    const credit = code === "TD04" || code === "TD08";
     const dues = kids(body, "DatiPagamento").flatMap((dp) => kids(dp, "DettaglioPagamento")).map((d) => text(d, "DataScadenzaPagamento")).filter(Boolean).sort();
     const di = h.parseDate(text(dgd, "Data")), dd = h.parseDate(dues[0]);
     const days = di && dd ? Math.round((dd - di) / 86400000) : null;
-    const rs = kids(one(body, "DatiBeniServizi"), "DatiRiepilogo");
+    const rs = sim ? [] : kids(one(body, "DatiBeniServizi"), "DatiRiepilogo");
     const sum = (tag) => rs.reduce((t, r) => t + (h.num(text(r, tag)) || 0), 0);
+    const vatSimple = sim ? kids(body, "DatiBeniServizi").reduce((t, g) => t + (h.num(text(g, "DatiIVA/Imposta")) || 0), 0) : 0;
     const lbl = code ? labelOf("TipoDocumento", code) : "";
     const m = (x) => h.fmtMoney(x.toFixed(2));
     document.getElementById("hero").innerHTML =
@@ -279,6 +332,8 @@
       '<div class="flow"><div class="who from"><small>' + T("From") + "</small><span>" + esc(partyName(R, "CedentePrestatore") || T("Unknown seller")) + "</span></div>" +
       '<span class="arrow" aria-hidden="true">→</span><div class="who to"><small>' + T("To") + "</small><span>" + esc(partyName(R, "CessionarioCommittente") || T("Unknown buyer")) + "</span></div></div></div>" +
       '<div class="hero-amount">' + (total ? '<div class="lbl">' + T(credit ? "Amount credited" : "Document total") + '</div><div class="big">' + h.fmtMoney(total) + '<span class="cur">' + esc(cur) + "</span></div>" : "") +
+      (sim && text(dgd, "Data") ? '<div class="due">' + T("Issue date") + " <b>" + h.fmtDate(text(dgd, "Data")) + "</b></div>" : "") +
+      (sim && vatSimple ? '<div class="sums"><div><span>' + T("VAT") + "</span><b>" + m(vatSimple) + "</b></div></div>" : "") +
       (dues[0] ? '<div class="due">' + T("Due") + " <b>" + h.fmtDate(dues[0]) + "</b>" + (days !== null ? " · " + T("{n} days after issue", { n: days }) : "") + "</div>" : "") +
       (rs.length ? '<div class="sums"><div><span>' + T("Taxable") + "</span><b>" + m(sum("ImponibileImporto")) + "</b></div><div><span>" + T("VAT") + "</span><b>" + m(sum("Imposta")) + "</b></div></div>" : "") + "</div>";
   }

@@ -1,8 +1,9 @@
 /* English names of the coded values of the Italian electronic invoice. The Italian text is the schema's own description of each value (rules/it-schema-data.js);
    these are translations of it. Element name -> value -> English. */
 window.IT_LABELS_EN = {
-  FormatoTrasmissione: { FPA12: "Invoice to public administration", FPR12: "Invoice to private parties" },
+  FormatoTrasmissione: { FPA12: "Invoice to public administration", FPR12: "Invoice to private parties", FSM10: "Simplified invoice to private parties" },
   TipoDocumento: {
+    TD07: "Simplified invoice", TD08: "Simplified credit note", TD09: "Simplified debit note",
     TD01: "Invoice", TD02: "Advance / down payment on invoice", TD03: "Advance / down payment on fee note", TD04: "Credit note", TD05: "Debit note", TD06: "Fee note",
     TD16: "Reverse charge integration (domestic)", TD17: "Integration / self-invoice for services purchased from abroad", TD18: "Integration for purchase of intra-EU goods",
     TD19: "Integration / self-invoice for goods purchased under art. 17 c. 2 DPR 633/72", TD20: "Self-invoice for regularisation and integration of invoices (art. 6 c. 9-bis D.Lgs. 471/97 or art. 46 c. 5 D.L. 331/93)",
