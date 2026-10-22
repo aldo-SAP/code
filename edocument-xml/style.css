@@ -600,8 +600,13 @@ td > .dl .xtag { display: none; }
   .who.from small { background: var(--from-soft); }
   .who.to small { background: var(--to-soft); }
   .who + .arrow + .who { margin-top: 4px; }
-  .hero-amount { margin-top: 10px; }
-  .hero-amount .sums { margin-top: 6px; padding-top: 8px; font-size: 0.84rem; }
+  /* the amount block under the names, full width (the same as below 640 px: from 641 to 720 px the hero is already a block, so the side-by-side styling must not apply) */
+  .hero-amount { flex: 1 1 100%; max-width: none; min-width: 0; margin-top: 10px; padding: 12px 0 0; border-left: 0; border-top: 1px solid var(--line-soft);
+    grid-template-columns: 1fr auto; align-items: end; justify-items: start; text-align: left; column-gap: 12px; }
+  .hero-amount .lbl { grid-column: 1; grid-row: 1; align-self: end; }
+  .hero-amount .big { grid-column: 2; grid-row: 1 / span 2; justify-self: end; font-size: 1.9rem; text-align: right; align-self: center; }
+  .hero-amount .due { grid-column: 1; grid-row: 2; font-size: 0.82rem; }
+  .hero-amount .sums { grid-column: 1 / -1; grid-row: 3; margin-top: 6px; padding-top: 8px; font-size: 0.84rem; }
   .v-btn { margin-left: 0; }
 }
 
@@ -911,3 +916,6 @@ table.tc tr[hidden] { display: none !important; }
 #toast.warn { background: #B26A00; }
 #toast.bad { background: #B3261E; }
 @media (prefers-reduced-motion: reduce) { #toast { transition: none; } }
+
+/* the unit description in a line's summary sits after the code; when the tile is too narrow it wraps as a whole ("· piece"), never leaving the dot behind */
+.unit .ud { white-space: nowrap; }

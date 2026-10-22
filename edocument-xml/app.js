@@ -531,7 +531,7 @@
           const lineNo = String(val(ln, "ID") || i + 1);
           body += '<tr class="line frow' + (nBad ? " has-err" : "") + '" data-line="' + i + '" style="--idw:' + Math.min(lineNo.length, 12) + 'ch" tabindex="0" aria-expanded="false"><td>' + esc(lineNo) + flag + "</td><td>" +
             esc(val(ln, "Item/Name") || "—") + (sid ? '<div class="small">' + esc(sid) + "</div>" : "") + '</td><td class="r">' +
-            (q ? esc(txt(q)) + (unit ? ' <span class="unit" title="' + esc(UNITS[unit] || unit) + '">' + esc(unit) + "</span>" : "") : "—") +
+            (q ? esc(txt(q)) + (unit ? ' <span class="unit" title="' + esc(UNITS[unit] ? T(UNITS[unit]) : unit) + '">' + esc(unit) + (UNITS[unit] ? '<span class="ud"><span class="sep"> · </span>' + esc(T(UNITS[unit])) + "</span>" : "") + "</span>" : "") : "—") +
             '</td><td class="r">' + (price ? fmtAmount(txt(price), "") : "—") + "</td><td><span class=\"vatc\" data-cat=\"" + esc(cat) + "\">" + esc(cat) + (pct ? " " + esc(pct) + " %" : "") + "</span>" +
             '</td><td class="r">' + (net ? renderValue(net) : "—") + '</td><td class="lgo" aria-hidden="true"></td></tr>' + lineErrRow(i, 7) +
             '<tr class="detail" data-detail="' + i + '" hidden><td colspan="7"><div class="detail-grid">' + detail + "</div></td></tr>";
