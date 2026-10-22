@@ -29,6 +29,13 @@ const { open } = require("./lib/engine");
       "cac:Party contains text, but only elements are allowed", "cbc:IssueDate: “2026-02-30” does not fit the type: date (YYYY-MM-DD)", "cbc:Amount/@currencyID: “x” does not fit the type: language code",
       "cbc:Amount has the attribute foo, which UBL 2.1 does not allow there", "cbc:Amount needs the attribute currencyID"];
     I18N.set("it"); ubl.forEach((t) => { total++; if (I18N.tr(t, 0, true) === null) out.push("UBL schema no Italian: " + t.slice(0, 90)); });
+    // the FatturaPA structure rules: their texts, and a detail of each kind (the ones the checker builds)
+    const it = ItSchema.texts.map((t) => t[1]).concat(["Foo is not allowed in DatiTrasmissione", "Data comes in the wrong place in DatiGeneraliDocumento", "Foo occurs more often than the schema allows in DatiTrasmissione",
+      "Foo needs the attribute versione", "DatiGenerali needs one of A and B / C", "DatiGenerali needs Numero", "Foo holds a value only, but contains the element Bar", "Foo contains text, but only elements are allowed",
+      "Foo has the attribute x, which the schema does not allow there", "Natura: “N9” is not one of the values the schema allows", "Data: “x” does not fit the type: date (YYYY-MM-DD)", "Quantita: “x” does not fit the type: decimal number",
+      "CAP: “1” does not fit the type: exactly 5 characters", "Nome: “” does not fit the type: at least 1 characters", "Nome: “x” does not fit the type: at most 60 characters", "Imposta: “x” does not fit the type: the format the schema gives",
+      "Data: “1960-01-01” does not fit the type: not before 1970-01-01", "NumeroLinea: “0” does not fit the type: not above 9999", "Divisa comes in the wrong place in DatiGeneraliDocumento (+3)"]);
+    I18N.set("it"); it.forEach((t) => { total++; if (I18N.tr(t, 0, true) === null) out.push("FatturaPA schema no Italian: " + t.slice(0, 90)); });
     out.push("TOTAL " + total);
     return out;
   });

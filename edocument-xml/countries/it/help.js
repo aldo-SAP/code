@@ -1,0 +1,11 @@
+/* How to fix each structure rule of the Italian invoice, in plain words. */
+EdocHelp.add({
+  "IT-XSD-01": ["Put the elements in the order of the FatturaPA schema, and remove any element the schema does not have at that place. The first element named in the detail is where to start.", "Metti gli elementi nell'ordine dello schema FatturaPA e rimuovi gli elementi che lo schema non prevede in quel punto. Parti dal primo elemento indicato nel dettaglio."],
+  "IT-XSD-02": ["Add the element named in the detail; the schema requires it at that place.", "Aggiungi l'elemento indicato nel dettaglio: lo schema lo richiede in quel punto."],
+  "IT-XSD-03": ["Keep only as many of the element as the schema allows (most elements once).", "Mantieni solo tante occorrenze dell'elemento quante ne consente lo schema (la maggior parte una sola volta)."],
+  "IT-XSD-04": ["Write the value in the form of its type: numbers with a decimal point and no thousands separator, dates as YYYY-MM-DD.", "Scrivi il valore nella forma del suo tipo: numeri con il punto decimale e senza separatore delle migliaia, date come AAAA-MM-GG."],
+  "IT-XSD-05": ["Add the attribute the schema requires (for example versione on the root element), and remove any other attribute.", "Aggiungi l'attributo richiesto dallo schema (per esempio versione sull'elemento radice) e rimuovi gli altri attributi."],
+  "IT-XSD-06": ["Use either a value or child elements in the element, not both; remove the stray text or the extra element.", "Usa nell'elemento o un valore o elementi figli, non entrambi; rimuovi il testo in eccesso o l'elemento in più."],
+  "IT-XSD-07": ["Use one of the values the schema lists for this element (for example TD01 to TD29 for TipoDocumento, N1 to N7 for Natura).", "Usa uno dei valori che lo schema elenca per questo elemento (per esempio da TD01 a TD29 per TipoDocumento, da N1 a N7 per Natura)."],
+  "IT-XSD-08": ["Fix the value to the format, length and range given in the detail (for example amounts with the number of decimals the schema asks for).", "Correggi il valore secondo il formato, la lunghezza e l'intervallo indicati nel dettaglio (per esempio importi con il numero di decimali richiesto dallo schema)."]
+});

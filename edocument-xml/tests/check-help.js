@@ -6,7 +6,7 @@ const root = path.join(__dirname, "..");
 global.window = {}; global.document = undefined;
 const load = (f) => (0, eval)(fs.readFileSync(path.join(root, f), "utf8"));
 load("lib/help.js"); global.EdocHelp = window.EdocHelp;
-const helpFiles = ["rules/help.js", "countries/fr/help.js", "countries/de/help.js", "countries/ae/help.js"];
+const helpFiles = ["rules/help.js", "countries/fr/help.js", "countries/de/help.js", "countries/ae/help.js", "countries/it/help.js"];
 // read the maps by wrapping add()
 const H = {}; const real = EdocHelp.add; EdocHelp.add = (m) => Object.assign(H, m);
 helpFiles.forEach((f) => load(f)); EdocHelp.add = real;
@@ -14,7 +14,8 @@ const RULES = [["rules/en16931-rules.js", "EN16931_RULES"], ["rules/peppol-rules
   ["countries/fr/frext-rules.js", "FR_EXT_RULES"], ["countries/de/xrechnung-rules.js", "XRECHNUNG_RULES"], ["countries/ae/pint-ae-rules.js", "PINT_AE_RULES"]];
 const ids = new Set(); const without = [];
 for (const [f, n] of RULES) { load(f); for (const p of window[n].patterns) for (const r of p.r) for (const a of r.a) ids.add(a[0]); }
-load("rules/ubl-schema-data.js"); load("rules/ubl-schema.js"); window.UblSchema.rules.forEach((i) => ids.add(i));   // the UBL 2.1 structure rules
+load("rules/ubl-schema-data.js"); load("rules/ubl-schema.js"); window.UblSchema.rules.forEach((i) => ids.add(i));
+load("rules/it-schema-data.js"); load("rules/it-schema.js"); window.ItSchema.rules.forEach((i) => ids.add(i));   // the FatturaPA structure rules   // the UBL 2.1 structure rules
 let bad = 0;
 for (const [id, h] of Object.entries(H)) {
   if (!ids.has(id)) { console.log("help for an unknown rule:", id); bad++; }

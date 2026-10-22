@@ -57,6 +57,7 @@
   const dec = (code, table) => (table[code] ? ' <span class="dec">· ' + esc(T(table[code])) + "</span>" : "");
 
   function decodeValue(el, raw) {
+    if (state.kind === "FatturaPA") return ItView.decode(el, raw);
     const n = el.localName, p = el.parentElement ? el.parentElement.localName : "";
     if (n === "InvoiceTypeCode" || n === "CreditNoteTypeCode" || (n === "DocumentTypeCode" && DOC_TYPES[raw])) return dec(raw, DOC_TYPES);
     if (n === "PaymentMeansCode") return dec(raw, PAY_MEANS);
@@ -84,6 +85,7 @@
     }
     if (el.children.length) return '<span class="dec">' + T("(group)") + "</span>";
     const raw = txt(el);
+    if (state.kind === "FatturaPA") { const v = ItView.value(el, raw); if (v != null) return v; }
     const attrs = Array.from(el.attributes).filter((a) => !/^xmlns/.test(a.name));
     const cur = el.getAttribute("currencyID");
     let html;
@@ -300,6 +302,7 @@
   }
 
   function buildSections() {
+    if (state.kind === "FatturaPA") return ItView.sections();
     const R = state.root, kind = state.kind;
     const claimed = new Set();
     const claim = (...names) => names.forEach((n) => claimed.add(n));
@@ -624,9 +627,13 @@
   };
   const iban = (s) => '<span class="iban">' + esc(String(s).replace(/\s+/g, "").replace(/(.{4})(?=.)/g, "$1 ")) + "</span>";
 
+  // The Italian invoice view (countries/it/view.js) builds its blocks with the same pieces
+  if (window.ItView) ItView.init({ state, esc, T, txt, num, formatSize, fmtAmount, fmtDate, fmtMoney, parseDate, countryName, iban, xtag, row, card, sub, renderFields, renderValue, extras, tagPath,
+    lineErrRow, checksHtml, currencyName: (c) => { try { const r = currencyNames && currencyNames.of(c.toUpperCase()); return r && r !== c.toUpperCase() ? r : ""; } catch (e) { return ""; } } });
+
   // Business rules live in rules/en16931.js.
   const roundingInInclusive = () => EN16931.roundingInInclusive(state.root);
-  const computeChecks = () => EN16931.check(state.root, state.kind, state.ruleSets);
+  const computeChecks = () => (state.kind === "FatturaPA" ? ItView.checks(state.root) : EN16931.check(state.root, state.kind, state.ruleSets));
 
   // Which Fields block (and which line) an element belongs to, so failed rules can be pinned on it.
   const BLOCK_OF = {
@@ -637,6 +644,7 @@
   REF_CLAIMS.forEach((n) => { BLOCK_OF[n] = "refs"; });
   BLOCK_OF.BillingReference = "preceding";
   function locate(el) {
+    if (state.kind === "FatturaPA") return ItView.locate(el);
     const R = state.root;
     let top = el;
     while (top && top.parentElement && top.parentElement !== R) top = top.parentElement;
@@ -725,9 +733,10 @@
     if (!c.length) return "";
     const li = (x) => checkLi(x, true);
     const bad = c.filter((x) => !x.ok && !x.warn), warn = c.filter((x) => !x.ok && x.warn), ok = c.filter((x) => x.ok);
-    const detected = EN16931.detect(state.root);
+    const it = state.kind === "FatturaPA";
+    const detected = it ? [] : EN16931.detect(state.root);
     const alone = state.ruleSets.some((id) => EN16931.sets[id] && EN16931.sets[id].standalone);
-    let h = '<div class="rulesets"><span>' + T("Rule sets") + '</span><label' + (alone ? ' title="' + esc(T("Not applied: the selected rule set has its own model and rules")) + '"' : ' class="on"') + '><input type="checkbox"' + (alone ? "" : " checked") + " disabled> EN 16931</label>" +
+    let h = it ? "" : '<div class="rulesets"><span>' + T("Rule sets") + '</span><label' + (alone ? ' title="' + esc(T("Not applied: the selected rule set has its own model and rules")) + '"' : ' class="on"') + '><input type="checkbox"' + (alone ? "" : " checked") + " disabled> EN 16931</label>" +
       Object.keys(EN16931.sets).map((id) => '<label' + (state.ruleSets.includes(id) ? ' class="on"' : "") + '><input type="checkbox" data-ruleset="' + id + '"' +
         (state.ruleSets.includes(id) ? " checked" : "") + "> " + esc(T(EN16931.sets[id].name)) + (detected.includes(id) ? " <small>" + T("detected") + "</small>" : "") + "</label>").join("") + "</div>";
     if (bad.length || warn.length) h += '<ul class="checks">' + bad.concat(warn).map(li).join("") + "</ul>";
@@ -758,8 +767,9 @@
     el.innerHTML = '<div class="v-main"><span class="v-icon" aria-hidden="true">' + (bad ? "✗" : "✓") + "</span><div><div class=\"v-text\">" +
       (bad ? T("✗ {bad} of {n} rules fail", { bad, n: checks.length }).replace(/^✗\s*/, "") : T("✓ {n} rules pass", { n: checks.length }).replace(/^✓\s*/, "")) + "</div>" +
       (warn ? '<div class="v-sub">' + T(warn > 1 ? "{n} warnings" : "{n} warning", { n: warn }) + "</div>" : "") +
+      (state.kind === "FatturaPA" ? '<button type="button" class="v-sets" data-act="checks">' + esc(T("Checks")) + ": " + esc(T("FatturaPA schema")) + "</button>" :
       '<button type="button" class="v-sets" data-act="checks" title="' + esc(T("Change the rule sets")) + '">' + esc(T("Rule sets")) + ": " + (state.ruleSets.some((id) => EN16931.sets[id] && EN16931.sets[id].standalone)
-        ? state.ruleSets.map((id) => esc(T(EN16931.sets[id].name))).join(" · ") : "EN 16931" + state.ruleSets.map((id) => " · " + esc(T(EN16931.sets[id].name))).join("")) + "</button></div></div>" +
+        ? state.ruleSets.map((id) => esc(T(EN16931.sets[id].name))).join(" · ") : "EN 16931" + state.ruleSets.map((id) => " · " + esc(T(EN16931.sets[id].name))).join("")) + "</button>") + "</div></div>" +
       '<div class="v-issues" id="vIssues"></div>' +
       (chips ? '<div class="v-chips">' + chips + "</div>" : "") +
       (bad || warn ? '<button type="button" class="v-btn" data-act="checks">' + T("Show all {n} rules", { n: checks.length }) + "</button>" : "") +
@@ -776,16 +786,17 @@
   }
   function buildReport() {
     const checks = state.checks, bad = checks.filter((c) => !c.ok && !c.warn), warn = checks.filter((c) => !c.ok && c.warn), R = state.root;
-    const sets = (state.ruleSets.some((id) => EN16931.sets[id] && EN16931.sets[id].standalone) ? [] : ["EN 16931"]).concat(state.ruleSets.map((id) => T(EN16931.sets[id].name))).join(" · ");
+    const itDoc = state.kind === "FatturaPA", itf = itDoc ? ItView.facts() : null;
+    const sets = itDoc ? "" : (state.ruleSets.some((id) => EN16931.sets[id] && EN16931.sets[id].standalone) ? [] : ["EN 16931"]).concat(state.ruleSets.map((id) => T(EN16931.sets[id].name))).join(" · ");
     const result = bad.length ? T("✗ {bad} of {n} rules fail", { bad: bad.length, n: checks.length }).replace(/^✗\s*/, "") : T("✓ {n} rules pass", { n: checks.length }).replace(/^✓\s*/, "");
     const sub = warn.length ? " · " + T(warn.length > 1 ? "{n} warnings" : "{n} warning", { n: warn.length }) : "";
-    const code = R ? val(R, state.kind === "CreditNote" ? "CreditNoteTypeCode" : "InvoiceTypeCode") : "";
-    const number = (R && val(R, "ID")) || "";
+    const code = itDoc ? itf.type : R ? val(R, state.kind === "CreditNote" ? "CreditNoteTypeCode" : "InvoiceTypeCode") : "";
+    const number = itDoc ? itf.number : (R && val(R, "ID")) || "";
     const blocks = [{ text: T("Check report"), size: 14, bold: true }];
     blocks.push({ cols: [
       { label: T("Document number"), value: number || T("missing") },
-      { label: T("Document type"), value: code ? code + (DOC_TYPES[code] ? " · " + T(DOC_TYPES[code]) : "") : T("missing") },
-      { label: T("Issue date"), value: (R && val(R, "IssueDate")) || T("missing") }
+      { label: T("Document type"), value: code ? code + (itDoc ? (ItView.labelOf("TipoDocumento", code) ? " · " + ItView.labelOf("TipoDocumento", code) : "") : DOC_TYPES[code] ? " · " + T(DOC_TYPES[code]) : "") : T("missing") },
+      { label: T("Issue date"), value: (itDoc ? itf.date : R && val(R, "IssueDate")) || T("missing") }
     ], gap: 6 });
     blocks.push({ text: T("Result") + ": " + result + sub, size: 12, bold: true, gap: 10, after: 4, color: bad.length ? "#B3261E" : "#1B7F3B" });
     const items = bad.concat(warn);
@@ -805,7 +816,7 @@
   function downloadReport() {
     const r = buildReport();
     // the invoice number; without one the name of the file, and without that "missing"
-    const base = ((state.root && val(state.root, "ID")) || (state.name || "").replace(/\.[A-Za-z0-9]{1,5}$/i, "") || "missing").replace(/[\\/:*?"<>|\s]+/g, "_");
+    const base = ((state.root && (state.kind === "FatturaPA" ? ItView.facts().number : val(state.root, "ID"))) || (state.name || "").replace(/\.[A-Za-z0-9]{1,5}$/i, "") || "missing").replace(/[\\/:*?"<>|\s]+/g, "_");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([r.bytes], { type: "application/pdf" }));
     a.download = "report-" + base + ".pdf";
@@ -814,6 +825,7 @@
 
   // Phone summary: the figures to match against SAP in one compact card (the wide hero and fact tiles are hidden there).
   function renderHero() {
+    if (state.kind === "FatturaPA") return ItView.hero();
     const R = state.root, kind = state.kind;
     const code = val(R, kind === "CreditNote" ? "CreditNoteTypeCode" : "InvoiceTypeCode");
     const partyName = (tag) => val(R, tag + "/Party/PartyLegalEntity/RegistrationName") || val(R, tag + "/Party/PartyName/Name");
@@ -874,7 +886,8 @@
     first.forEach((s) => { if (/flag-bad/.test(s.html)) state.secFlag[s.id] = "bad"; else if (/flag-warn/.test(s.html)) state.secFlag[s.id] = "warn"; });
     const sections = buildSections();
     const byId = new Map(sections.map((s) => [s.id, s]));
-    const menu = (cls) => '<nav class="fnav ' + cls + '" aria-label="' + esc(T("Sections")) + '">' + NAV_GROUPS.map(([label, ids]) => {
+    const groups = state.kind === "FatturaPA" ? ItView.nav(state.root) : NAV_GROUPS;
+    const menu = (cls) => '<nav class="fnav ' + cls + '" aria-label="' + esc(T("Sections")) + '">' + groups.map(([label, ids]) => {
       const items = ids.filter((id) => byId.has(id)).map((id) => {
         const s = byId.get(id);
         return '<a href="#sec-' + id + '" data-sec="' + id + '">' + dot(id) + esc(T(s.title)) +
@@ -883,7 +896,7 @@
       return items ? '<div class="glabel">' + esc(T(label)) + "</div>" + items : "";
     }).join("") + "</nav>";
     state.sectionTitles = new Map(sections.map((s) => [s.id, s.title]));
-    const topIds = NAV_GROUPS.slice(0, 3).flatMap((g) => g[1]);
+    const topIds = groups.slice(0, 3).flatMap((g) => g[1]);
     const part = (list) => '<div class="fgrid">' + list.map((s) => s.html).join("") + "</div>";
     const top = sections.filter((s) => topIds.includes(s.id)), bottom = sections.filter((s) => s.id !== "lines" && !topIds.includes(s.id));
     const lines = byId.get("lines");
@@ -993,7 +1006,7 @@
     const run = ++checkRun, key = [state.root, state.kind, (state.ruleSets || []).join(","), I18N.lang];
     state.checking = false; state.checkError = "";
     if (state.ckey && state.ckey.every((v, i) => v === key[i])) return drawAll();
-    if (state.root.getElementsByTagName("*").length < SLICE_ELEMENTS) { state.checks = computeChecks(); state.ckey = key; drawAll(); announceChecks(); return; }
+    if (state.kind === "FatturaPA" || state.root.getElementsByTagName("*").length < SLICE_ELEMENTS) { state.checks = computeChecks(); state.ckey = key; drawAll(); announceChecks(); return; }
     state.checks = []; state.ckey = null; state.checking = true;
     drawAll();
     EN16931.checkAsync(state.root, state.kind, state.ruleSets).then((res) => {
@@ -1020,7 +1033,7 @@
   }
   function announceChecks() {
     const checks = state.checks || [], bad = checks.filter((c) => !c.ok && !c.warn).length, warn = checks.filter((c) => !c.ok && c.warn).length;
-    const id = (state.root && val(state.root, "ID")) || state.name || "";
+    const id = (state.root && (state.kind === "FatturaPA" ? ItView.facts().number : val(state.root, "ID"))) || state.name || "";
     const result = bad ? T("✗ {bad} of {n} rules fail", { bad, n: checks.length }).replace(/^✗\s*/, "") : T("✓ {n} rules pass", { n: checks.length }).replace(/^✓\s*/, "");
     toast(T("Checks done") + (id ? " · " + id : "") + " · " + result + (warn ? " · " + T(warn > 1 ? "{n} warnings" : "{n} warning", { n: warn }) : ""), bad ? "bad" : warn ? "warn" : "ok");   // red, yellow (warnings only) or green
   }
@@ -1454,6 +1467,7 @@
       return { error: () => "<b>" + T("Not valid XML.") + "</b> " + why };
     }
     let root = doc.documentElement, wrapped = "";
+    if (root.localName === "FatturaElettronica" && window.ItView) return { root, kind: "FatturaPA", wrapped, text, conv: converted, dashes, amps, ruleSets: [] };
     const kinds = ["Invoice", "CreditNote"];
     if (!kinds.includes(root.localName)) {
       const found = Array.from(root.getElementsByTagName("*")).find((e) => kinds.includes(e.localName));
@@ -1566,7 +1580,7 @@
       if (!r || r.error) { it.state = "unreadable"; it.error = r ? plain(r.error()) : T("Empty file."); renderBatch(); continue; }
       it.prep = r;
       try {
-        const res = await EN16931.checkAsync(r.root, r.kind, r.ruleSets);
+        const res = r.kind === "FatturaPA" ? ItView.checks(r.root) : await EN16931.checkAsync(r.root, r.kind, r.ruleSets);
         if (run !== batch.run) return;
         it.checks = res; it.bad = res.filter((x) => !x.ok && !x.warn).length; it.warn = res.filter((x) => !x.ok && x.warn).length;
         it.state = it.bad ? "bad" : it.warn ? "warn" : "ok";

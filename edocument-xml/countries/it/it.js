@@ -1,0 +1,38 @@
+/* Italian text for the Italy (FatturaPA) screens and the sentences of the structure check. */
+window.I18N.addItalian({
+  "VAT number": "Partita IVA", "Tax code": "Codice fiscale", "First name": "Nome", "Last name": "Cognome", "Title": "Titolo", "EORI code": "Codice EORI", "Tax regime": "Regime fiscale",
+  "Street": "Indirizzo", "Number": "Numero civico", "Postcode": "CAP", "Province": "Provincia", "Document total": "Importo totale del documento", "Separate numbering (art. 73)": "Numerazione separata (art. 73)",
+  "Sender": "Trasmittente", "Progressive number": "Progressivo di invio", "Transmission format": "Formato di trasmissione", "Recipient code": "Codice destinatario", "Recipient PEC": "PEC del destinatario",
+  "Transmission": "Trasmissione", "Intermediary": "Terzo intermediario", "Issuer": "Soggetto emittente", "Vehicles": "Veicoli", "Attachment": "Allegato", "VAT summary": "Riepilogo IVA",
+  "Signature": "Firma", "Payment method": "Modalità di pagamento", "Account": "Conto", "Recipient": "Beneficiario", "Nature": "Natura", "Exigibility": "Esigibilità", "Legal reference": "Riferimento normativo",
+  "Unit price": "Prezzo unitario", "Attached data": "Dati allegati", "FatturaPA schema": "schema FatturaPA", "Related invoices": "Fatture collegate", "Transport": "Trasporto", "Delivery note": "Documento di trasporto",
+  "Receipt": "Ricezione", "Agreement": "Convenzione", "Work progress": "Stato avanzamento lavori", "Main invoice": "Fattura principale",
+  "Every element must be one that the schema allows at that place, in the order the schema gives": "Ogni elemento deve essere uno di quelli che lo schema ammette in quel punto, nell'ordine previsto dallo schema",
+  "Every element that the schema requires must be present": "Ogni elemento richiesto dallo schema deve essere presente",
+  "No element may occur more often than the schema allows": "Nessun elemento può comparire più spesso di quanto lo schema consente",
+  "Every value must have the form of its type (number, date …)": "Ogni valore deve avere la forma del suo tipo (numero, data …)",
+  "Every attribute the schema requires must be present, and no other attribute may be used": "Ogni attributo richiesto dallo schema deve essere presente e non si possono usare altri attributi",
+  "An element holds either a value or other elements, never both": "Un elemento contiene un valore oppure altri elementi, mai entrambi",
+  "Every coded value must be one of the values the schema lists": "Ogni valore codificato deve essere uno dei valori elencati dallo schema",
+  "Every value must have the format, length and range the schema gives": "Ogni valore deve avere il formato, la lunghezza e l'intervallo previsti dallo schema",
+  "decimal number": "numero decimale", "whole number": "numero intero", "date (YYYY-MM-DD)": "data (AAAA-MM-GG)", "date and time": "data e ora", "base64 data": "dati base64",
+  "the format the schema gives": "il formato previsto dallo schema"
+}, [
+  ["{_a} is not allowed in {_b}", "{_a} non è ammesso in {_b}"],
+  ["{_a} comes in the wrong place in {_b}", "{_a} è nel posto sbagliato in {_b}"],
+  ["{_a} occurs more often than the schema allows in {_b}", "{_a} compare più spesso di quanto lo schema consente in {_b}"],
+  ["{_a} needs the attribute {_b}", "{_a} richiede l'attributo {_b}"],
+  ["{_a} needs one of {_b}", "{_a} richiede uno tra {_b}"],
+  ["{_a} needs {_b}", "{_a} richiede {_b}"],
+  ["{_a} holds a value only, but contains the element {_b}", "{_a} contiene solo un valore, ma contiene l'elemento {_b}"],
+  ["{_a} contains text, but only elements are allowed", "{_a} contiene testo, ma sono ammessi solo elementi"],
+  ["{_a} has the attribute {_b}, which the schema does not allow there", "{_a} ha l'attributo {_b}, che lo schema non ammette in quel punto"],
+  ["{_a}: “{_v}” is not one of the values the schema allows", "{_a}: “{_v}” non è uno dei valori ammessi dallo schema"],
+  ["{_a}: “{_v}” does not fit the type: {t}", "{_a}: “{_v}” non rispetta il tipo: {t}"],
+  ["exactly {_n} characters", "esattamente {_n} caratteri"],
+  ["at least {_n} characters", "almeno {_n} caratteri"],
+  ["at most {_n} characters", "al massimo {_n} caratteri"],
+  ["not before {_d}", "non prima del {_d}"],
+  ["not above {_n}", "non oltre {_n}"],
+  ["{a} (+{_n})", "{a} (+{_n})"]
+]);
