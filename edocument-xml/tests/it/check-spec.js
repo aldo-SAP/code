@@ -10,16 +10,11 @@ const { chromium } = require("playwright");
     ["the sample", base, []],
     ["PEC with a recipient code", R("<CodiceDestinatario>ABCDEFG</CodiceDestinatario>", "<CodiceDestinatario>ABCDEFG</CodiceDestinatario><PECDestinatario>a@pec.it</PECDestinatario>"), ["01"]],
     ["PEC with 0000000", R("<CodiceDestinatario>ABCDEFG</CodiceDestinatario>", "<CodiceDestinatario>0000000</CodiceDestinatario><PECDestinatario>a@pec.it</PECDestinatario>"), []],
-    ["FPR12 with 6 characters", R("ABCDEFG", "ABCDEF"), ["02"]],
-    ["FPA12 with 7 characters", R("<FormatoTrasmissione>FPR12", "<FormatoTrasmissione>FPA12"), ["02"]],
-    ["FPA12 with 6 characters", R("<FormatoTrasmissione>FPR12", "<FormatoTrasmissione>FPA12").replace("ABCDEFG", "ABCDEF"), []],
-    ["buyer without any identification", R("<IdFiscaleIVA><IdPaese>IT</IdPaese><IdCodice>09876543210</IdCodice></IdFiscaleIVA>", ""), ["03"]],
-    ["buyer with a tax code only", R("<IdFiscaleIVA><IdPaese>IT</IdPaese><IdCodice>09876543210</IdCodice></IdFiscaleIVA>", "<CodiceFiscale>RSSMRA80A01H501U</CodiceFiscale>"), []],
-    ["buyer representative in FPA12", R("<FormatoTrasmissione>FPR12", "<FormatoTrasmissione>FPA12").replace("ABCDEFG", "ABCDEF").replace("</CessionarioCommittente>", "<RappresentanteFiscale><IdFiscaleIVA><IdPaese>IT</IdPaese><IdCodice>1</IdCodice></IdFiscaleIVA><Denominazione>X</Denominazione></RappresentanteFiscale></CessionarioCommittente>"), ["04"]],
-    ["seller province outside Italy", R("<Provincia>RM</Provincia><Nazione>IT</Nazione>", "<Provincia>RM</Provincia><Nazione>DE</Nazione>"), ["05"]],
+    ["buyer representative in FPA12", R("<FormatoTrasmissione>FPR12", "<FormatoTrasmissione>FPA12").replace("</CessionarioCommittente>", "<RappresentanteFiscale><IdFiscaleIVA><IdPaese>IT</IdPaese><IdCodice>1</IdCodice></IdFiscaleIVA><Denominazione>X</Denominazione></RappresentanteFiscale></CessionarioCommittente>"), ["02"]],
+    ["seller province outside Italy", R("<Provincia>RM</Provincia><Nazione>IT</Nazione>", "<Provincia>RM</Provincia><Nazione>DE</Nazione>"), ["03"]],
     ["seller abroad without province", R("<Provincia>RM</Provincia><Nazione>IT</Nazione>", "<Nazione>DE</Nazione>"), []],
-    ["Natura without a legal reference", R("<RiferimentoNormativo>Art. 10</RiferimentoNormativo>", ""), ["06"]],
-    ["an empty element", R("<Causale>Fornitura</Causale>", "<Causale></Causale>"), ["07"]],
+    ["Natura without a legal reference", R("<RiferimentoNormativo>Art. 10</RiferimentoNormativo>", ""), ["04"]],
+    ["an empty element", R("<Causale>Fornitura</Causale>", "<Causale></Causale>"), ["05"]],
   ];
   const b = await chromium.launch(), p = await b.newPage();
   await p.setContent("<html></html>");

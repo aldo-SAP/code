@@ -108,7 +108,7 @@
     });
     const rest = Array.from(R.children).filter((k) => !["FatturaElettronicaHeader", "FatturaElettronicaBody"].includes(k.localName));
     if (rest.length) push("other", "Other elements", h.card("other", "Other elements", rest.map((e) => h.row(e.localName === "Signature" ? h.T("Signature") : e.localName, "", e.children.length ? '<span class="dec">' + h.T("(group)") + "</span>" : h.renderValue(e), "extra", h.tagPath(e))).join(""), { full: true }));
-    if (h.state.checks.length) { const bad = h.state.checks.filter((c) => !c.ok && !c.warn).length; push("checks", "Checks", h.card("checks", "Checks", h.checksHtml(h.state.checks), { count: bad ? h.T("{n} failing", { n: bad }) : h.T("all pass") })); }
+    if (h.state.checks.length) { const bad = h.state.checks.filter((c) => !c.ok && !c.warn).length; push("checks", "Checks", h.card("checks", "Checks", h.checksHtml(h.state.checks) + note(), { count: bad ? h.T("{n} failing", { n: bad }) : h.T("all pass") })); }
     const order = [].concat(...nav(R).map((g) => g[1]));
     return out.sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id));
   }
@@ -244,7 +244,7 @@
     const checks = h.state.checks;
     if (checks.length) {
       const bad = checks.filter((c) => !c.ok && !c.warn).length;
-      push("checks", "Checks", h.card("checks", "Checks", h.checksHtml(checks), { count: bad ? h.T("{n} failing", { n: bad }) : h.T("all pass") }));
+      push("checks", "Checks", h.card("checks", "Checks", h.checksHtml(checks) + note(), { count: bad ? h.T("{n} failing", { n: bad }) : h.T("all pass") }));
     }
     // in the order of the navigation: the document first, then the parties, payment, lines, amounts
     const order = [].concat(...nav(R).map((g) => g[1]));
@@ -296,20 +296,26 @@
   }
 
   // ---- the checks, in the shape of the other countries' results: { id, text, ok, detail, at: [elements] }
-  function checks(root) {
+  function checks(root, name) {
     if (!window.ItSchema) return [];
     const out = [];
-    const run = (api, prefix) => {
-      const found = api.check(root);
+    const run = (api, prefix, opts, skip) => {
+      const found = api.check(root, opts);
       api.texts.forEach(([n, text]) => {
+        if (skip && skip(n)) return;
         const mine = found.filter((f) => f.kind === n);
         out.push({ id: prefix + n, text, ok: !mine.length, detail: mine.length ? mine[0].detail + (mine.length > 1 ? " (+" + (mine.length - 1) + ")" : "") : "", at: mine.length ? mine.map((f) => f.el) : [root] });
       });
     };
     run(ItSchema, "IT-XSD-");
     if (window.ItSpec && !simple(root)) run(ItSpec, "IT-SPEC-");     // the specification's rules are for the ordinary invoice
+    // the controls of the Sistema di Interscambio; the file name only when the document came from a file
+    if (window.ItSdi) run(ItSdi, "SDI-", { name: name || "" }, (n) => n === "00001" && !name);
     return out;
   }
+
+  // under the checks: what the SdI also checks, that a file alone cannot show
+  const note = () => '<p class="passed-note">' + h.esc(h.T("Controls of the Sistema di Interscambio that need the registries, the invoices sent before or the signature are not checked here.")) + "</p>";
 
   // ---- the top of the page
   function hero() {

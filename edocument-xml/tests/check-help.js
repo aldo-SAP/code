@@ -15,7 +15,7 @@ const RULES = [["rules/en16931-rules.js", "EN16931_RULES"], ["rules/peppol-rules
 const ids = new Set(); const without = [];
 for (const [f, n] of RULES) { load(f); for (const p of window[n].patterns) for (const r of p.r) for (const a of r.a) ids.add(a[0]); }
 load("rules/ubl-schema-data.js"); load("rules/ubl-schema.js"); window.UblSchema.rules.forEach((i) => ids.add(i));
-load("rules/it-schema-data.js"); load("rules/it-schema.js"); load("rules/it-spec.js"); window.ItSchema.rules.concat(window.ItSpec.rules).forEach((i) => ids.add(i));   // the FatturaPA structure rules   // the UBL 2.1 structure rules
+load("rules/it-schema-data.js"); load("rules/it-schema.js"); load("rules/it-spec.js"); load("rules/it-sdi.js"); window.ItSchema.rules.concat(window.ItSpec.rules, window.ItSdi.rules).forEach((i) => ids.add(i));   // the FatturaPA structure rules   // the UBL 2.1 structure rules
 let bad = 0;
 for (const [id, h] of Object.entries(H)) {
   if (!ids.has(id)) { console.log("help for an unknown rule:", id); bad++; }

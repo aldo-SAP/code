@@ -149,3 +149,4 @@ rendered verdict, hero, fields and raw XML. Run it before and after a change tha
 - `gen-it-schema.py OUT.js XSD…` builds `rules/it-schema-data.js` from the official XSDs (`Schema_VFPA12_V1.2.3.xsd`, which is the same file as `Schema_VFPR12_v1.2.3.xsd`, and `Schema_VFSM10v_1.0.2.xsd`); keep them in `.cache/it-fatturapa/`.
 - `it/mutate.py` makes documents from a sample invoice with one change each and takes libxml2's schema verdict; `it/differential.js` compares the viewer's structure check (`rules/it-schema.js`) with it (needs the XSD with the XMLDSig import pointed at a local stub).
 - `it/check-spec.js` tests the specification rules (`rules/it-spec.js`, from the technical specification v1.4).
+- `it/check-sdi.js` tests the controls of the Sistema di Interscambio (`rules/it-sdi.js`, from "Elenco dei controlli" v2.0 and the SdI specifications 1.8.4): every code on the sample invoice with one change each.

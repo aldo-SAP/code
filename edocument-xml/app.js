@@ -633,7 +633,7 @@
 
   // Business rules live in rules/en16931.js.
   const roundingInInclusive = () => EN16931.roundingInInclusive(state.root);
-  const computeChecks = () => (state.kind === "FatturaPA" ? ItView.checks(state.root) : EN16931.check(state.root, state.kind, state.ruleSets));
+  const computeChecks = () => (state.kind === "FatturaPA" ? ItView.checks(state.root, state.name) : EN16931.check(state.root, state.kind, state.ruleSets));
 
   // Which Fields block (and which line) an element belongs to, so failed rules can be pinned on it.
   const BLOCK_OF = {
@@ -1580,7 +1580,7 @@
       if (!r || r.error) { it.state = "unreadable"; it.error = r ? plain(r.error()) : T("Empty file."); renderBatch(); continue; }
       it.prep = r;
       try {
-        const res = r.kind === "FatturaPA" ? ItView.checks(r.root) : await EN16931.checkAsync(r.root, r.kind, r.ruleSets);
+        const res = r.kind === "FatturaPA" ? ItView.checks(r.root, it.name) : await EN16931.checkAsync(r.root, r.kind, r.ruleSets);
         if (run !== batch.run) return;
         it.checks = res; it.bad = res.filter((x) => !x.ok && !x.warn).length; it.warn = res.filter((x) => !x.ok && x.warn).length;
         it.state = it.bad ? "bad" : it.warn ? "warn" : "ok";
