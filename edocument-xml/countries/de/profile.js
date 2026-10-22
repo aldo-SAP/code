@@ -4,6 +4,6 @@ EdocProfiles.register(function () {
   return {
     id: "de",
     detect: (R) => window.XRechnung && window.XRechnung.detect(R),
-    sample: window.DE_SAMPLE_XML ? { label: "Try a German (XRechnung) sample", file: "sample-xrechnung.xml", xml: window.DE_SAMPLE_XML } : null
+    sample: window.DE_SAMPLE_XML ? { label: "Germany", title: "Try a German (XRechnung) sample", file: "sample-xrechnung.xml", xml: window.DE_SAMPLE_XML } : null
   };
 });

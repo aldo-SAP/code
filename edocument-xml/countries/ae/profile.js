@@ -27,6 +27,6 @@ EdocProfiles.register(function (h) {
       ]
     }],
     refLabels: { "InvoicePeriod/DescriptionCode": ["Frequency of billing", "BTAE-06"] },
-    sample: window.AE_SAMPLE_XML ? { label: "Try a UAE sample", file: "sample-uae-invoice.xml", xml: window.AE_SAMPLE_XML } : null
+    sample: window.AE_SAMPLE_XML ? { label: "UAE", title: "Try a UAE sample", file: "sample-uae-invoice.xml", xml: window.AE_SAMPLE_XML } : null
   };
 });

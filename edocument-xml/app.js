@@ -1497,7 +1497,7 @@
       (r.dashes ? " · " + T("removed {n} leading “-” from tags", { n: r.dashes }) : "") +
       (r.amps ? " · " + esc(T("escaped {n} bare “&”", { n: r.amps })) : ""));
     $("clearBtn").hidden = false;
-    sampleBtns.forEach((b) => { b.hidden = true; });
+    showSamples(false);
     pasteArea.hidden = true; pasteArea.value = ""; pasteBtn.setAttribute("aria-expanded", "false");
   }
 
@@ -1521,20 +1521,23 @@
     pasteArea.value = "";
     drop.classList.remove("loaded");
     $("clearBtn").hidden = true;
-    sampleBtns.forEach((b) => { b.hidden = false; });
+    showSamples(true);
     setMsg(() => T(window.matchMedia("(hover: none)").matches ? "Open an XML file or paste it. Nothing leaves your browser." : "Drop a UBL invoice or credit note XML here, or paste it anywhere with Ctrl+V."));
   }
 
   // The sample buttons: one invoice that follows EN 16931 (lib/sample.js) and one per country format that has an example
   // (countries/*/profile.js), so a first visit shows a green verdict at once.
   const sampleBtns = [$("sampleBtn")];
-  EdocProfiles.all(H).filter((p) => p.sample).forEach((p) => {
+  // one short button per country, in the order of the names; the full sentence is its label for a screen reader
+  EdocProfiles.all(H).filter((p) => p.sample).sort((x, y) => x.sample.label.localeCompare(y.sample.label)).forEach((p) => {
     const b = document.createElement("button");
     b.type = "button"; b.id = p.id + "SampleBtn"; b.dataset.i18n = ""; b.textContent = p.sample.label;
-    $("sampleBtn").after(b);
+    if (p.sample.title) { b.setAttribute("aria-label", p.sample.title); b.dataset.i18nAria = p.sample.title; }
+    $("sampleBtn").parentNode.appendChild(b);
     b.addEventListener("click", () => load(p.sample.xml, p.sample.file));
     sampleBtns.push(b);
   });
+  function showSamples(on) { $("samples").hidden = !on; }
   $("sampleBtn").addEventListener("click", () => load(window.EDOC_SAMPLE_XML, "sample-invoice.xml"));
   // ---------- Several files at once: a list with the result of each, a click shows that file as usual ----------
   const batch = { items: [], active: -1, run: 0 };
@@ -1567,7 +1570,7 @@
     const run = ++batch.run;
     batch.items = files.map((f) => ({ name: f.name, state: "pending" }));
     batch.active = -1; renderBatch();
-    drop.classList.add("loaded"); $("clearBtn").hidden = false; sampleBtns.forEach((b) => { b.hidden = true; });
+    drop.classList.add("loaded"); $("clearBtn").hidden = false; showSamples(false);
     setMsg(() => "<b>" + esc(T("{n} files", { n: files.length })) + "</b>");
     for (let i = 0; i < files.length; i++) {
       if (run !== batch.run) return;

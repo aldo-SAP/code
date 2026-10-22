@@ -35,11 +35,16 @@
     <div class="lb-actions">
       <button class="primary" id="pickBtn" type="button" data-i18n>Choose file</button>
       <button id="pasteBtn" type="button" aria-expanded="false" aria-controls="pasteArea" data-i18n>Paste text</button>
-      <button id="sampleBtn" type="button" data-i18n>Try a sample invoice</button>
       <button id="clearBtn" type="button" hidden data-i18n>Clear</button>
     </div>
     <input type="file" id="file" multiple >
   </div>
+  <section class="samples" id="samples" aria-labelledby="samplesTitle">
+    <h2 id="samplesTitle" data-i18n>Samples</h2>
+    <div class="samples-list">
+      <button id="sampleBtn" type="button" aria-label="Try a sample invoice" data-i18n-aria="Try a sample invoice">EN 16931</button>
+    </div>
+  </section>
   <textarea id="pasteArea" hidden spellcheck="false" aria-label="XML input" data-i18n-aria="XML input" placeholder="Paste the XML here; it is read as soon as it's complete." data-i18n-ph="Paste the XML here; it is read as soon as it's complete."></textarea>
 
   <section class="batch" id="batch" hidden aria-label="Files" data-i18n-aria="Files">
@@ -150,6 +155,7 @@
 <script src="countries/fr/messages.js"></script>
 <script src="countries/fr/help.js"></script>
 <script src="countries/fr/ereport.js"></script>
+<script src="countries/fr/sample.js"></script>
 <script src="countries/ae/pint-ae-rules.js"></script>
 <script src="countries/ae/rules.js"></script>
 <script src="countries/ae/it-messages.js"></script>
@@ -169,6 +175,7 @@
 <script src="countries/de/it.js"></script>
 <script src="countries/de/sample.js"></script>
 <script src="countries/de/profile.js"></script>
+<script src="countries/fr/profile.js"></script>
 <script src="lib/field-trace.js"></script>
 <script src="lib/request-document.js"></script>
 <script src="lib/request-to-ubl.js"></script>
@@ -176,6 +183,8 @@
 <script src="countries/it/help.js"></script>
 <script src="countries/it/it.js"></script>
 <script src="countries/it/view.js"></script>
+<script src="countries/it/sample.js"></script>
+<script src="countries/it/profile.js"></script>
 <script src="app.js"></script>
 <script>
 // Works offline once it has been opened: sw.js keeps the page's own files (never a document you open) and serves them when there is no network.

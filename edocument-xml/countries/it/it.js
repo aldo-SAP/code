@@ -1,5 +1,8 @@
 /* Italian text for the Italy (FatturaPA) screens and the sentences of the structure check. */
 window.I18N.addItalian({
+  "Samples": "Esempi", "Germany": "Germania", "France": "Francia", "Italy": "Italia", "UAE": "Emirati Arabi Uniti",
+  "Try a French sample": "Prova un esempio francese",
+  "Try an Italian (FatturaPA) sample": "Prova un esempio italiano (FatturaPA)",
   "VAT number": "Partita IVA", "Tax code": "Codice fiscale", "First name": "Nome", "Last name": "Cognome", "Title": "Titolo", "EORI code": "Codice EORI", "Tax regime": "Regime fiscale",
   "Street": "Indirizzo", "Number": "Numero civico", "Postcode": "CAP", "Province": "Provincia", "Document total": "Importo totale del documento", "Separate numbering (art. 73)": "Numerazione separata (art. 73)",
   "Sender": "Trasmittente", "Progressive number": "Progressivo di invio", "Transmission format": "Formato di trasmissione", "Recipient code": "Codice destinatario", "Recipient PEC": "PEC del destinatario",
