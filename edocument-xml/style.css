@@ -820,8 +820,14 @@ table.ac th .thc { flex-wrap: wrap; row-gap: 0; }
   #sec-lines tr.line.open > td:first-child { box-shadow: inset 3px 0 0 var(--accent), inset 0 2px 0 var(--line); }
   #sec-lines tr.line.has-err.open > td { background: var(--err-bg); }
   #sec-lines tr.line.has-err.open > td:first-child { box-shadow: inset 3px 0 0 var(--err), inset 0 2px 0 var(--line); }
-  #sec-lines tr.detail:not([hidden]) > td { background: var(--bg); box-shadow: inset 3px 0 0 var(--accent), inset 0 -2px 0 var(--line); padding: 10px 14px 16px 30px; }   /* the details sit a little in from the line */
-  #sec-lines tr.line.has-err.open + tr.line-err + tr.detail > td, #sec-lines tr.line.has-err.open + tr.detail > td { box-shadow: inset 3px 0 0 var(--err), inset 0 -2px 0 var(--line); }
+  /* the details sit in from the line, and their bar with them (a tree: the line's bar at the edge, the details' bar one step in) */
+  #sec-lines tr.detail:not([hidden]) > td { --bar: var(--accent); padding: 10px 14px 16px 30px; box-shadow: inset 0 -2px 0 var(--line);
+    background: linear-gradient(90deg, transparent 14px, var(--bar) 14px, var(--bar) 16px, transparent 16px) no-repeat, var(--bg); }
+  #sec-lines tr.line.has-err.open + tr.line-err + tr.detail > td, #sec-lines tr.line.has-err.open + tr.detail > td { --bar: var(--err); }
+  @supports (color: color-mix(in srgb, red, blue)) {   /* thin and soft where the browser can mix colours */
+    #sec-lines tr.detail:not([hidden]) > td { --bar: color-mix(in srgb, var(--accent) 65%, transparent); }
+    #sec-lines tr.line.has-err.open + tr.line-err + tr.detail > td, #sec-lines tr.line.has-err.open + tr.detail > td { --bar: color-mix(in srgb, var(--err) 85%, transparent); }
+  }
 }
 /* phone cards: the open card keeps its border and the details continue it, so the card does not change shape when opened */
 @media (max-width: 720px) {
