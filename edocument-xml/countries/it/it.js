@@ -1,5 +1,6 @@
 /* Italian text for the Italy (FatturaPA) screens and the sentences of the structure check. */
 window.I18N.addItalian({
+  "Sources and licences": "Fonti e licenze",
   "Samples": "Esempi", "Germany": "Germania", "France": "Francia", "Italy": "Italia", "UAE": "Emirati Arabi Uniti",
   "Try a French sample": "Prova un esempio francese",
   "Try an Italian (FatturaPA) sample": "Prova un esempio italiano (FatturaPA)",

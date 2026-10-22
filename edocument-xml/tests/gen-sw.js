@@ -7,7 +7,7 @@ const fs = require("fs"), path = require("path"), crypto = require("crypto");
 const root = path.join(__dirname, "..");
 const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
 const refs = Array.from(html.matchAll(/(?:src|href)="([^":]+\.(?:js|css))"/g)).map((m) => m[1]);
-const extra = ["manifest.webmanifest", "fonts/instrument-sans.woff2", "fonts/jetbrains-mono.woff2", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-180.png", "icons/icon-maskable-512.png"];
+const extra = ["manifest.webmanifest", "notices.html", "fonts/instrument-sans.woff2", "fonts/jetbrains-mono.woff2", "icons/icon-192.png", "icons/icon-512.png", "icons/icon-180.png", "icons/icon-maskable-512.png"];
 const files = ["./", "index.html"].concat(Array.from(new Set(refs.filter((f) => f !== "sw.js").concat(extra))).sort());
 const hash = crypto.createHash("sha256");
 files.forEach((f) => { const p = path.join(root, f === "./" ? "index.html" : f); if (fs.existsSync(p)) hash.update(f + "\0").update(fs.readFileSync(p)); });
