@@ -176,6 +176,66 @@ function drawEditor() {
     ov.appendChild(c);
   });
 }
+// Finds the page: the largest bright area (Otsu threshold on a blurred, shrunken copy), holes filled, then its four extreme
+// points along the diagonals. Returns [TL, TR, BR, BL] in src pixels, or null when no clear page is found.
+function detectPage(src) {
+  var k = 360 / Math.max(src.width, src.height), w = Math.max(8, Math.round(src.width * k)), h = Math.max(8, Math.round(src.height * k));
+  var c = document.createElement("canvas"); c.width = w; c.height = h;
+  var x = c.getContext("2d"); x.imageSmoothingQuality = "high"; x.drawImage(src, 0, 0, w, h);
+  var px = x.getImageData(0, 0, w, h).data, L = new Float32Array(w * h), i, j;
+  for (i = 0; i < w * h; i++) L[i] = (px[i * 4] + px[i * 4 + 1] + px[i * 4 + 2]) / 3;
+  for (var pass = 0; pass < 2; pass++) {   // box blur, so printed text melts into the paper
+    var T = new Float32Array(w * h), r = 3;
+    for (j = 0; j < h; j++) for (i = 0; i < w; i++) {
+      var sum = 0, n = 0;
+      for (var dy = -r; dy <= r; dy++) for (var dx = -r; dx <= r; dx++) {
+        var xx = i + dx, yy = j + dy;
+        if (xx >= 0 && yy >= 0 && xx < w && yy < h) { sum += L[yy * w + xx]; n++; }
+      }
+      T[j * w + i] = sum / n;
+    }
+    L = T;
+  }
+  var hist = new Array(256).fill(0), total = w * h;
+  for (i = 0; i < total; i++) hist[Math.min(255, L[i] | 0)]++;
+  var sumAll = 0; for (i = 0; i < 256; i++) sumAll += i * hist[i];
+  var wB = 0, sumB = 0, best = 0, thr = 128;
+  for (i = 0; i < 256; i++) {
+    wB += hist[i]; if (!wB || wB === total) continue;
+    sumB += i * hist[i];
+    var mB = sumB / wB, mF = (sumAll - sumB) / (total - wB), between = wB * (total - wB) * (mB - mF) * (mB - mF);
+    if (between > best) { best = between; thr = i; }
+  }
+  var mask = new Uint8Array(total); for (i = 0; i < total; i++) mask[i] = L[i] > thr ? 1 : 0;
+  var label = new Int32Array(total), sizes = [0], id = 0, stack = [];
+  for (i = 0; i < total; i++) {
+    if (!mask[i] || label[i]) continue;
+    id++; sizes[id] = 0; stack.push(i); label[i] = id;
+    while (stack.length) {
+      var p = stack.pop(), pxl = p % w, pyl = (p / w) | 0; sizes[id]++;
+      [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (d) {
+        var nx = pxl + d[0], ny = pyl + d[1];
+        if (nx < 0 || ny < 0 || nx >= w || ny >= h) return;
+        var q = ny * w + nx; if (mask[q] && !label[q]) { label[q] = id; stack.push(q); }
+      });
+    }
+  }
+  var main = 0; for (i = 1; i <= id; i++) if (!main || sizes[i] > sizes[main]) main = i;
+  if (!main || sizes[main] < total * 0.15) return null;
+  var tl = null, tr = null, br = null, bl = null, a, b;
+  for (j = 0; j < h; j++) for (i = 0; i < w; i++) {
+    if (label[j * w + i] !== main) continue;
+    a = i + j; b = i - j;
+    if (!tl || a < tl.a) tl = { a: a, p: [i, j] };
+    if (!br || a > br.a) br = { a: a, p: [i, j] };
+    if (!tr || b > tr.a) tr = { a: b, p: [i, j] };
+    if (!bl || b < bl.a) bl = { a: b, p: [i, j] };
+  }
+  var quad = [tl, tr, br, bl].map(function (o) { return [o.p[0] / k, o.p[1] / k]; });
+  var area = 0; for (i = 0; i < 4; i++) { var u = quad[i], v = quad[(i + 1) % 4]; area += u[0] * v[1] - v[0] * u[1]; }
+  return Math.abs(area) / 2 > src.width * src.height * 0.15 ? quad : null;
+}
+
 function resetCorners() {
   var W = state.src.width, H = state.src.height;
   var m = Math.round(Math.min(W, H) * 0.06);
@@ -373,7 +433,10 @@ function chooseFile(f) {
     state.src = c;
     var st = $("stage"); st.width = c.width; st.height = c.height; st.getContext("2d").drawImage(c, 0, 0);
     $("crop").hidden = false; resetCorners();
-    $("go").disabled = false; setStatus("");
+    var found = detectPage(c);
+    if (found) { state.corners = found; drawEditor(); }
+    setStatus(found ? "Page found automatically. If the dots are off (a facing page can get included), drag them onto the corners, then read the menu." : "");
+    $("go").disabled = false;
   }).catch(function () { setStatus("Could not open that image.", true); });
 }
 
