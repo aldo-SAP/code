@@ -262,8 +262,8 @@ function readWithClaude(key) {
       headers: { "content-type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01", "anthropic-dangerous-direct-browser-access": "true" },
       body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 4096, messages: [{ role: "user", content: [
         { type: "image", source: { type: "base64", media_type: "image/jpeg", data: b64 } },
-        { type: "text", text: 'This is a photo of a restaurant menu. List every dish. Reply with JSON only, no other text: {"items":[{"section":"","name":"","price":0,"priceText":"","description":"","search":"","tags":[]}]}. ' +
-          'Keep name, section and description in the menu\'s language. price is a number or null; priceText is the price as printed. search is a short English phrase for a photo search of the dish. ' +
+        { type: "text", text: 'This is a photo of a restaurant menu. List every dish or drink. Reply with JSON only, no other text: {"items":[{"section":"","name":"","price":0,"priceText":"","description":"","search":"","tags":[]}]}. ' +
+          'Keep name, section and description in the menu\'s language. price is a number or null; priceText is the price as printed. search is a short English phrase for a photo search of the dish or drink (for a cocktail, include the word cocktail). ' +
           'tags may contain only: "vegetarian", "vegan", "spicy", "gluten-free"; use them only when the menu says so or the ingredients make it certain.' }
       ] }] })
     });
@@ -301,18 +301,33 @@ function googleImage(q) {
     "&cx=" + encodeURIComponent($("gCx").value.trim()) + "&q=" + encodeURIComponent(q);
   return fetch(u).then(function (r) { return r.json(); }).then(function (j) { return j.items && j.items[0] ? j.items[0].link : ""; });
 }
+// What kind of thing the item is, so a search for "Old Fashioned" adds "cocktail" and not "food".
+var COCKTAIL = /cocktail|mixed|spritz|martini|sour\b|mojito|margarita/i;
+var DRINK = /liqueur|liquor|spirit|whisk|vodka|gin\b|rum\b|tequila|brandy|cognac|beer|wine|prosecco|champagne|shots?\b|drinks?|beverage|aperitif|digestif|coffee|tea\b|juice|soft/i;
+function kindOf(item) {
+  var t = item.section + " " + item.name;
+  if (COCKTAIL.test(item.section)) return "cocktail";
+  if (DRINK.test(item.section)) return "drink";
+  if (!item.section && state.items.length) {
+    var drinks = state.items.filter(function (i) { return DRINK.test(i.section) || COCKTAIL.test(i.section); }).length;
+    if (drinks > state.items.length / 2) return "drink";
+  }
+  return COCKTAIL.test(t) ? "cocktail" : "food";
+}
+
 function findImage(item) {
   var base = (item.search || item.name).replace(/\(.*?\)/g, "").replace(/\s+/g, " ").trim();
   var useGoogle = $("gKey").value.trim() && $("gCx").value.trim();
   var steps = [];
-  if (useGoogle) steps.push(function () { return googleImage(base + " dish food"); });
-  steps.push(function () { return wikiImage(base); }, function () { return wikiImage(base + " food"); });
+  var kind = kindOf(item);
+  if (useGoogle) steps.push(function () { return googleImage(base + " " + kind); });
+  steps.push(function () { return wikiImage(base); }, function () { return wikiImage(base + " " + kind); });
   return steps.reduce(function (p, step) {
     return p.then(function (url) { return url || step().catch(function () { return ""; }); });
   }, Promise.resolve(""));
 }
 function googleLink(item) {
-  return "https://www.google.com/search?tbm=isch&q=" + encodeURIComponent((item.search || item.name) + " food");
+  return "https://www.google.com/search?tbm=isch&q=" + encodeURIComponent((item.search || item.name) + " " + kindOf(item));
 }
 
 /* ---------- cards and filters ---------- */
