@@ -287,13 +287,42 @@ function readWithClaude(key) {
 }
 
 /* ---------- pictures ---------- */
-function wikiImage(q) {
-  var u = "https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrlimit=4&prop=pageimages&piprop=thumbnail&pithumbsize=480&format=json&origin=*&gsrsearch=" + encodeURIComponent(q);
-  return fetch(u).then(function (r) { return r.json(); }).then(function (j) {
-    var pages = j.query && j.query.pages ? Object.keys(j.query.pages).map(function (k) { return j.query.pages[k]; }) : [];
-    pages.sort(function (a, b) { return a.index - b.index; });
-    for (var i = 0; i < pages.length; i++) if (pages[i].thumbnail) return pages[i].thumbnail.source;
-    return "";
+var plain = function (t) { return t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); };
+var DRINK_WORDS = /cocktail|drink|beverage|liqueur|liquor|alcohol|whisk|vodka|\bgin\b|\brum\b|tequila|brandy|beer|wine|spirit|aperitif|shot\b/i;
+var FOOD_WORDS = /dish|food|cuisine|sandwich|soup|salad|pasta|pizza|cheese|meat|bread|dessert|cake|sauce|rice|fish|chicken|beef|pork|egg|vegetable|burger|noodle|pastry|snack|stew|dumpling|sausage|seafood|fruit|ingredient/i;
+var wikiGet = function (host, params) {
+  return fetch("https://" + host + "/w/api.php?format=json&origin=*&action=query&" + params).then(function (r) { return r.json(); });
+};
+var byIndex = function (j) {
+  var pages = j.query && j.query.pages ? Object.keys(j.query.pages).map(function (k) { return j.query.pages[k]; }) : [];
+  return pages.sort(function (a, b) { return a.index - b.index; });
+};
+
+// The most telling word of the name; a result is accepted only if its title contains it.
+function keyWord(name) {
+  var words = plain(name).replace(/\(.*?\)/g, " ").split(/[^a-z]+/).filter(function (w) { return w.length >= 4; });
+  return words.sort(function (a, b) { return b.length - a.length; })[0] || plain(name);
+}
+
+// Wikipedia article for the item. The article's opening text must be about a drink or food (`need`), so "Manhattan
+// cocktail" can not return the borough of New York.
+function wikiImage(q, key, need) {
+  return wikiGet("en.wikipedia.org", "generator=search&gsrlimit=5&prop=pageimages%7Cextracts&piprop=thumbnail&pithumbsize=480&exintro=1&explaintext=1&exsentences=2&exlimit=max&gsrsearch=" + encodeURIComponent(q)).then(function (j) {
+    var hit = byIndex(j).filter(function (p) {
+      return p.thumbnail && plain(p.title).indexOf(key) >= 0 && (!need || need.test(p.extract || ""));
+    })[0];
+    return hit ? hit.thumbnail.source : "";
+  });
+}
+
+// A photo from Wikimedia Commons whose file name contains the key word.
+function commonsImage(q, key) {
+  return wikiGet("commons.wikimedia.org", "generator=search&gsrnamespace=6&gsrlimit=8&prop=imageinfo&iiprop=url&iiurlwidth=480&gsrsearch=" + encodeURIComponent(q)).then(function (j) {
+    var hit = byIndex(j).filter(function (p) {
+      var i = p.imageinfo && p.imageinfo[0];
+      return i && /\.(jpe?g|png)$/i.test(p.title) && plain(p.title).indexOf(key) >= 0;
+    })[0];
+    return hit ? hit.imageinfo[0].thumburl : "";
   });
 }
 function googleImage(q) {
@@ -318,10 +347,10 @@ function kindOf(item) {
 function findImage(item) {
   var base = (item.search || item.name).replace(/\(.*?\)/g, "").replace(/\s+/g, " ").trim();
   var useGoogle = $("gKey").value.trim() && $("gCx").value.trim();
-  var steps = [];
-  var kind = kindOf(item);
+  var kind = kindOf(item), key = keyWord(base), drink = kind !== "food", steps = [];
   if (useGoogle) steps.push(function () { return googleImage(base + " " + kind); });
-  steps.push(function () { return wikiImage(base); }, function () { return wikiImage(base + " " + kind); });
+  steps.push(function () { return wikiImage(base + " " + kind, key, drink ? DRINK_WORDS : FOOD_WORDS); }, function () { return commonsImage(base + " " + kind, key); });
+  if (!drink) steps.push(function () { return wikiImage(base, key, FOOD_WORDS); });
   return steps.reduce(function (p, step) {
     return p.then(function (url) { return url || step().catch(function () { return ""; }); });
   }, Promise.resolve(""));
