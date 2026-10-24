@@ -290,6 +290,7 @@ function readWithClaude(key) {
 var plain = function (t) { return t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); };
 var DRINK_WORDS = /cocktail|drink|beverage|liqueur|liquor|alcohol|whisk|vodka|\bgin\b|\brum\b|tequila|brandy|beer|wine|spirit|aperitif|shot\b/i;
 var FOOD_WORDS = /dish|food|cuisine|sandwich|soup|salad|pasta|pizza|cheese|meat|bread|dessert|cake|sauce|rice|fish|chicken|beef|pork|egg|vegetable|burger|noodle|pastry|snack|stew|dumpling|sausage|seafood|fruit|ingredient/i;
+var FILE_WORDS = { cocktail: /cocktail|martini|drink|glass/i, drink: /drink|bottle|glass|shot|liqueur|liquor|whisk|vodka|beer|wine|gin\b|rum\b|tequila/i, food: FOOD_WORDS };
 var wikiGet = function (host, params) {
   return fetch("https://" + host + "/w/api.php?format=json&origin=*&action=query&" + params).then(function (r) { return r.json(); });
 };
@@ -315,12 +316,12 @@ function wikiImage(q, key, need) {
   });
 }
 
-// A photo from Wikimedia Commons whose file name contains the key word.
-function commonsImage(q, key) {
+// A photo from Wikimedia Commons whose file name has the key word and also the category ("Cosmopolitan" alone is a whale).
+function commonsImage(q, key, need) {
   return wikiGet("commons.wikimedia.org", "generator=search&gsrnamespace=6&gsrlimit=8&prop=imageinfo&iiprop=url&iiurlwidth=480&gsrsearch=" + encodeURIComponent(q)).then(function (j) {
     var hit = byIndex(j).filter(function (p) {
       var i = p.imageinfo && p.imageinfo[0];
-      return i && /\.(jpe?g|png)$/i.test(p.title) && plain(p.title).indexOf(key) >= 0;
+      return i && /\.(jpe?g|png)$/i.test(p.title) && plain(p.title).indexOf(key) >= 0 && need.test(p.title);
     })[0];
     return hit ? hit.imageinfo[0].thumburl : "";
   });
@@ -349,7 +350,7 @@ function findImage(item) {
   var useGoogle = $("gKey").value.trim() && $("gCx").value.trim();
   var kind = kindOf(item), key = keyWord(base), drink = kind !== "food", steps = [];
   if (useGoogle) steps.push(function () { return googleImage(base + " " + kind); });
-  steps.push(function () { return wikiImage(base + " " + kind, key, drink ? DRINK_WORDS : FOOD_WORDS); }, function () { return commonsImage(base + " " + kind, key); });
+  steps.push(function () { return wikiImage(base + " " + kind, key, drink ? DRINK_WORDS : FOOD_WORDS); }, function () { return commonsImage(base + " " + kind, key, FILE_WORDS[kind]); });
   if (!drink) steps.push(function () { return wikiImage(base, key, FOOD_WORDS); });
   return steps.reduce(function (p, step) {
     return p.then(function (url) { return url || step().catch(function () { return ""; }); });
