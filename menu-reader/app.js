@@ -10,6 +10,8 @@ var state = { file: null, items: [], sections: [], section: "", diets: {}, max: 
 
 /* ---------- reading the text ---------- */
 var PRICE_END = /(?:(?:[$€£]\s?\d{1,4}(?:[.,]\d{1,2})?)|(?:\d{1,4}[.,]\d{2}\s?(?:[$€£]|eur|usd|gbp)?)|(?:\d{1,4}\s?[$€£]))\s*$/i;
+var CUR = "(?:c[z2]{1,2}k|kč|kc|eur|usd|gbp|chf|pln|huf|sek|nok|dkk|lei|ron)";
+var PRICE_CUR = new RegExp("(?:^|[^\\d.,])(\\d{1,5}(?:[.,]\\d{1,2})?)\\s?" + CUR + "(?![A-Za-z0-9])", "i");
 var PRICE_BARE = /\s\.{0,}\s*(\d{1,3})\s*$/;
 
 function tagsFromText(t) {
@@ -26,24 +28,40 @@ function parsePrice(s) {
   return m ? parseFloat(m[1] + "." + (m[2] || "0")) : null;
 }
 
+function mostlyCaps(letters) {
+  return letters.length >= 3 && letters.replace(/[^A-ZÀ-Þ]/g, "").length >= letters.length * 0.8;
+}
+function titleCase(t) {
+  return t.toLowerCase().replace(/(^|[\s\/-])([a-zà-ÿ])/g, function (_, a, b) { return a + b.toUpperCase(); });
+}
+
 // Turns raw OCR text into [{section, name, price, priceText, description, search, tags}].
 function parseMenuText(text) {
   var lines = text.split(/\r?\n/).map(function (l) {
     return l.replace(/[|_~\\]+/g, " ").replace(/\.{2,}/g, " ").replace(/\s+/g, " ").trim();
   }).filter(function (l) { return (l.match(/[A-Za-zÀ-ÿ]/g) || []).length >= 3; });
-  var items = [], section = "", last = null;
+  var items = [], section = "", top = "", last = null;
   lines.forEach(function (line) {
-    var priceText = "", m = PRICE_END.exec(line);
-    if (m) { priceText = m[0].trim(); line = line.slice(0, m.index).trim(); }
+    var priceText = "", m = PRICE_CUR.exec(line);
+    if (m) { priceText = m[1] + " " + /[A-Za-zč]+/.exec(m[0].slice(m[0].indexOf(m[1]) + m[1].length))[0].toUpperCase().replace(/^C[Z2]+K$/, "CZK"); line = line.slice(0, m.index).trim(); }
+    else if (m = PRICE_END.exec(line)) { priceText = m[0].trim(); line = line.slice(0, m.index).trim(); }
     else if ((m = PRICE_BARE.exec(line)) && line.split(" ").length > 2) { priceText = m[1]; line = line.slice(0, m.index).trim(); }
     if (!line) return;
     var letters = line.replace(/[^A-Za-zÀ-ÿ]/g, "");
-    var isCaps = letters.length >= 3 && letters === letters.toUpperCase();
-    if (!priceText && isCaps && line.split(" ").length <= 4) { section = line.charAt(0) + line.slice(1).toLowerCase(); last = null; return; }
+    var isCaps = mostlyCaps(letters);
+    if (!priceText && isCaps && line.split(" ").length <= 4) {
+      var head = titleCase(line.replace(/(\s+\S*\d\S*)+$/, ""));
+      if (/^with\b/i.test(line) && top) section = top + " " + head.charAt(0).toLowerCase() + head.slice(1);
+      else section = top = head;
+      last = null; return;
+    }
     if (!priceText && last && !last.description && (/^[a-zà-ÿ(]/.test(line) || line.length > 45)) { last.description = line; return; }
     var name = line, desc = "", cut = /\s[-–—]\s|:|,/.exec(line);
     if (cut && cut.index >= 3) { name = line.slice(0, cut.index); desc = line.slice(cut.index + cut[0].length).trim(); }
-    last = { section: section, name: name.replace(/^[\d.\-•*\s]+/, "").trim(), price: priceText ? parsePrice(priceText) : null,
+    name = name.replace(/^[\d.\-•*\s]+/, "").trim();
+    name = name.replace(/^(?:\S\s+)+(?=\S{2})/, "");
+    if (mostlyCaps(name.replace(/[^A-Za-zÀ-ÿ]/g, ""))) name = titleCase(name);
+    last = { section: section, name: name, price: priceText ? parsePrice(priceText) : null,
       priceText: priceText, description: desc, search: "", tags: [] };
     if (last.name.length >= 2) items.push(last);
   });
@@ -69,14 +87,50 @@ function toCanvas(file, maxSide) {
   });
 }
 
+// Evens out shadows and the yellow cast of a photo taken in poor light: divide by a blurred copy, then stretch contrast.
+function enhance(c) {
+  var w = c.width, h = c.height, x = c.getContext("2d"), img = x.getImageData(0, 0, w, h), d = img.data;
+  var s = document.createElement("canvas"); s.width = Math.max(1, w >> 5); s.height = Math.max(1, h >> 5);
+  var sx = s.getContext("2d"); sx.imageSmoothingQuality = "high"; sx.drawImage(c, 0, 0, s.width, s.height);
+  var b = document.createElement("canvas"); b.width = w; b.height = h;
+  var bx = b.getContext("2d"); bx.imageSmoothingQuality = "high"; bx.drawImage(s, 0, 0, w, h);
+  var bg = bx.getImageData(0, 0, w, h).data;
+  for (var i = 0; i < d.length; i += 4) {
+    var g = (d[i] + d[i + 1] + d[i + 2]) / 3, k = (bg[i] + bg[i + 1] + bg[i + 2]) / 3 + 1;
+    var v = Math.max(0, Math.min(255, ((g / k) * 255 * 1.12 - 90) * 255 / 150));
+    d[i] = d[i + 1] = d[i + 2] = v;
+  }
+  x.putImageData(img, 0, 0);
+  return c;
+}
+
+// One text line per OCR line. Keeps words the reader is fairly sure of, drops anything beside the page edge (the cut-off
+// facing page), and after a big gap keeps only numbers, so a price column survives but stray marks past it do not.
+function linesFromOcr(data, width) {
+  return (data.lines || []).map(function (l) {
+    var out = [], prev = null;
+    var words = l.words || [];
+    words.forEach(function (w, i) {
+      var b = w.bbox, h = Math.max(1, b.y1 - b.y0), nx = words[i + 1];
+      if (w.text.length <= 2 && !out.length && nx && nx.bbox.x0 - b.x1 > 2 * h) return;
+      if (w.confidence < 50 || !/[A-Za-z0-9À-ÿ]/.test(w.text)) return;
+      if (b.x0 > width * 0.88 || b.x1 >= width - 8) return;
+      if (prev && b.x0 - prev.x1 > 4 * h && !/\d/.test(w.text) && !/^(czk|kč|eur|usd)/i.test(w.text)) return;
+      out.push(w.text); if (w.text.length > 2) prev = b;
+    });
+    return out.join(" ");
+  }).join("\n");
+}
+
 function readWithOcr(file, lang) {
   setStatus("Loading the text reader…", false, 0);
-  return Promise.all([window.Tesseract ? 0 : loadScript(TESSERACT_URL), toCanvas(file, 2200)]).then(function (r) {
+  var width = 0;
+  return Promise.all([window.Tesseract ? 0 : loadScript(TESSERACT_URL), toCanvas(file, 2200).then(function (c) { width = c.width; return enhance(c); })]).then(function (r) {
     return window.Tesseract.recognize(r[1], lang, { logger: function (m) {
       if (m.status === "recognizing text") setStatus("Reading the menu… " + Math.round(m.progress * 100) + "%", false, m.progress);
       else setStatus("Preparing: " + m.status + "…", false, 0);
     } });
-  }).then(function (res) { return { text: res.data.text }; });
+  }).then(function (res) { return { text: linesFromOcr(res.data, width) }; });
 }
 
 function readWithClaude(file, key) {
@@ -263,7 +317,7 @@ function chooseFile(f) {
 
 function finish(res) {
   var items = res.items || parseMenuText(res.text);
-  if (res.text !== undefined) { $("raw").value = res.text; $("rawBox").hidden = false; }
+  if (res.text !== undefined) { $("raw").value = res.text; $("rawBox").hidden = false; $("rawBox").open = true; }
   else $("rawBox").hidden = true;
   if (!items.length) { setStatus("No dishes found. Try a sharper, straighter photo, or switch the reading mode.", true); return; }
   setStatus("Found " + items.length + " dishes. Looking for pictures…");
