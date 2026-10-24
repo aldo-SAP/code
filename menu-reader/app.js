@@ -6,7 +6,7 @@ var KEYS = ["claudeKey", "gKey", "gCx"];
 
 var $ = function (id) { return document.getElementById(id); };
 var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
-var state = { file: null, items: [], sections: [], section: "", diets: {}, max: 0, priceCeil: 0 };
+var state = { src: null, corners: [], items: [], sections: [], section: "", diets: {}, max: 0, priceCeil: 0 };
 
 /* ---------- reading the text ---------- */
 var PRICE_END = /(?:(?:[$€£]\s?\d{1,4}(?:[.,]\d{1,2})?)|(?:\d{1,4}[.,]\d{2}\s?(?:[$€£]|eur|usd|gbp)?)|(?:\d{1,4}\s?[$€£]))\s*$/i;
@@ -122,10 +122,70 @@ function linesFromOcr(data, width) {
   }).join("\n");
 }
 
-function readWithOcr(file, lang) {
+// Cuts the quad [TL, TR, BR, BL] out of src and maps it onto a flat rectangle (perspective correction).
+function warp(src, q, maxSide) {
+  var d = function (a, b) { return Math.hypot(a[0] - b[0], a[1] - b[1]); };
+  var W = Math.max(d(q[0], q[1]), d(q[3], q[2])), H = Math.max(d(q[0], q[3]), d(q[1], q[2])), k = Math.min(1, maxSide / Math.max(W, H));
+  var w = Math.max(2, Math.round(W * k)), h = Math.max(2, Math.round(H * k));
+  var x0 = q[0][0], y0 = q[0][1], x1 = q[1][0], y1 = q[1][1], x2 = q[2][0], y2 = q[2][1], x3 = q[3][0], y3 = q[3][1];
+  var sx = x0 - x1 + x2 - x3, sy = y0 - y1 + y2 - y3, A, B, C, D, E, F, G = 0, Hh = 0;
+  if (Math.abs(sx) < 1e-6 && Math.abs(sy) < 1e-6) { A = x1 - x0; B = x3 - x0; C = x0; D = y1 - y0; E = y3 - y0; F = y0; }
+  else {
+    var dx1 = x1 - x2, dx2 = x3 - x2, dy1 = y1 - y2, dy2 = y3 - y2, det = dx1 * dy2 - dx2 * dy1;
+    G = (sx * dy2 - dx2 * sy) / det; Hh = (dx1 * sy - sx * dy1) / det;
+    A = x1 - x0 + G * x1; B = x3 - x0 + Hh * x3; C = x0; D = y1 - y0 + G * y1; E = y3 - y0 + Hh * y3; F = y0;
+  }
+  var sw = src.width, sh = src.height, sd = src.getContext("2d").getImageData(0, 0, sw, sh).data;
+  var out = document.createElement("canvas"); out.width = w; out.height = h;
+  var ox = out.getContext("2d"), img = ox.createImageData(w, h), od = img.data;
+  for (var j = 0; j < h; j++) for (var i = 0; i < w; i++) {
+    var u = i / (w - 1), v = j / (h - 1), z = G * u + Hh * v + 1;
+    var px = (A * u + B * v + C) / z, py = (D * u + E * v + F) / z;
+    px = Math.max(0, Math.min(sw - 1.001, px)); py = Math.max(0, Math.min(sh - 1.001, py));
+    var ix = px | 0, iy = py | 0, fx = px - ix, fy = py - iy, o = (iy * sw + ix) * 4, t = (j * w + i) * 4;
+    for (var c = 0; c < 3; c++) {
+      od[t + c] = (sd[o + c] * (1 - fx) + sd[o + 4 + c] * fx) * (1 - fy) + (sd[o + sw * 4 + c] * (1 - fx) + sd[o + sw * 4 + 4 + c] * fx) * fy;
+    }
+    od[t + 3] = 255;
+  }
+  ox.putImageData(img, 0, 0);
+  return out;
+}
+
+var NS = "http://www.w3.org/2000/svg";
+function drawEditor() {
+  var W = state.src.width, H = state.src.height, ov = $("ov"), r = W / 35;
+  ov.setAttribute("viewBox", "0 0 " + W + " " + H); ov.textContent = "";
+  var poly = document.createElementNS(NS, "polygon");
+  poly.setAttribute("points", state.corners.map(function (p) { return p.join(","); }).join(" "));
+  poly.setAttribute("fill", "rgba(10,108,116,.12)"); poly.setAttribute("stroke", "#0fbcc8"); poly.setAttribute("stroke-width", W / 250);
+  ov.appendChild(poly);
+  state.corners.forEach(function (p, n) {
+    var c = document.createElementNS(NS, "circle");
+    c.setAttribute("cx", p[0]); c.setAttribute("cy", p[1]); c.setAttribute("r", r); c.setAttribute("stroke-width", W / 400);
+    c.addEventListener("pointerdown", function (e) {
+      c.setPointerCapture(e.pointerId);
+      var rect = ov.getBoundingClientRect();
+      c.onpointermove = function (m) {
+        state.corners[n] = [Math.max(0, Math.min(W, (m.clientX - rect.left) * W / rect.width)), Math.max(0, Math.min(H, (m.clientY - rect.top) * H / rect.height))];
+        c.setAttribute("cx", state.corners[n][0]); c.setAttribute("cy", state.corners[n][1]);
+        poly.setAttribute("points", state.corners.map(function (q) { return q.join(","); }).join(" "));
+      };
+      c.onpointerup = function () { c.onpointermove = null; };
+    });
+    ov.appendChild(c);
+  });
+}
+function resetCorners() {
+  var W = state.src.width, H = state.src.height;
+  var m = Math.round(Math.min(W, H) * 0.06);
+  state.corners = [[m, m], [W - m, m], [W - m, H - m], [m, H - m]]; drawEditor();
+}
+
+function readWithOcr(lang) {
   setStatus("Loading the text reader…", false, 0);
   var width = 0;
-  return Promise.all([window.Tesseract ? 0 : loadScript(TESSERACT_URL), toCanvas(file, 2200).then(function (c) { width = c.width; return enhance(c); })]).then(function (r) {
+  return Promise.all([window.Tesseract ? 0 : loadScript(TESSERACT_URL), Promise.resolve(warp(state.src, state.corners, 2200)).then(function (c) { width = c.width; return enhance(c); })]).then(function (r) {
     return window.Tesseract.recognize(r[1], lang, { logger: function (m) {
       if (m.status === "recognizing text") setStatus("Reading the menu… " + Math.round(m.progress * 100) + "%", false, m.progress);
       else setStatus("Preparing: " + m.status + "…", false, 0);
@@ -133,9 +193,9 @@ function readWithOcr(file, lang) {
   }).then(function (res) { return { text: linesFromOcr(res.data, width) }; });
 }
 
-function readWithClaude(file, key) {
+function readWithClaude(key) {
   setStatus("Asking Claude to read the menu…", false, -1);
-  return toCanvas(file, 1800).then(function (c) {
+  return Promise.resolve(warp(state.src, state.corners, 1800)).then(function (c) {
     var b64 = c.toDataURL("image/jpeg", 0.85).split(",")[1];
     return fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -308,11 +368,13 @@ function setStatus(msg, isErr, progress) {
 }
 
 function chooseFile(f) {
-  if (!f || !/^image\//.test(f.type)) { setStatus("That file is not an image.", true); return; }
-  state.file = f;
-  var p = $("preview"); if (p.src) URL.revokeObjectURL(p.src);
-  p.src = URL.createObjectURL(f); p.hidden = false;
-  $("go").disabled = false; setStatus("");
+  if (!f || !/^image\//.test(f.type)) { setStatus("That file is not an image.", true); return Promise.resolve(); }
+  return toCanvas(f, 2600).then(function (c) {
+    state.src = c;
+    var st = $("stage"); st.width = c.width; st.height = c.height; st.getContext("2d").drawImage(c, 0, 0);
+    $("crop").hidden = false; resetCorners();
+    $("go").disabled = false; setStatus("");
+  }).catch(function () { setStatus("Could not open that image.", true); });
 }
 
 function finish(res) {
@@ -329,7 +391,7 @@ function run() {
   var mode = $("mode").value, key = $("claudeKey").value.trim();
   if (mode === "claude" && !key) { $("settings").open = true; setStatus("Enter your Claude API key under “Keys and privacy”.", true); return; }
   $("go").disabled = true;
-  (mode === "claude" ? readWithClaude(state.file, key) : readWithOcr(state.file, $("lang").value))
+  (mode === "claude" ? readWithClaude(key) : readWithOcr($("lang").value))
     .then(finish).catch(function (e) { setStatus(e.message || String(e), true); })
     .then(function () { $("go").disabled = false; $("bar").hidden = true; });
 }
@@ -357,6 +419,7 @@ function saveKeys() {
     if (!ocr) $("settings").open = true;
   });
   $("go").addEventListener("click", run);
+  $("resetCorners").addEventListener("click", resetCorners);
   $("rebuild").addEventListener("click", function () { showMenu(parseMenuText($("raw").value)); });
   $("q").addEventListener("input", renderCards);
   $("sort").addEventListener("change", renderCards);

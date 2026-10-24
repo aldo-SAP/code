@@ -19,7 +19,11 @@
     <strong>Choose or take a photo of a menu</strong>
     <span>or drop an image here.</span>
   </label>
-  <img id="preview" alt="The menu photo you chose" hidden>
+  <div id="crop" hidden>
+    <p class="note">Drag the four dots onto the corners of the menu page. This straightens a tilted photo and leaves out the table and the facing page, which makes reading much more accurate.</p>
+    <div class="stage"><canvas id="stage"></canvas><svg id="ov" aria-label="Menu page corners"></svg></div>
+    <button id="resetCorners" type="button" class="secondary small">Reset corners</button>
+  </div>
 
   <div class="row">
     <label for="mode">Read with</label>
@@ -38,7 +42,7 @@
     </select>
   </div>
 
-  <p class="note" id="modeHint">On-device reading works best on a straight, well-lit, flat photo. For an angled photo, dim light or several columns, Claude mode is much more accurate.</p>
+  <p class="note" id="modeHint">Free reading works best on a straight, evenly lit page. Set the four corners above before you read.</p>
 
   <details class="settings" id="settings">
     <summary>Keys and privacy</summary>
