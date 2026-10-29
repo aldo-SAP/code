@@ -147,14 +147,17 @@
     [/cac:InvoicePeriod\/cbc:DescriptionCode$/, ["UNCL 2005 period codes"]],
     [/cbc:ItemClassificationCode$/, ["UNCL 7143 classification codes"]]
   ];
+  const SVG = (inner) => '<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + "</svg>";
+  const ICON_DOC = SVG('<path d="M4 1.8h5.2L12.5 5v9.2H4z"/><path d="M9 1.8V5h3.5"/><path d="M6.2 8.4h4.3M6.2 11h4.3"/>');   // a page: the field's documentation
+  const ICON_LIST = SVG('<path d="M6.4 4h7.2M6.4 8h7.2M6.4 12h7.2"/><path d="M2.6 4h.01M2.6 8h.01M2.6 12h.01" stroke-width="2"/>');   // a list: the code values
   function xlinks(tag, doc) {
     if (!doc || (state.kind !== "Invoice" && state.kind !== "CreditNote") || !/^c[ab]c:[\w.-]+(\/c[ab]c:[\w.-]+)*$/.test(tag)) return "";
     const a = (href, cls, icon, title) => '<a class="' + cls + '" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer" title="' + esc(title) + '" aria-label="' + esc(title) + '">' + icon + "</a>";
     const page = SYNTAX + (state.kind === "CreditNote" ? "ubl-credit-note/" : "ubl-invoice/") + tag.replace(/:/g, "-") + "/";
-    let html = a(page, "xdoc", "↗", T("Field documentation (Peppol BIS Billing 3.0)"));
+    let html = a(page, "xdoc", ICON_DOC, T("Field documentation (Peppol BIS Billing 3.0)"));
     const hit = CODE_LISTS.find(([re]) => re.test(tag));
-    if (hit && window.EdocHelp) hit[1].forEach((name) => { const url = EdocHelp.listUrl(name); if (url) html += a(url, "xcodes", "≡", T("Code values: {list}", { list: name })); });
-    return html;
+    if (hit && window.EdocHelp) hit[1].forEach((name) => { const url = EdocHelp.listUrl(name); if (url) html += a(url, "xcodes", ICON_LIST, T("Code values: {list}", { list: name })); });
+    return '<span class="xl">' + html + "</span>";
   }
   const xtag = (tag, doc) => (tag ? '<code class="xtag">' + esc(tag) + xlinks(tag, doc) + "</code>" : "");
   const bts = (bt) => (bt ? bt.split("/").map((b) => b.trim()).filter(Boolean) : []);
