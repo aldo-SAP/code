@@ -149,11 +149,11 @@
   ];
   function xlinks(tag, doc) {
     if (!doc || (state.kind !== "Invoice" && state.kind !== "CreditNote") || !/^c[ab]c:[\w.-]+(\/c[ab]c:[\w.-]+)*$/.test(tag)) return "";
-    const a = (href, cls, text, title) => ' <a class="' + cls + '" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer" title="' + esc(title) + '">' + esc(text) + " ↗</a>";
+    const a = (href, cls, icon, title) => '<a class="' + cls + '" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer" title="' + esc(title) + '" aria-label="' + esc(title) + '">' + icon + "</a>";
     const page = SYNTAX + (state.kind === "CreditNote" ? "ubl-credit-note/" : "ubl-invoice/") + tag.replace(/:/g, "-") + "/";
-    let html = a(page, "xdoc", T("docs"), T("Field documentation (Peppol BIS Billing 3.0)"));
+    let html = a(page, "xdoc", "↗", T("Field documentation (Peppol BIS Billing 3.0)"));
     const hit = CODE_LISTS.find(([re]) => re.test(tag));
-    if (hit && window.EdocHelp) hit[1].forEach((name) => { const url = EdocHelp.listUrl(name); if (url) html += a(url, "xcodes", T("codes"), T("Code values: {list}", { list: name })); });
+    if (hit && window.EdocHelp) hit[1].forEach((name) => { const url = EdocHelp.listUrl(name); if (url) html += a(url, "xcodes", "≡", T("Code values: {list}", { list: name })); });
     return html;
   }
   const xtag = (tag, doc) => (tag ? '<code class="xtag">' + esc(tag) + xlinks(tag, doc) + "</code>" : "");

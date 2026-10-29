@@ -492,10 +492,12 @@ dialog#viewer::backdrop { background: rgba(20, 18, 14, 0.6); }
 }
 
 /* the field's documentation and code list links, at the end of the path */
-.xtag a { display: inline-block; margin: 2px 0 0 4px; padding: 0 6px; border: 1px solid var(--line); border-radius: 4px; color: var(--accent);
-  text-decoration: none; font: 600 0.7rem/1.6 system-ui, sans-serif; letter-spacing: 0; white-space: nowrap; }
+.xtag a { display: inline-block; margin-left: 5px; padding: 0 5px; border: 1px solid var(--line); border-radius: 4px; color: var(--accent);
+  text-decoration: none; font: 600 0.72rem/1.5 system-ui, sans-serif; letter-spacing: 0; white-space: nowrap; vertical-align: baseline; }
 .xtag a:hover, .xtag a:focus-visible { background: var(--accent-soft); border-color: var(--accent); outline: none; }
-@media (pointer: coarse) { .xtag a { padding: 3px 9px; } }
+@media (pointer: coarse) { .xtag a { padding: 2px 8px; } }
+/* a wider label column while the paths are shown, so the path and its links stay on one line where they can */
+@media (min-width: 700px) { .show-tags .row { grid-template-columns: minmax(130px, 48%) minmax(0, 1fr); } }
 
 /* Phone: keep the page fixed like an app. Nothing may push it sideways; wide tables scroll inside their own box. */
 html, body { max-width: 100%; overflow-x: clip; overscroll-behavior-x: none; -webkit-text-size-adjust: 100%; }
