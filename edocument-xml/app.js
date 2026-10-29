@@ -129,7 +129,34 @@
   // Shown under a label when "Show XML tags" is on.
   // A label with its BT number kept on the same line; the number sits at the right end when there is room.
   const btCell = (labelHtml, bt) => '<span class="thc"><span class="thl">' + labelHtml + "</span>" + (bt ? '<span class="bt">' + bt + "</span>" : "") + "</span>";
-  const xtag = (tag) => (tag ? '<code class="xtag">' + esc(tag) + "</code>" : "");
+  // Beside each path (shown with "Show BT numbers and XML paths"): a link to the field's page in the Peppol BIS Billing 3.0 syntax guide and,
+  // for a coded field, to the code list its value comes from. The path decides both; `doc` is the field's BT number (or true) and is
+  // what says the field is part of the invoice model, so extension and "More fields" paths get no link that would not exist.
+  const SYNTAX = "https://docs.peppol.eu/poacc/billing/3.0/syntax/";
+  const CODE_LISTS = [   // [end of the XML path, code lists (named as in lib/help.js)]
+    [/c[ab]c:(InvoiceTypeCode|CreditNoteTypeCode)$/, ["UNCL 1001 document type codes"]],
+    [/cbc:PaymentMeansCode$/, ["UNCL 4461 payment means codes"]],
+    [/TaxCategory\/cbc:ID$/, ["UNCL 5305 VAT category codes"]],
+    [/cbc:TaxExemptionReasonCode$/, ["VATEX exemption reason codes"]],
+    [/cbc:(\w*CurrencyCode)$/, ["ISO 4217 currency codes"]],
+    [/cac:Country\/cbc:IdentificationCode$/, ["ISO 3166-1 country codes"]],
+    [/cbc:EndpointID$/, ["EAS electronic address schemes"]],
+    [/(PartyIdentification|PartyLegalEntity|StandardItemIdentification)\/cbc:(ID|CompanyID)$/, ["ISO 6523 ICD identifier schemes"]],
+    [/cbc:(InvoicedQuantity|CreditedQuantity)$/, ["UN/ECE Rec 20 unit codes"]],
+    [/cbc:AllowanceChargeReasonCode$/, ["UNCL 5189 allowance reason codes", "UNCL 7161 charge reason codes"]],
+    [/cac:InvoicePeriod\/cbc:DescriptionCode$/, ["UNCL 2005 period codes"]],
+    [/cbc:ItemClassificationCode$/, ["UNCL 7143 classification codes"]]
+  ];
+  function xlinks(tag, doc) {
+    if (!doc || (state.kind !== "Invoice" && state.kind !== "CreditNote") || !/^c[ab]c:[\w.-]+(\/c[ab]c:[\w.-]+)*$/.test(tag)) return "";
+    const a = (href, cls, text, title) => ' <a class="' + cls + '" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer" title="' + esc(title) + '">' + esc(text) + " ↗</a>";
+    const page = SYNTAX + (state.kind === "CreditNote" ? "ubl-credit-note/" : "ubl-invoice/") + tag.replace(/:/g, "-") + "/";
+    let html = a(page, "xdoc", T("docs"), T("Field documentation (Peppol BIS Billing 3.0)"));
+    const hit = CODE_LISTS.find(([re]) => re.test(tag));
+    if (hit && window.EdocHelp) hit[1].forEach((name) => { const url = EdocHelp.listUrl(name); if (url) html += a(url, "xcodes", T("codes"), T("Code values: {list}", { list: name })); });
+    return html;
+  }
+  const xtag = (tag, doc) => (tag ? '<code class="xtag">' + esc(tag) + xlinks(tag, doc) + "</code>" : "");
   const bts = (bt) => (bt ? bt.split("/").map((b) => b.trim()).filter(Boolean) : []);
   // Failed checks that point at a field: at its element, or naming its BT number for this part of the document
   // (ctx), so a failure on line 2 does not mark the same BT on the other lines. Returns { lvl, ids } or null.
@@ -155,7 +182,7 @@
   function row(label, bt, valueHtml, cls, tag, flag) {
     if (flag) cls = (cls ? cls + " " : "") + "flag-" + flag.lvl;
     return '<div class="row' + (cls ? " " + cls : "") + '"' + (flag ? ' title="' + esc(flagTitle(flag)) + '"' + dataRules(flag) : "") + '><div class="k"><span class="kl">' + esc(T(label)) + "</span>" +
-      (bt ? btHtml(bt) : "") + xtag(tag) + '</div><div class="v">' + valueHtml + whyHtml(flag) + "</div></div>";
+      (bt ? btHtml(bt) : "") + xtag(tag, bt) + '</div><div class="v">' + valueHtml + whyHtml(flag) + "</div></div>";
   }
   function markDeep(el, used) { used.add(el); for (const k of el.querySelectorAll("*")) used.add(k); }
 
@@ -250,7 +277,7 @@
     const foot = "<tr><td" + (amtCol ? ' colspan="' + (amtCol + 1) + '"' : "") + ">" + T(role === "C" ? "Total charges" : "Total allowances") + "</td>" +
       '<td class="r">' + money(sum) + ' <span class="unit">' + esc(cur) + "</span></td>" +
       (cols.length - amtCol - 1 > 0 ? '<td colspan="' + (cols.length - amtCol - 1) + '"></td>' : "") + "</tr>";
-    const head = "<tr><th>#</th>" + cols.map(([path, label, bt]) => "<th" + (isNum(path) ? ' class="r"' : "") + ">" + btCell(esc(T(label)), esc(btFor(bt, role))) + xtag("cac:AllowanceCharge/" + guessTag(null, path)) + "</th>").join("") + "</tr>";
+    const head = "<tr><th>#</th>" + cols.map(([path, label, bt]) => "<th" + (isNum(path) ? ' class="r"' : "") + ">" + btCell(esc(T(label)), esc(btFor(bt, role))) + xtag("cac:AllowanceCharge/" + guessTag(null, path), btFor(bt, role)) + "</th>").join("") + "</tr>";
     return '<div class="tablewrap"><table class="ac"><thead>' + head + "</thead><tbody>" + rows + "</tbody><tfoot>" + foot + "</tfoot></table></div>" + more;
   }
 
@@ -333,8 +360,8 @@
         const used = new Set();
         let body = "";
         if (docs.length) {
-          body = '<div class="tablewrap"><table><thead><tr><th>#</th><th>' + btCell(T("Invoice reference"), "BT-25") + xtag("cac:BillingReference/cac:InvoiceDocumentReference/cbc:ID") + "</th>" +
-            "<th>" + btCell(T("Issue date"), "BT-26") + xtag("cac:BillingReference/cac:InvoiceDocumentReference/cbc:IssueDate") + "</th></tr></thead><tbody>" +
+          body = '<div class="tablewrap"><table><thead><tr><th>#</th><th>' + btCell(T("Invoice reference"), "BT-25") + xtag("cac:BillingReference/cac:InvoiceDocumentReference/cbc:ID", "BT-25") + "</th>" +
+            "<th>" + btCell(T("Issue date"), "BT-26") + xtag("cac:BillingReference/cac:InvoiceDocumentReference/cbc:IssueDate", "BT-26") + "</th></tr></thead><tbody>" +
             docs.map((d, i) => {
               const id = first(d, "ID"), date = first(d, "IssueDate");
               [id, date].forEach((e) => e && used.add(e));
@@ -447,7 +474,7 @@
         // with a breakdown the total closes the table; without one it stands alone
         if (amt && !subs.length) inner += row(totalLabel, totalBt, renderValue(amt), "", tagPath(amt));
         if (subs.length) {
-          const th = (label, bt, tag, r) => "<th" + (r ? ' class="r"' : "") + ">" + btCell(T(label), bt) + xtag("cac:TaxSubtotal/" + tag) + "</th>";
+          const th = (label, bt, tag, r) => "<th" + (r ? ' class="r"' : "") + ">" + btCell(T(label), bt) + xtag("cac:TaxSubtotal/" + tag, bt) + "</th>";
           inner += '<div class="tablewrap"><table><thead><tr>' + th("Category", "BT-118", "cac:TaxCategory/cbc:ID") + th("Rate", "BT-119", "cac:TaxCategory/cbc:Percent", true) +
             th("Taxable", "BT-116", "cbc:TaxableAmount", true) + th("VAT", "BT-117", "cbc:TaxAmount", true) +
             th("Exemption reason", "BT-120/121", "cac:TaxCategory/cbc:TaxExemptionReason") + "</tr></thead><tbody>";
@@ -464,7 +491,7 @@
           if (amt) {
             const sumTaxable = subs.reduce((t, st) => t + (num(val(st, "TaxableAmount")) || 0), 0);
             const curT = (first(subs[0], "TaxableAmount") || { getAttribute: () => "" }).getAttribute("currencyID") || "";
-            inner += '<tfoot><tr><td colspan="2">' + btCell(T(totalLabel), totalBt) + xtag(tagPath(amt)) + '</td><td class="r">' + money(sumTaxable) + ' <span class="unit">' + esc(curT) + '</span></td><td class="r">' + renderValue(amt) + "</td><td></td></tr></tfoot>";
+            inner += '<tfoot><tr><td colspan="2">' + btCell(T(totalLabel), totalBt) + xtag(tagPath(amt), totalBt) + '</td><td class="r">' + money(sumTaxable) + ' <span class="unit">' + esc(curT) + '</span></td><td class="r">' + renderValue(amt) + "</td><td></td></tr></tfoot>";
           }
           inner += "</table></div>";
         }
@@ -490,7 +517,7 @@
         if (e) u.add(e);
         return '<tr class="frow' + (e ? "" : " empty") + (strong[path] ? " " + strong[path] : "") + (flag ? " flag-" + flag.lvl : "") + '"' +
           (flag ? ' title="' + esc(flagTitle(flag)) + '"' + dataRules(flag) : "") + '><td class="k">' + btCell(esc(T(label)), bt) +
-          xtag(e ? tagPath(e) : "cac:LegalMonetaryTotal/cbc:" + path) + "</td>" +
+          xtag(e ? tagPath(e) : "cac:LegalMonetaryTotal/cbc:" + path, bt) + "</td>" +
           '<td class="r">' + (e ? (sign[path] || "") + fmtAmount(txt(e), "") : flag ? missing() : "—") + '</td><td class="cur">' + (e ? esc(e.getAttribute("currencyID") || "") : "") + "</td></tr>";
       }).join("");
       let body = trs ? '<table class="tot"><tbody>' + trs + "</tbody></table>" + extras([lmt], u) : "";
@@ -512,7 +539,7 @@
       let body = "";
       if (lines.length) {
         const lt = "cac:" + lineTag + "/";
-        const th = (label, tag, r) => "<th" + (r ? ' class="r"' : "") + ">" + T(label) + xtag(lt + tag) + "</th>";
+        const th = (label, tag, r) => "<th" + (r ? ' class="r"' : "") + ">" + T(label) + xtag(lt + tag, true) + "</th>";
         body = '<div class="tablewrap"><table><thead><tr>' + th("Line", "cbc:ID") + th("Item", "cac:Item/cbc:Name") +
           th("Quantity", kind === "CreditNote" ? "cbc:CreditedQuantity" : "cbc:InvoicedQuantity", true) + th("Net price", "cac:Price/cbc:PriceAmount", true) +
           th("VAT", "cac:Item/cac:ClassifiedTaxCategory") + th("Net amount", "cbc:LineExtensionAmount", true) + '<th class="lgo"></th></tr></thead><tbody>';
