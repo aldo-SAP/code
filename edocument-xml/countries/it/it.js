@@ -1,5 +1,6 @@
 /* Italian text for the Italy (FatturaPA) screens and the sentences of the structure check. */
 window.I18N.addItalian({
+  "Invoiced quantity unit of measure": "Unità di misura della quantità fatturata", "Credited quantity unit of measure": "Unità di misura della quantità accreditata", "Item price base quantity unit of measure": "Unità di misura della quantità base del prezzo",
   "Sources and licences": "Fonti e licenze",
   "Samples": "Esempi", "Germany": "Germania", "France": "Francia", "Italy": "Italia", "UAE": "Emirati Arabi Uniti",
   "Try a French sample": "Prova un esempio francese",

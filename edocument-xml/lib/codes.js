@@ -50,10 +50,11 @@ window.EdocCodes = (function () {
     "9906": "IT VAT", "9907": "IT codice fiscale", "9920": "ES VAT", "9925": "BE VAT", "9930": "DE VAT", "9938": "LU VAT",
     "9944": "NL VAT", "9957": "FR VAT", "9959": "US EIN", "EM": "Email", SEPA: "SEPA creditor ID"
   };
-  const UNITS = {
+  // the whole UN/ECE Recommendation 20 list (lib/units-data.js); the short names below are the ones in everyday use and are translated
+  const UNITS = Object.assign({}, window.UNIT_CODES || {}, {
     C62: "one", H87: "piece", EA: "each", XUN: "unit", XPP: "piece", HUR: "hour", DAY: "day", WEE: "week", MON: "month",
     ANN: "year", MIN: "minute", KGM: "kilogram", GRM: "gram", TNE: "tonne", MTR: "metre", KMT: "kilometre", MTK: "square metre",
     MTQ: "cubic metre", LTR: "litre", KWH: "kilowatt hour", SET: "set", PR: "pair", LS: "lump sum", E48: "service unit", ZZ: "mutually defined"
-  };
+  });
   return { DOC_TYPES, PAY_MEANS, VAT_CAT, DATE_CODE, AC_REASON, NOTE_SUBJECT, SCHEMES, UNITS };
 })();

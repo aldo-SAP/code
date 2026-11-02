@@ -74,7 +74,7 @@
   }
 
   // Render one leaf element's value, including decoded codes and attribute chips.
-  function renderValue(el) {
+  function renderValue(el, noUnit) {
     const n = el.localName;
     if (n === "EmbeddedDocumentBinaryObject") {
       const i = state.attIndex.get(el);
@@ -101,6 +101,7 @@
 
     for (const a of attrs) {
       if (a.name === "currencyID") continue;
+      if (a.name === "unitCode" && noUnit) continue;     // the unit has its own row (BT-130, BT-150)
       if (a.name === "unitCode") { html += ' <span class="unit" title="' + esc(T("Unit of measure")) + '">' + esc(a.value) + (UNITS[a.value] ? " · " + esc(T(UNITS[a.value])) : "") + "</span>"; continue; }
       if (a.name === "name" && n === "PaymentMeansCode") { html += '<span class="chip" title="' + esc(T("Payment means text (BT-82)")) + '">' + esc(a.value) + "</span>"; continue; }
       let label = a.value;
@@ -164,17 +165,27 @@
     let html = "";
     for (const [path, label, bt, opts] of spec) {
       if (opts && opts.only && opts.only !== state.kind) continue;
-      const els = byPath(ctx, path), b = btFor(bt, role);
+      // "Element/@attribute": the attribute of the element, as a field of its own (unit codes: BT-130, BT-150)
+      const att = path.indexOf("/@") >= 0 ? path.split("/@") : null;
+      const els = byPath(ctx, att ? att[0] : path), b = btFor(bt, role);
       if (!els.length) {
         // Hidden empty fields still show when a failed check points at them or EN 16931 requires them.
         const flag = fieldFlag(ctx, b, []) || requiredFlag(ctx, b);
-        if (state.showEmpty || flag) html += row(label, b, flag ? missing() : "—", "empty", guessTag(ctx, path), flag);
+        if (state.showEmpty || flag) html += row(label, b, flag ? missing() : "—", "empty", guessTag(ctx, att ? att[0] : path) + (att ? "/@" + att[1] : ""), flag);
         continue;
       }
       for (const el of els) {
         const flag = fieldFlag(ctx, b, [el]);
+        if (att) {
+          const v = el.getAttribute(att[1]), tag = tagPath(el) + "/@" + att[1];
+          if (v == null) {
+            const f = flag || requiredFlag(ctx, b);
+            if (state.showEmpty || f) html += row(label, b, f ? missing() : "—", "empty", tag, f);
+          } else html += row(label, b, esc(v) + (att[1] === "unitCode" ? dec(v, UNITS) : ""), "", tag, flag);
+          continue;
+        }
         if (opts && opts.fmt) { markDeep(el, used); html += row(label, b, opts.fmt(el), "", tagPath(el), flag); }
-        else { used.add(el); html += row(label, b, renderValue(el), "", tagPath(el), flag); }
+        else { used.add(el); html += row(label, b, renderValue(el, opts && opts.noUnit), "", tagPath(el), flag); }
       }
     }
     return html;
