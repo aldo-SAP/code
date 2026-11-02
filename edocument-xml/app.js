@@ -189,7 +189,7 @@
   const flagTitle = (flag) => (flag.ids.length ? T("Fails {ids}", { ids: flag.ids.join(", ") }) : T("Required field"));
   const missing = () => '<span class="missing">' + T("Missing") + "</span>";
   // several BT numbers (BT-81 / BT-82) go one under the other, so the label keeps its width
-  const btHtml = (bt) => { const parts = String(bt).split(" / "); const spans = parts.map((b) => '<span class="bt">' + esc(b) + "</span>").join(""); return parts.length > 1 ? '<span class="bts">' + spans + "</span>" : spans; };
+  const btHtml = (bt) => { const parts = String(bt).split(" / "); const spans = parts.map((b) => '<span class="bt' + (b[0] === "~" ? " unit-inline" : "") + '">' + esc(b.replace("~", "")) + "</span>").join(""); return parts.length > 1 ? '<span class="bts">' + spans + "</span>" : spans; };
   function row(label, bt, valueHtml, cls, tag, flag) {
     if (flag) cls = (cls ? cls + " " : "") + "flag-" + flag.lvl;
     return '<div class="row' + (cls ? " " + cls : "") + '"' + (flag ? ' title="' + esc(flagTitle(flag)) + '"' + dataRules(flag) : "") + '><div class="k"><span class="kl">' + esc(T(label)) + "</span>" +
@@ -204,11 +204,13 @@
       if (opts && opts.only && opts.only !== state.kind) continue;
       // "Element/@attribute": the attribute of the element, as a field of its own (unit codes: BT-130, BT-150)
       const att = path.indexOf("/@") >= 0 ? path.split("/@") : null;
-      const els = byPath(ctx, att ? att[0] : path), b = btFor(bt, role);
+      const els = byPath(ctx, att ? att[0] : path);
+      // a quantity with its unit beside it (BT-129 and BT-130): both numbers are on the row; with BT numbers and XML paths the unit has its own row, so its number goes there
+      const b = btFor(bt, role) + (opts && opts.unitBt ? " / " + opts.unitBt : ""), shown = opts && opts.unitBt ? btFor(bt, role) + " / ~" + opts.unitBt : b;
       if (!els.length) {
         // Hidden empty fields still show when a failed check points at them or EN 16931 requires them.
         const flag = fieldFlag(ctx, b, []) || requiredFlag(ctx, b);
-        if (state.showEmpty || flag) html += row(label, b, flag ? missing() : "—", "empty", guessTag(ctx, att ? att[0] : path) + (att ? "/@" + att[1] : ""), flag);
+        if (state.showEmpty || flag) html += row(label, shown, flag ? missing() : "—", "empty", guessTag(ctx, att ? att[0] : path) + (att ? "/@" + att[1] : ""), flag);
         continue;
       }
       for (const el of els) {
@@ -225,7 +227,7 @@
         else {
           used.add(el);
           const cur = el.getAttribute("currencyID"), ownRow = !!(opts && opts.noUnit) || !!cur;
-          html += row(label, b, renderValue(el, ownRow), "", tagPath(el), flag);
+          html += row(label, shown, renderValue(el, ownRow), "", tagPath(el), flag);
           if (cur) html += row(T("Currency of {name}", { name: T(label) }), "", esc(cur) + (currencyName(cur) ? ' <span class="dec">· ' + esc(currencyName(cur)) + "</span>" : ""), "unit-row", tagPath(el) + "/@currencyID");
         }
       }
