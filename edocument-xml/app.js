@@ -1283,7 +1283,11 @@
     const count = bad ? T("{n} errors", { n: bad }) : "";
     const countLine = [bad ? (bad > 1 ? T("{n} errors", { n: bad }) : T("{n} error", { n: bad })) : "", warn ? (warn > 1 ? T("{n} warnings", { n: warn }) : T("{n} warning", { n: warn })) : ""].filter(Boolean).join(" · ");
     $("ipCount").textContent = countLine;
+    // only warnings: the tab says Warning(s) in orange, and the count in the panel is orange too
     $("ipOpenCount").textContent = String(issueList.length);
+    $("ipOpenLabel").textContent = bad ? T("Issues") : T(warn > 1 ? "Warnings" : "Warning");
+    $("ipOpen").classList.toggle("warn", !bad);
+    $("ipCount").classList.toggle("warn", !bad);
     $("ipList").innerHTML = issueList.map((it, i) => issueBtn(it, i, false)).join("");
     const v = $("vIssues");
     if (v) v.innerHTML = issueList.slice(0, 3).map((it, i) => issueBtn(it, i, true)).join("") +
