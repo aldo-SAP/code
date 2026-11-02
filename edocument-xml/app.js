@@ -53,12 +53,13 @@
     return (n / 1048576).toFixed(2) + " MB";
   }
   function num(raw) { const n = Number(String(raw).trim()); return isFinite(n) && String(raw).trim() !== "" ? n : null; }
-  function fmtAmount(raw, cur) {
+  // ownRow: the currency has a row of its own when BT numbers and XML paths are shown, so the chip beside the amount is only for the compact view
+  function fmtAmount(raw, cur, ownRow) {
     const n = num(raw);
-    if (n === null || state.raw) return (state.raw && n !== null ? '<span class="amt">' + esc(raw) + "</span>" : esc(raw)) + (cur ? ' <span class="unit"' + (currencyName(cur) ? ' title="' + esc(currencyName(cur)) + '"' : "") + ">" + esc(cur) + "</span>" : "");
+    if (n === null || state.raw) return (state.raw && n !== null ? '<span class="amt">' + esc(raw) + "</span>" : esc(raw)) + (cur ? ' <span class="unit' + (ownRow ? " unit-inline" : "") + '"' + (currencyName(cur) ? ' title="' + esc(currencyName(cur)) + '"' : "") + ">" + esc(cur) + "</span>" : "");
     const dec = (String(raw).split(".")[1] || "").length;
     const s = n.toLocaleString(I18N.locale(), { minimumFractionDigits: Math.max(2, Math.min(dec, 6)), maximumFractionDigits: Math.max(2, Math.min(dec, 6)) });
-    return '<span class="amt" title="' + esc(raw) + '">' + s + "</span>" + (cur ? ' <span class="unit"' + (currencyName(cur) ? ' title="' + esc(currencyName(cur)) + '"' : "") + ">" + esc(cur) + "</span>" : "");
+    return '<span class="amt" title="' + esc(raw) + '">' + s + "</span>" + (cur ? ' <span class="unit' + (ownRow ? " unit-inline" : "") + '"' + (currencyName(cur) ? ' title="' + esc(currencyName(cur)) + '"' : "") + ">" + esc(cur) + "</span>" : "");
   }
   const dec = (code, table) => (table[code] ? ' <span class="dec">· ' + esc(T(table[code])) + "</span>" : "");
 
@@ -78,7 +79,7 @@
   }
 
   // Render one leaf element's value, including decoded codes and attribute chips.
-  function renderValue(el, noUnit) {
+  function renderValue(el, ownRow) {
     const n = el.localName;
     if (n === "EmbeddedDocumentBinaryObject") {
       const i = state.attIndex.get(el);
@@ -93,7 +94,7 @@
     const attrs = Array.from(el.attributes).filter((a) => !/^xmlns/.test(a.name));
     const cur = el.getAttribute("currencyID");
     let html;
-    if (cur) html = fmtAmount(raw, cur);
+    if (cur) html = fmtAmount(raw, cur, ownRow);
     else if (n === "ChargeIndicator") html = raw === "true" ? T("Charge") : raw === "false" ? T("Allowance") : esc(raw);
     else if ((n === "Percent" || n === "MultiplierFactorNumeric") && num(raw) !== null) html = '<span class="amt">' + esc(raw) + "</span> %";
     else if (n === "Note" && /^#([A-Z0-9]{2,4})#/.test(raw)) {
@@ -105,8 +106,7 @@
 
     for (const a of attrs) {
       if (a.name === "currencyID") continue;
-      if (a.name === "unitCode" && noUnit) continue;     // the unit has its own row (BT-130, BT-150)
-      if (a.name === "unitCode") { html += ' <span class="unit" title="' + esc(T("Unit of measure")) + '">' + esc(a.value) + (UNITS[a.value] ? " · " + esc(T(UNITS[a.value])) : "") + "</span>"; continue; }
+      if (a.name === "unitCode") { html += ' <span class="unit' + (ownRow ? " unit-inline" : "") + '" title="' + esc(T("Unit of measure")) + '">' + esc(a.value) + (UNITS[a.value] ? " · " + esc(T(UNITS[a.value])) : "") + "</span>"; continue; }
       if (a.name === "name" && n === "PaymentMeansCode") { html += '<span class="chip" title="' + esc(T("Payment means text (BT-82)")) + '">' + esc(a.value) + "</span>"; continue; }
       let label = a.value;
       if (a.name === "schemeID" && SCHEMES[a.value]) label += " · " + T(SCHEMES[a.value]);
@@ -160,7 +160,8 @@
     const el = tag.replace(/\/@\w+$/, "");
     if (!doc || (state.kind !== "Invoice" && state.kind !== "CreditNote") || !/^c[ab]c:[\w.-]+(\/c[ab]c:[\w.-]+)*$/.test(el)) return "";
     const a = (href, cls, icon, title) => '<a class="' + cls + '" href="' + esc(href) + '" target="_blank" rel="noopener noreferrer" title="' + esc(title) + '" aria-label="' + esc(title) + '">' + icon + "</a>";
-    const page = SYNTAX + (state.kind === "CreditNote" ? "ubl-credit-note/" : "ubl-invoice/") + el.replace(/:/g, "-") + "/";
+    const att = tag.slice(el.length + 2);     // "" or the attribute, which has a page of its own under its element's
+    const page = SYNTAX + (state.kind === "CreditNote" ? "ubl-creditnote/" : "ubl-invoice/") + el.replace(/:/g, "-") + "/" + (att ? att + "/" : "");
     let html = a(page, "xdoc", ICON_DOC, T("Field documentation (Peppol BIS Billing 3.0)"));
     const hit = CODE_LISTS.find(([re]) => re.test(tag));
     if (hit && window.EdocHelp) hit[1].forEach((name) => { const url = EdocHelp.listUrl(name); if (url) html += a(url, "xcodes", ICON_LIST, T("Code values: {list}", { list: name })); });
@@ -216,12 +217,17 @@
           const v = el.getAttribute(att[1]), tag = tagPath(el) + "/@" + att[1];
           if (v == null) {
             const f = flag || requiredFlag(ctx, b);
-            if (state.showEmpty || f) html += row(label, b, f ? missing() : "—", "empty", tag, f);
-          } else html += row(label, b, esc(v) + (att[1] === "unitCode" ? dec(v, UNITS) : ""), "", tag, flag);
+            if (state.showEmpty || f) html += row(label, b, f ? missing() : "—", "empty unit-row", tag, f);
+          } else html += row(label, b, esc(v) + (att[1] === "unitCode" ? dec(v, UNITS) : ""), "unit-row", tag, flag);
           continue;
         }
         if (opts && opts.fmt) { markDeep(el, used); html += row(label, b, opts.fmt(el), "", tagPath(el), flag); }
-        else { used.add(el); html += row(label, b, renderValue(el, opts && opts.noUnit), "", tagPath(el), flag); }
+        else {
+          used.add(el);
+          const cur = el.getAttribute("currencyID"), ownRow = !!(opts && opts.noUnit) || !!cur;
+          html += row(label, b, renderValue(el, ownRow), "", tagPath(el), flag);
+          if (cur) html += row(T("Currency of {name}", { name: T(label) }), "", esc(cur) + (currencyName(cur) ? ' <span class="dec">· ' + esc(currencyName(cur)) + "</span>" : ""), "unit-row", tagPath(el) + "/@currencyID");
+        }
       }
     }
     return html;
@@ -259,7 +265,7 @@
     const iss = id !== "lines" && id !== "checks" && sec;
     const loose = iss ? iss.list.filter((c) => !marked.has(c.id)) : [];
     const errs = loose.length ? '<ul class="checks card-errs">' + loose.map((c) => checkLi(c, false)).join("") + "</ul>" : "";
-    const nRows = (body.match(/<div class="row[ "]|<tr class="line /g) || []).length;
+    const nRows = (body.match(/<div class="row[^">]*"|<tr class="line /g) || []).filter((m) => !/unit-row/.test(m)).length;     // the unit and currency rows are only there with BT numbers and XML paths
     return '<section class="card' + (opts.full ? " full" : "") + (collapsible ? " collapsible" + (open ? "" : " collapsed") : "") + '" id="sec-' + id + '"><h2' +
       (collapsible ? ' tabindex="0" role="button" aria-expanded="' + open + '" data-act="card"' : "") + ">" +
       dot(id) + esc(T(title)) + (opts.count != null ? '<span class="n">' + opts.count + "</span>" : "") +

@@ -484,6 +484,10 @@ dialog#viewer::backdrop { background: rgba(20, 18, 14, 0.6); }
 .lang-switch .flag { width: 20px; height: 13px; border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.15); flex: none; }
 @media (max-width: 520px) { .lang-switch button span { display: none; } }
 
+/* The unit of measure and the currency: beside the value (10 USD, 20 LO · lot), or, with "Show BT numbers and XML paths", a field of their own */
+#content:not(.show-tags) .unit-row { display: none; }
+.show-tags .unit-inline { display: none; }
+
 /* "Show XML tags": each field's UBL path under its label */
 .xtag { display: none; }
 .show-tags .xtag {
