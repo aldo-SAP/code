@@ -8,6 +8,7 @@ var ICONS = {
   tree: '<path d="M6 4v16M6 8h6M6 14h6"/><rect x="12" y="5" width="7" height="6" rx="1.5"/><rect x="12" y="11.5" width="7" height="5" rx="1.5"/>',
   tool: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>',
   pdf: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6M9.5 14.5 12 17l2.5-2.5"/>',
+  menu: '<path d="M7 3v8a2 2 0 0 0 2 2v8M7 3v6M11 3v6M9 3v6"/><path d="M17 3c-2 2-2.5 5-2.500 8H17v10"/>',
   merge: '<rect x="3" y="3" width="9" height="12" rx="1.5"/><rect x="12" y="9" width="9" height="12" rx="1.5"/>'
 };
 var GROUPS = [
@@ -33,7 +34,10 @@ var GROUPS = [
       tags: ["Base64", "PDF"] },
     { name: "PDF Merger", href: "pdf-merger/index.html", icon: "merge",
       desc: "Combine PDFs and photos into one PDF, in the order you choose.",
-      tags: ["PDF", "Photos", "Merge"] }
+      tags: ["PDF", "Photos", "Merge"] },
+    { name: "Menu Reader", href: "menu-reader/index.html", icon: "menu",
+      desc: "Photograph a restaurant menu and get it back as cards with a picture per dish, filterable by section, price and diet.",
+      tags: ["Menu", "OCR", "Photos", "Filters"] }
   ] }
 ];
 

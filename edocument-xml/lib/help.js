@@ -30,6 +30,8 @@
     get(id) { const h = H[id]; return h ? (window.I18N && I18N.lang === "it" ? h[1] || h[0] : h[0]) : ""; },
     // the official list a code-list rule takes its value from: { name, url }, or null
     link(id) { return L[id] || null; },
+    // the official page or file of a code list, by the name used above ("UNCL 4461 payment means codes"), or ""
+    listUrl: (name) => (LISTS[name] ? LISTS[name][0] : ""),
     linkIds: () => Object.keys(L),
     count: () => Object.keys(H).length
   };
