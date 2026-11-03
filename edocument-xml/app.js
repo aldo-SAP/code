@@ -1178,7 +1178,7 @@
     if (!on) { $("ereportXml").textContent = ""; if (!$("pEreport").hidden) showTab("fields"); return; }
     try { $("ereportXml").textContent = EReport.build(state.root, state.kind).xml; } catch (e) { $("ereportXml").textContent = String(e.message || e); }
   }
-  $("ereportCopy").addEventListener("click", () => { try { navigator.clipboard.writeText($("ereportXml").textContent); } catch (e) {} });
+  $("ereportCopy").addEventListener("click", () => { try { navigator.clipboard.writeText(tidyXml($("ereportXml").textContent)); } catch (e) {} });
   function ensureRaw() {
     if (!state.rawDirty || !state.root) return;
     $("rawXml").innerHTML = xmlHtml(state.root.ownerDocument); state.rawDirty = false;
@@ -1365,10 +1365,10 @@
       downloadXml(state.text || "");
     } else if (b.dataset.xml === "copy") {
       const label = b.textContent;
-      try { await navigator.clipboard.writeText(state.text || ""); b.textContent = T("Copied"); }
+      try { await navigator.clipboard.writeText(tidyXml(state.text || "")); b.textContent = T("Copied"); }     // the copy is the tidy form, like the download
       catch (err) {
         const ta = document.createElement("textarea");
-        ta.value = state.text || ""; document.body.appendChild(ta); ta.select();
+        ta.value = tidyXml(state.text || ""); document.body.appendChild(ta); ta.select();
         try { document.execCommand("copy"); b.textContent = T("Copied"); } catch (e2) { b.textContent = T("Copy failed"); }
         ta.remove();
       }
