@@ -205,3 +205,7 @@ form[data-busy] button{opacity:.6;cursor:progress}
   .stack td form{margin:0}
   .row{gap:10px}
 }
+@media (max-width:820px){
+  .stack td form.row{display:flex;flex-wrap:wrap;gap:8px;width:100%;justify-content:flex-end}
+  .stack td form.row>button{flex:1 1 120px}
+}

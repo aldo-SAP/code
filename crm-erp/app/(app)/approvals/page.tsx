@@ -25,7 +25,7 @@ export default async function Approvals({ searchParams }: { searchParams: Promis
   const approved = await groups("approved", "AND t.invoice_id IS NULL AND t.payout_id IS NULL");
   const row = (g: any, actions: React.ReactNode) => (
     <tr key={`${g.worker_id}${g.assignment_id}${g.month}`}>
-      <td><Link href={`/timesheets?person=${g.worker_id}&month=${g.month}`}>{g.worker}</Link>{g.owner_id !== g.worker_id && <span className="muted"> (for {g.owner})</span>}</td>
+      <td><Link href={`/timesheets?person=${g.worker_id}&month=${g.month}`}>{g.worker}</Link>{g.owner_id !== g.worker_id && <span className="muted"> (covering for {g.owner})</span>}</td>
       <td>{g.project}</td><td>{g.month}</td><td className="num">{num(g.hours)}h / {num(g.hours / g.hours_per_day)}d</td>
       <td className="muted" style={{ maxWidth: 360 }}>{g.days.join(", ")}</td><td>{actions}</td></tr>
   );
