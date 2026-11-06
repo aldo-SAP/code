@@ -347,7 +347,9 @@
   // the facts for the PDF report: document number, type and date
   function facts() {
     const dgd = one(one(bodies(h.state.root)[0], "DatiGenerali"), "DatiGeneraliDocumento");
-    return { number: text(dgd, "Numero"), type: text(dgd, "TipoDocumento"), date: text(dgd, "Data") };
+    return { number: text(dgd, "Numero"), type: text(dgd, "TipoDocumento"), date: text(dgd, "Data"),
+      // the name of a downloaded XML: the transmission's progressive and the document number
+      fileName: [text(one(h.state.root, "FatturaElettronicaHeader"), "DatiTrasmissione/ProgressivoInvio"), text(dgd, "Numero")].filter(Boolean).join("_") };
   }
 
   window.ItView = { init, isIt, value, decode, sections, nav, locate, checks, hero, facts, labelOf };

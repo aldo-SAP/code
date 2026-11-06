@@ -1,27 +1,35 @@
 /*
- * Files embedded in the invoice (EmbeddedDocumentBinaryObject): finding them, the preview window and the download.
+ * Files embedded in the invoice (EmbeddedDocumentBinaryObject; in an Italian FatturaPA the Attachment of an Allegati block): finding them, the preview window and the download.
  * EdocAttachments(h) needs { state, $, T, val, formatSize } and returns { collect, preview, download, close, extFor }.
  */
 window.EdocAttachments = function (h) {
   "use strict";
   const { state, $, T, val, formatSize } = h;
+  // the format an Italian invoice names (FormatoAttachment) to a type
+  const FORMATS = { pdf: "application/pdf", xml: "application/xml", zip: "application/zip", txt: "text/plain", csv: "text/csv", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", gif: "image/gif" };
   function collectAttachments() {
     state.atts = []; state.attIndex = new Map(); state.cache.forEach((c) => c.url && URL.revokeObjectURL(c.url)); state.cache = new Map();
     const all = state.root.getElementsByTagName("*");
     for (const el of all) {
-      if (el.localName !== "EmbeddedDocumentBinaryObject") continue;
+      const fatturapa = el.localName === "Attachment" && el.parentElement && el.parentElement.localName === "Allegati";
+      if (el.localName !== "EmbeddedDocumentBinaryObject" && !fatturapa) continue;
       let adr = el.parentElement;
-      while (adr && adr.localName !== "AdditionalDocumentReference" && adr.localName !== "DocumentReference") adr = adr.parentElement;
+      if (!fatturapa) while (adr && adr.localName !== "AdditionalDocumentReference" && adr.localName !== "DocumentReference") adr = adr.parentElement;
       const b64 = el.textContent.replace(/\s+/g, "");
       const pad = (b64.match(/=+$/) || [""])[0].length;
       const i = state.atts.length;
       const head = sniffB64(b64);
-      const mime = el.getAttribute("mimeCode") || head || "";
-      const filename = el.getAttribute("filename") || (adr ? val(adr, "ID") : "") || "attachment-" + (i + 1) + extFor(mime);
+      // FatturaPA: the name, the format ("PDF") and the description are elements of the same Allegati block
+      const fmt = fatturapa ? val(adr, "FormatoAttachment").toLowerCase() : "";
+      const mime = fatturapa ? (head || FORMATS[fmt] || "") : el.getAttribute("mimeCode") || head || "";
+      let filename = fatturapa ? val(adr, "NomeAttachment") : el.getAttribute("filename") || (adr ? val(adr, "ID") : "");
+      if (fatturapa && filename && !/\.[A-Za-z0-9]{1,5}$/.test(filename) && fmt) filename += "." + fmt;
+      filename = filename || "attachment-" + (i + 1) + extFor(mime);
       let warn = "";
       if (mime === "application/pdf" && head && head !== "application/pdf") warn = "Declared as PDF, but the content doesn't start with %PDF.";
+      if (fatturapa && val(adr, "AlgoritmoCompressione")) warn = "Compressed (AlgoritmoCompressione): download it and open it with an archive tool.";
       state.atts.push({ el, b64, filename, mime, sniffed: head, size: Math.max(0, Math.floor(b64.length * 3 / 4) - pad),
-        desc: adr ? val(adr, "DocumentDescription") : "", ref: adr ? val(adr, "ID") : "", warn });
+        desc: adr ? val(adr, fatturapa ? "DescrizioneAttachment" : "DocumentDescription") : "", ref: !fatturapa && adr ? val(adr, "ID") : "", warn });
       state.attIndex.set(el, i);
     }
   }

@@ -1,5 +1,6 @@
 /* Italian text for the Italy (FatturaPA) screens and the sentences of the structure check. */
 window.I18N.addItalian({
+  "Compressed (AlgoritmoCompressione): download it and open it with an archive tool.": "Compresso (AlgoritmoCompressione): scaricalo e aprilo con un programma per archivi.",
   "Warnings": "Avvisi",
   "Currency of {name}": "Valuta di {name}",
   "Invoiced quantity unit of measure": "Unità di misura della quantità fatturata", "Credited quantity unit of measure": "Unità di misura della quantità accreditata", "Item price base quantity unit of measure": "Unità di misura della quantità base del prezzo",

@@ -81,7 +81,7 @@
   // Render one leaf element's value, including decoded codes and attribute chips.
   function renderValue(el, ownRow) {
     const n = el.localName;
-    if (n === "EmbeddedDocumentBinaryObject") {
+    if (n === "EmbeddedDocumentBinaryObject" || (n === "Attachment" && state.attIndex.has(el))) {
       const i = state.attIndex.get(el);
       const a = state.atts[i];
       return '<a href="#att-' + i + '">' + esc(a.filename) + "</a>" +
@@ -1164,7 +1164,7 @@
   // the download is always the tidy form
   function downloadXml(text) {
     text = tidyXml(text);
-    const number = state.root && val(state.root, "ID");
+    const number = state.root && (state.kind === "FatturaPA" ? ItView.facts().fileName : val(state.root, "ID"));     // an Italian invoice: ProgressivoInvio_Numero (DatiGeneraliDocumento/Numero)
     const name = (number || (state.name || "").replace(/\.[A-Za-z0-9]{1,5}$/i, "") || "invoice").replace(/[\\/:*?"<>|\s]+/g, "_");
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([text], { type: "application/xml" }));
