@@ -8,7 +8,9 @@ CREATE TABLE IF NOT EXISTS people (
 CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY, email TEXT UNIQUE NOT NULL, name TEXT NOT NULL, password_hash TEXT NOT NULL,
   role TEXT NOT NULL CHECK (role IN ('admin','manager','worker')),
-  person_id INTEGER REFERENCES people(id), active INTEGER NOT NULL DEFAULT 1
+  person_id INTEGER REFERENCES people(id), active INTEGER NOT NULL DEFAULT 1,
+  auth_method TEXT NOT NULL DEFAULT 'password' CHECK (auth_method IN ('password','microsoft','both')),
+  ms_oid TEXT UNIQUE
 );
 CREATE TABLE IF NOT EXISTS clients (
   id INTEGER PRIMARY KEY, name TEXT NOT NULL, country TEXT, address TEXT, email TEXT,

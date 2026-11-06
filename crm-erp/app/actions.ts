@@ -1,5 +1,6 @@
 "use server";
 import { cookies } from "next/headers";
+import { randomBytes } from "node:crypto";
 import { redirect } from "next/navigation";
 import { get, run, tx } from "@/lib/db";
 import { hashPassword, verifyPassword, makeSession, SESSION_COOKIE, SESSION_DAYS, can } from "@/lib/auth";
@@ -25,15 +26,18 @@ const referer = (fd: FormData, fallback: string) => s(fd, "_back") || fallback;
 
 // ------------------------------------------------------------------ auth
 export async function login(fd: FormData) {
-  const u = get<{ id: number; password_hash: string; role: string }>("SELECT id,password_hash,role FROM users WHERE email=? AND active=1", s(fd, "email").toLowerCase());
+  const email = s(fd, "email").toLowerCase();
+  const recent = get<{ n: number }>("SELECT COUNT(*) n FROM audit_log WHERE action='login_failed' AND user_name=? AND at > datetime('now','-15 minutes')", email)!.n;
+  if (recent >= 5) back("/login", "Too many failed attempts. Try again in 15 minutes.", "err");
+  const u = get<{ id: number; password_hash: string; role: string; auth_method: string; name: string }>("SELECT id,password_hash,role,auth_method,name FROM users WHERE email=? AND active=1", email);
+  if (u?.auth_method === "microsoft") back("/login", "This account signs in with Microsoft. Use the Microsoft button.", "err");
   if (!u || !verifyPassword(String(fd.get("password") ?? ""), u.password_hash)) {
-    audit({ id: null, name: s(fd, "email").toLowerCase() || "unknown" }, "login_failed", "user", null, "Failed sign-in attempt");
+    audit({ id: null, name: email || "unknown" }, "login_failed", "user", null, "Failed sign-in attempt");
     back("/login", "Wrong email or password", "err");
   }
-  const who = get<{ name: string }>("SELECT name FROM users WHERE id=?", u!.id)!;
-  audit({ id: u!.id, name: who.name }, "login", "user", u!.id, "Signed in");
-  (await cookies()).set(SESSION_COOKIE, makeSession(u.id), { httpOnly: true, sameSite: "lax", path: "/", maxAge: SESSION_DAYS * 86400, secure: process.env.NODE_ENV === "production" && process.env.INSECURE_COOKIES !== "1" });
-  redirect(u.role === "worker" ? "/timesheets" : "/");
+  audit({ id: u!.id, name: u!.name }, "login", "user", u!.id, "Signed in with password");
+  (await cookies()).set(SESSION_COOKIE, makeSession(u!.id), { httpOnly: true, sameSite: "lax", path: "/", maxAge: SESSION_DAYS * 86400, secure: process.env.NODE_ENV === "production" && process.env.INSECURE_COOKIES !== "1" });
+  redirect(u!.role === "worker" ? "/timesheets" : "/");
 }
 export async function logout() {
   const me = await currentUser();
@@ -441,12 +445,24 @@ export async function setPayout(fd: FormData) {
 export async function addUser(fd: FormData) {
   const u = await requireAdmin();
   const email = s(fd, "email").toLowerCase(), pw = String(fd.get("password") ?? "");
-  if (!email || pw.length < 8) back("/settings", "Email and a password of at least 8 characters are required", "err");
+  const method = ["microsoft", "password", "both"].includes(s(fd, "auth_method")) ? s(fd, "auth_method") : "password";
+  if (!email) back("/settings", "Email is required", "err");
+  if (method !== "microsoft" && pw.length < 8) back("/settings", "A password of at least 8 characters is required for password logins", "err");
   if (get("SELECT 1 FROM users WHERE email=?", email)) back("/settings", "That email already has a login", "err");
   const role = ["admin", "manager", "worker"].includes(s(fd, "role")) ? s(fd, "role") : "worker";
-  const uid = run("INSERT INTO users (email,name,password_hash,role,person_id) VALUES (?,?,?,?,?)", email, s(fd, "name") || email, hashPassword(pw), role, i(fd, "person_id"));
-  audit(u, "create", "user", uid, `Created login ${email} (${role})`);
+  const hash = hashPassword(method === "microsoft" ? randomBytes(24).toString("hex") : pw);
+  const uid = run("INSERT INTO users (email,name,password_hash,role,person_id,auth_method) VALUES (?,?,?,?,?,?)", email, s(fd, "name") || email, hash, role, i(fd, "person_id"), method);
+  audit(u, "create", "user", uid, `Created login ${email} (${role}, ${method})`);
   back("/settings", "User created");
+}
+export async function setUserAuth(fd: FormData) {
+  const me = await requireAdmin();
+  const id = i(fd, "id")!, method = s(fd, "auth_method");
+  if (!["microsoft", "password", "both"].includes(method)) back("/settings", "Invalid sign-in method", "err");
+  if (id === me.id && method === "microsoft") back("/settings", "Keep your own admin account on 'both' or 'password' so you can never be locked out if Microsoft is misconfigured.", "err");
+  run("UPDATE users SET auth_method=? WHERE id=?", method, id);
+  audit(me, "update", "user", id, `Sign-in method for login #${id} set to ${method}`);
+  back("/settings", "Saved");
 }
 export async function setUserActive(fd: FormData) {
   const me = await requireAdmin();

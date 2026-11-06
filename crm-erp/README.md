@@ -55,6 +55,25 @@ Set `ADMIN_EMAIL` / `ADMIN_PASSWORD` before seeding to choose your own login. Fo
 - **Voiding an issued invoice** needs an admin, a reason and typing `VOID`.
 - **Audit log** (admin): every sign-in, create, change, approval, invoice action and unlock with who, when, reason and before/after values. The table is append-only (database triggers block edits and deletes). Each invoice also shows its own history.
 
+## Microsoft sign-in (Entra ID)
+
+Staff sign in with their Microsoft work account; freelancers without one keep a password. Each user has a sign-in method: `microsoft`, `password` or `both` (Settings, admin only).
+
+**One-time setup (a Microsoft 365 admin, about 10 minutes)**
+1. Entra admin center, **App registrations**, **New registration**. Name it e.g. "Talent CRM". Supported account types: **Single tenant only** (this company's directory).
+2. **Redirect URI**: platform **Web**, value `https://YOUR-DOMAIN/auth/microsoft/callback` (for local tests `http://localhost:3000/auth/microsoft/callback`). Settings in the app shows the exact value.
+3. **Certificates & secrets**, **New client secret**. Copy the secret *value* now. It expires (max 24 months): put a reminder in your calendar.
+4. From the **Overview** page copy **Directory (tenant) ID** and **Application (client) ID**.
+5. Set these on the server (never commit them): `MS_TENANT_ID`, `MS_CLIENT_ID`, `MS_CLIENT_SECRET`, `APP_URL=https://YOUR-DOMAIN`. Restart.
+6. In the app, create each staff user with sign-in **Microsoft** and the same email as their Microsoft account. The first Microsoft sign-in links their Microsoft account id; later logins match on that id.
+
+**Security properties**
+- Authorization code flow with PKCE, `state` and `nonce`; the ID token signature (Microsoft's published keys), issuer (your tenant), audience (this app), expiry and tenant id are all verified. Forged, replayed, expired or other-tenant tokens are rejected (see `tests/msauth.test.ts`).
+- Nobody is created automatically: a valid Microsoft account that an admin has not added gets "No access". Deactivating a user, or disabling them in Microsoft, locks them out.
+- Your MFA and conditional-access policies apply automatically; the app never sees a Microsoft password.
+- Password sign-in: scrypt hashes, signed httpOnly cookies, and 5 failed attempts per email lock password login for 15 minutes. Every attempt is in the audit log.
+- Keep your own admin on `both` so a Microsoft misconfiguration or an expired client secret cannot lock you out.
+
 ### Known limits (v1)
 - No VAT (amounts only, as requested). Invoices print to PDF from the browser or export as CSV.
 - Substitution on a **monthly** or **fixed** assignment is not priced; substitutions apply to hourly/daily work.

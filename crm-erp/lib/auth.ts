@@ -28,6 +28,20 @@ function secret(): string {
 }
 const sign = (v: string) => createHmac("sha256", secret()).update(v).digest("hex");
 
+/** Short-lived signed blob (used to carry the Microsoft login state through the redirect). */
+export function signBlob(data: object, ttlMs = 10 * 60_000): string {
+  const body = Buffer.from(JSON.stringify({ ...data, exp: Date.now() + ttlMs })).toString("base64url");
+  return `${body}.${sign(body)}`;
+}
+export function readBlob<T = any>(token: string | undefined): T | null {
+  if (!token) return null;
+  const [body, sig] = token.split(".");
+  if (!body || !sig) return null;
+  const expected = sign(body);
+  if (sig.length !== expected.length || !timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
+  try { const d = JSON.parse(Buffer.from(body, "base64url").toString()); return d.exp > Date.now() ? d : null; } catch { return null; }
+}
+
 export const SESSION_COOKIE = "session";
 export const SESSION_DAYS = 14;
 

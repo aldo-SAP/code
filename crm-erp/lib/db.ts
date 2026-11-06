@@ -30,6 +30,8 @@ function migrate(d: DB) {
       d.exec(`UPDATE assignments SET client_contract_id=(SELECT client_contract_id FROM projects WHERE projects.id=assignments.project_id)
               WHERE id IN (SELECT MIN(a.id) FROM assignments a JOIN projects p ON p.id=a.project_id WHERE p.client_contract_id IS NOT NULL GROUP BY p.client_contract_id)`);
   }
+  if (!cols("users").includes("auth_method")) d.exec("ALTER TABLE users ADD COLUMN auth_method TEXT NOT NULL DEFAULT 'password'");
+  if (!cols("users").includes("ms_oid")) { d.exec("ALTER TABLE users ADD COLUMN ms_oid TEXT"); d.exec("CREATE UNIQUE INDEX IF NOT EXISTS ux_users_ms_oid ON users(ms_oid)"); }
   d.exec("CREATE UNIQUE INDEX IF NOT EXISTS ux_assignment_contract ON assignments(client_contract_id) WHERE client_contract_id IS NOT NULL");
 }
 
