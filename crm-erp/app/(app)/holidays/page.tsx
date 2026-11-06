@@ -43,7 +43,7 @@ export default async function Holidays({ searchParams }: { searchParams: Promise
       <h2>Add one day</h2>
       <form action={addHolidayAction} className="row card">
         <Hidden name="country" value={country} /><Hidden name="_back" value={back} />
-        <Field label="Date"><input type="date" name="day" required defaultValue={`${year}-01-01`} /></Field>
+        <Field label="Date" full><input type="date" name="day" required defaultValue={`${year}-01-01`} /></Field>
         <Field label="Name"><input name="name" required placeholder="Easter Monday" style={{ width: 260 }} /></Field>
         <button>Add to {countryName(country)}</button>
       </form>

@@ -90,6 +90,11 @@ body{padding-left:env(safe-area-inset-left,0);padding-right:env(safe-area-inset-
   form.row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:end}
   form.row>*{min-width:0}form.row>button,form.row>span,form.row>b,form.row>p{grid-column:1/-1}
   form.row>label.f.wide{grid-column:1/-1}
+  /* text boxes, drop-downs and notes use the whole row; only dates, months and numbers pair up two to a row */
+  form.row>label.f:has(input:not([type=date]):not([type=month]):not([type=number]):not([type=checkbox]):not([type=time])),form.row>label.f:has(select),form.row>label.f:has(textarea){grid-column:1/-1}
+  form.row>label.f:nth-child(odd):last-child{grid-column:1/-1}
+  /* a date, month or number with nobody to share the row with (next item is the button; otherwise mark the field `full`) also takes the whole row */
+  form.row>label.f:has(+ button){grid-column:1/-1}
   form.row label.f input:not([type=checkbox]),form.row label.f select{width:100%!important;max-width:100%;min-width:0}
   input[type=date]::-webkit-date-and-time-value,input[type=month]::-webkit-date-and-time-value{text-align:left;min-width:0}
   input[type=date]::-webkit-datetime-edit,input[type=month]::-webkit-datetime-edit{padding:0}
@@ -109,6 +114,10 @@ body{padding-left:env(safe-area-inset-left,0);padding-right:env(safe-area-inset-
   .stack td::before{content:attr(data-label);color:var(--muted);font-size:12px;text-align:left;flex:none;max-width:40%;padding-top:2px}
   .stack td[data-label=""]::before{content:none}
   .stack td.num[data-label=""]{justify-content:flex-end}
+  /* lists without column headings: one compact row per item, name at the left, status and amount at the right */
+  .stack:not(:has(thead)) tr{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 12px;padding:10px 12px}
+  .stack:not(:has(thead)) td{padding:0;display:block;text-align:right}
+  .stack:not(:has(thead)) td:first-child{flex:1 1 9rem;text-align:left;font-weight:500}
   .stack td:empty{display:none}
   .stack td[colspan]{display:block;text-align:left}
   .stack td[colspan]::before{content:none}

@@ -39,7 +39,7 @@ export default async function Deals({ searchParams }: { searchParams: Promise<{ 
         <Field label="Existing client"><select name="client_id"><option value="">- new company -</option>{clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>
         <Field label="Company (if new)"><input name="company_name" /></Field>
         <Field label="Contact"><input name="contact_name" /></Field>
-        <Field label="Value"><input name="value" type="number" step="0.01" style={{ width: 110 }} /></Field>
+        <Field label="Value" full><input name="value" type="number" step="0.01" style={{ width: 110 }} /></Field>
         <Field label="Currency"><CurrencySelect /></Field>
         <Field label="Stage"><select name="stage">{STAGES.map((s) => <option key={s}>{s}</option>)}</select></Field>
         <Field label="Expected close"><input name="expected_close" type="date" /></Field>

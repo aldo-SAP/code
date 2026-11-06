@@ -85,7 +85,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
       <table><tbody>{fx.map((f) => <tr key={f.id}><td>{f.currency}</td><td>{f.rate_to_eur}</td><td>{fmtDate(f.as_of)}</td></tr>)}{!fx.length && <tr><td className="muted">Only needed for non-EUR amounts in margin reports.</td></tr>}</tbody></table>
       <form action={addFx} className="row" style={{ marginTop: 8 }}>
         <Field label="Currency"><select name="currency">{CURRENCIES.filter((c) => c !== "EUR").map((c) => <option key={c}>{c}</option>)}</select></Field>
-        <Field label="EUR per 1 unit"><input name="rate_to_eur" type="number" step="0.000001" required /></Field>
+        <Field label="EUR per 1 unit" full><input name="rate_to_eur" type="number" step="0.000001" required /></Field>
         <Field label="As of"><input name="as_of" type="date" defaultValue={today()} required /></Field><button className="sec">Save rate</button>
       </form>
     </>

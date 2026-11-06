@@ -47,8 +47,8 @@ export function Nav({ user }: { user: User }) {
   );
 }
 
-export function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <label className="f"><span className="lbl">{label}</span>{children}</label>;
+export function Field({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) {
+  return <label className={full ? "f wide" : "f"}><span className="lbl">{label}</span>{children}</label>;
 }
 export const CURRENCIES = ["EUR", "USD", "GBP", "CHF", "PLN", "RON", "ALL"];
 export function CurrencySelect({ name = "currency", value = "EUR", label }: { name?: string; value?: string; label?: string }) {
