@@ -1128,6 +1128,34 @@
       (j.used > j.trace.length ? '<p class="small">' + esc(T("{n} more fields were placed, but their element is not traced here.", { n: j.used - j.trace.length })) + "</p>" : "") +
       '<div class="tablewrap"><table class="ac"><thead><tr><th>' + esc(T("Source field")) + "</th><th>" + esc(T("Value")) + "</th><th>" + esc(T("XML element")) + "</th><th></th></tr></thead><tbody>" + rows + "</tbody></table></div></details>";
   }
+  // The structure of the request against the provider's: what the platform will not read as it is
+  function structureHtml(j) {
+    const list = j.structure || [];
+    if (!window.RequestCheck) return "";
+    const rows = list.map((m) => '<tr><td><span class="iss-lvl ' + (m.level === "error" ? "bad" : "warn") + '">' + esc(T(m.level === "error" ? "Error" : "Warning")) + "</span></td><td><code>" + esc(m.path) + "</code></td><td>" + esc(I18N.tr(m.message)) + "</td></tr>").join("");
+    return "<h3>" + esc(T("Request structure")) + " · " + list.length + "</h3>" +
+      (rows ? '<div class="tablewrap"><table class="ac"><thead><tr><th></th><th>' + esc(T("Source field")) + "</th><th>" + esc(T("Why")) + "</th></tr></thead><tbody>" + rows + "</tbody></table></div>"
+        : '<p class="none">' + esc(T("The structure matches the one the provider gave.")) + "</p>");
+  }
+  // What to change in the request: the figures of the failing amount rules, worked out again from the request's own fields
+  function fixesHtml(j) {
+    if (!window.RequestFixes || !j.input) return "";
+    const failed = (state.checks || []).filter((c) => !c.ok && !c.warn).map((c) => c.id);
+    if (!failed.length) return "";
+    let list = [], hints = [];
+    try { list = RequestFixes.suggest(j.input, failed); } catch (e) { list = []; }
+    try { hints = RequestFixes.hints(j.input, (state.checks || []).filter((c) => !c.ok && !c.warn), list.map((f) => f.rule)); } catch (e) { hints = []; }
+    if (!list.length && !hints.length) return "";
+    const hintRows = hints.map((h) => '<tr><td><code>' + esc((h.where ? h.where + "." : "") + h.field) + "</code></td><td>" + esc(h.now || "–") + "</td><td>" +
+      esc(h.state === "missing" ? T("Not in the request: add it ({bt})", { bt: h.bt }) : T("Check the value ({bt})", { bt: h.bt })) + "</td><td>" + esc(h.rule) + "</td></tr>").join("");
+    const hintHtml = hintRows ? "<h3>" + esc(T("Fields behind the other failing rules")) + " · " + hints.length + "</h3>" +
+      '<div class="tablewrap"><table class="ac"><thead><tr><th>' + esc(T("Source field")) + "</th><th>" + esc(T("Now")) + "</th><th>" + esc(T("What to do")) + "</th><th>" + esc(T("Rule")) + "</th></tr></thead><tbody>" + hintRows + "</tbody></table></div>" : "";
+    if (!list.length) return hintHtml;
+    const rows = list.map((f) => "<tr><td><code>" + esc((f.where ? f.where + "." : "") + f.field) + "</code></td><td>" + esc(f.now || "–") + "</td><td><b>" + esc(f.should) + "</b></td><td>" + esc(T(f.text, f.args)) + "</td><td>" + esc(f.rule) + "</td></tr>").join("");
+    return "<h3>" + esc(T("What to change")) + " · " + list.length + "</h3>" +
+      '<p class="small">' + esc(T("Each figure follows from the other fields as they are in the request. When another field is the wrong one (the quantity, a price), change that one instead and the figures below follow.")) + "</p>" +
+      '<div class="tablewrap"><table class="ac"><thead><tr><th>' + esc(T("Source field")) + "</th><th>" + esc(T("Now")) + "</th><th>" + esc(T("Should be")) + "</th><th>" + esc(T("Why")) + "</th><th>" + esc(T("Rule")) + "</th></tr></thead><tbody>" + rows + "</tbody></table></div>" + hintHtml;
+  }
   function renderConv() {
     const j = state.conv;
     $("tab-conv").hidden = !j;
@@ -1135,6 +1163,7 @@
     const rows = j.notMapped.map((m) => "<tr><td><code>" + esc(m.path) + "</code></td><td>" + esc(m.value) + "</td><td>" + esc(m.reason || "") + "</td></tr>").join("");
     $("convInfo").innerHTML =
       '<p class="conv-sum"><span>' + esc(T("Converted to XML")) + (j.total > 1 ? " · " + esc(T("first of {n} invoices", { n: j.total })) : "") + '</span><button type="button" id="convDownload">' + esc(T("Download XML")) + "</button></p>" +
+      structureHtml(j) + fixesHtml(j) +
       "<h3>" + esc(T("Not placed in the XML")) + " · " + j.notMapped.length + "</h3>" +
       (rows ? '<div class="tablewrap"><table class="ac"><thead><tr><th>' + esc(T("Source field")) + "</th><th>" + esc(T("Value")) + "</th><th>" + esc(T("Why")) + "</th></tr></thead><tbody>" + rows + "</tbody></table></div>"
         : '<p class="none">' + esc(T("Every field with a value was placed.")) + "</p>") +
@@ -1503,6 +1532,8 @@
       let parsed = null;
       try { parsed = JSON.parse(text); } catch (e) { return { error: () => "<b>" + esc(T("Could not read the document.")) + "</b>" }; }
       try { converted = RequestToUbl.convert(parsed); } catch (e) { return { error: () => "<b>" + esc(String(e.message || e)) + "</b>" }; }
+      converted.structure = window.RequestCheck ? RequestCheck.check(parsed) : [];
+      converted.input = parsed;                                    // for the figures worked out again in "What to change"
       text = converted.xml;
     }
     // XML copied from a browser's tree view has a "-" before each expandable tag (-<cac:Party>); drop it.

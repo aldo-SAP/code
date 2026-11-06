@@ -1,0 +1,597 @@
+[
+ {
+  "name": "base case: no discount row, the gross price is dropped (point 2)",
+  "source": "platform result, message of 2026-10-19 17:10 UTC",
+  "facts": [
+   [
+    "string(//cac:InvoiceLine/cac:Price/cbc:PriceAmount)",
+    "20.000000"
+   ],
+   [
+    "count(//cac:InvoiceLine/cac:Price/cac:AllowanceCharge)",
+    "0"
+   ],
+   [
+    "string(//cac:InvoiceLine/cac:Price/cbc:BaseQuantity/@unitCode)",
+    "XCS"
+   ]
+  ],
+  "notMapped": [
+   "LineItemGrossPrice | the gross price is only written"
+  ],
+  "noFailures": true
+ },
+ {
+  "name": "discount row 0.000000 + allowance 15, gross = net 20, line 185.00 (points 1, 2, 3)",
+  "source": "platform result, message of 2026-10-19 17:10 UTC",
+  "line": {
+   "LineNetAmount": "185.00"
+  },
+  "header": {
+   "DocumentNetAmount": "185.00",
+   "DocumentTotalWithoutVAT": "185.00",
+   "DocumentTotalTaxAmount": "10.18",
+   "DocumentTotalWithVAT": "195.18",
+   "DocumentDueAmount": "195.18"
+  },
+  "headerItems": [
+   {
+    "PaymentTerms": "30 jours nets",
+    "TaxableAmount": "185.00",
+    "TaxAmount": "10.18",
+    "TaxCategoryID": "S",
+    "TaxCategory_Scheme": "VAT",
+    "TaxRate": "5.50"
+   }
+  ],
+  "itemList": [
+   {
+    "LineItemDiscount": "0.000000"
+   },
+   {
+    "LineAllowanceReasonCode": "95",
+    "LineAllowanceReason": "Remise",
+    "LineAllowanceAmount": "15.00"
+   }
+  ],
+  "facts": [
+   [
+    "string(//cac:InvoiceLine/cac:Price/cac:AllowanceCharge/cbc:Amount)",
+    "0.000000"
+   ],
+   [
+    "string(//cac:InvoiceLine/cac:Price/cac:AllowanceCharge/cbc:BaseAmount)",
+    "20.000000"
+   ],
+   [
+    "count(//cac:InvoiceLine/cac:AllowanceCharge)",
+    "1"
+   ],
+   [
+    "string(//cac:InvoiceLine/cac:AllowanceCharge/cbc:Amount)",
+    "15.00"
+   ]
+  ],
+  "noFailures": true
+ },
+ {
+  "name": "net 18, discount row 2.000000, gross 20 (points 1, 2)",
+  "source": "platform result, message of 2026-10-19 17:10 UTC",
+  "line": {
+   "LineNetAmount": "180.00",
+   "LineItemNetPrice": "18.000000"
+  },
+  "header": {
+   "DocumentNetAmount": "180.00",
+   "DocumentTotalWithoutVAT": "180.00",
+   "DocumentTotalTaxAmount": "9.90",
+   "DocumentTotalWithVAT": "189.90",
+   "DocumentDueAmount": "189.90"
+  },
+  "headerItems": [
+   {
+    "PaymentTerms": "30 jours nets",
+    "TaxableAmount": "180.00",
+    "TaxAmount": "9.90",
+    "TaxCategoryID": "S",
+    "TaxCategory_Scheme": "VAT",
+    "TaxRate": "5.50"
+   }
+  ],
+  "itemList": [
+   {
+    "LineItemDiscount": "2.000000"
+   }
+  ],
+  "facts": [
+   [
+    "string(//cac:InvoiceLine/cac:Price/cbc:PriceAmount)",
+    "18.000000"
+   ],
+   [
+    "string(//cac:InvoiceLine/cac:Price/cac:AllowanceCharge/cbc:Amount)",
+    "2.000000"
+   ],
+   [
+    "string(//cac:InvoiceLine/cac:Price/cac:AllowanceCharge/cbc:BaseAmount)",
+    "20.000000"
+   ]
+  ],
+  "noFailures": true
+ },
+ {
+  "name": "LineItemDiscount on the line is ignored; the allowance stays, R120 fails (points 1, 3)",
+  "source": "platform result, message of 2026-10-19 17:10 UTC",
+  "line": {
+   "LineNetAmount": "180.00",
+   "LineItemNetPrice": "18.000000",
+   "LineItemDiscount": "20.00"
+  },
+  "header": {
+   "DocumentNetAmount": "180.00",
+   "DocumentTotalWithoutVAT": "180.00",
+   "DocumentTotalTaxAmount": "9.90",
+   "DocumentTotalWithVAT": "189.90",
+   "DocumentDueAmount": "189.90"
+  },
+  "headerItems": [
+   {
+    "PaymentTerms": "30 jours nets",
+    "TaxableAmount": "180.00",
+    "TaxAmount": "9.90",
+    "TaxCategoryID": "S",
+    "TaxCategory_Scheme": "VAT",
+    "TaxRate": "5.50"
+   }
+  ],
+  "itemList": [
+   {
+    "LineAllowanceReasonCode": "95",
+    "LineAllowanceReason": "Remise",
+    "LineAllowanceAmount": "20.00"
+   }
+  ],
+  "facts": [
+   [
+    "count(//cac:InvoiceLine/cac:Price/cac:AllowanceCharge)",
+    "0"
+   ],
+   [
+    "count(//cac:InvoiceLine/cac:AllowanceCharge)",
+    "1"
+   ],
+   [
+    "string(//cac:InvoiceLine/cac:AllowanceCharge/cbc:Amount)",
+    "20.00"
+   ]
+  ],
+  "mustFail": [
+   "PEPPOL-EN16931-R120"
+  ],
+  "notMapped": [
+   "LineItemDiscount | not used on the line"
+  ]
+ },
+ {
+  "name": "two discount rows are not summed: one price allowance per row, BaseAmount on the first only; R046 fails (point 9)",
+  "source": "platform result, message of 2026-10-19 17:23 UTC",
+  "line": {
+   "LineNetAmount": "180.00",
+   "LineItemNetPrice": "18.000000"
+  },
+  "header": {
+   "DocumentNetAmount": "180.00",
+   "DocumentTotalWithoutVAT": "180.00",
+   "DocumentTotalTaxAmount": "9.90",
+   "DocumentTotalWithVAT": "189.90",
+   "DocumentDueAmount": "189.90"
+  },
+  "headerItems": [
+   {
+    "PaymentTerms": "30 jours nets",
+    "TaxableAmount": "180.00",
+    "TaxAmount": "9.90",
+    "TaxCategoryID": "S",
+    "TaxCategory_Scheme": "VAT",
+    "TaxRate": "5.50"
+   }
+  ],
+  "itemList": [
+   {
+    "LineItemDiscount": "1.000000"
+   },
+   {
+    "LineItemDiscount": "1.000000"
+   }
+  ],
+  "facts": [
+   [
+    "count(//cac:InvoiceLine/cac:Price/cac:AllowanceCharge)",
+    "2"
+   ],
+   [
+    "count(//cac:InvoiceLine/cac:Price/cac:AllowanceCharge/cbc:BaseAmount)",
+    "1"
+   ],
+   [
+    "string(//cac:InvoiceLine/cac:Price/cac:AllowanceCharge[1]/cbc:BaseAmount)",
+    "20.000000"
+   ]
+  ],
+  "mustFail": [
+   "PEPPOL-EN16931-R046"
+  ]
+ },
+ {
+  "name": "line allowance fields pass through as sent (point 6)",
+  "source": "platform result, message of 2026-10-19 17:10 UTC",
+  "itemList": [
+   {
+    "LineAllowanceReasonCode": "95",
+    "LineAllowanceReason": "REMISE",
+    "LineAllowancePercentage": "17.58",
+    "LineAllowanceAmount": "31.36",
+    "LineAllowanceBaseAmount": "178.40"
+   }
+  ],
+  "facts": [
+   [
+    "string(//cac:InvoiceLine/cac:AllowanceCharge/cbc:ChargeIndicator)",
+    "false"
+   ],
+   [
+    "string(//cac:InvoiceLine/cac:AllowanceCharge/cbc:AllowanceChargeReasonCode)",
+    "95"
+   ],
+   [
+    "string(//cac:InvoiceLine/cac:AllowanceCharge/cbc:AllowanceChargeReason)",
+    "REMISE"
+   ],
+   [
+    "string(//cac:InvoiceLine/cac:AllowanceCharge/cbc:MultiplierFactorNumeric)",
+    "17.58"
+   ],
+   [
+    "string(//cac:InvoiceLine/cac:AllowanceCharge/cbc:Amount)",
+    "31.36"
+   ],
+   [
+    "string(//cac:InvoiceLine/cac:AllowanceCharge/cbc:BaseAmount)",
+    "178.40"
+   ]
+  ]
+ },
+ {
+  "name": "an allowance and a charge in one row give two line AllowanceCharge elements (point 5)",
+  "source": "platform result, message of 2026-10-19 17:10 UTC",
+  "itemList": [
+   {
+    "LineAllowanceReasonCode": "95",
+    "LineAllowanceAmount": "10.00",
+    "LineChargeReasonCode": "AA",
+    "LineChargeAmount": "5.00"
+   }
+  ],
+  "facts": [
+   [
+    "count(//cac:InvoiceLine/cac:AllowanceCharge)",
+    "2"
+   ],
+   [
+    "count(//cac:InvoiceLine/cac:AllowanceCharge[cbc:ChargeIndicator='true'])",
+    "1"
+   ]
+  ]
+ },
+ {
+  "name": "attachment name and mime without the file: the document reference is written, the two fields are reported (point 8)",
+  "source": "platform result, message of 2026-10-19 17:10 UTC",
+  "headerItems": [
+   {
+    "PaymentTerms": "30 jours nets",
+    "TaxableAmount": "200.00",
+    "TaxAmount": "11.00",
+    "TaxCategoryID": "S",
+    "TaxCategory_Scheme": "VAT",
+    "TaxRate": "5.50"
+   },
+   {
+    "InvoicedDocumentReference": "DOC-1",
+    "AdditionalDocEmbedded_Filename": "doc.pdf",
+    "AdditionalDocEmbedded_Mimecode": "application/pdf"
+   }
+  ],
+  "facts": [
+   [
+    "string(//cac:AdditionalDocumentReference/cbc:ID)",
+    "DOC-1"
+   ]
+  ],
+  "notMapped": [
+   "AdditionalDocEmbedded_Filename | attachment uploaded separately",
+   "AdditionalDocEmbedded_Mimecode | attachment uploaded separately"
+  ]
+ },
+ {
+  "name": "document allowance and charge, with their totals (point 10)",
+  "source": "platform result, message of 2026-10-19 17:23 UTC",
+  "header": {
+   "DocumentTotalAllowance": "10.00",
+   "DocumentTotalCharge": "5.00"
+  },
+  "headerItems": [
+   {
+    "PaymentTerms": "30 jours nets",
+    "TaxableAmount": "200.00",
+    "TaxAmount": "11.00",
+    "TaxCategoryID": "S",
+    "TaxCategory_Scheme": "VAT",
+    "TaxRate": "5.50",
+    "DocumentAllowanceReasonCode": "95",
+    "DocumentAllowanceReason": "Remise",
+    "DocumentAllowanceAmount": "10.00",
+    "DocumentAllowanceTaxCategory": "S",
+    "DocumentAllowanceTaxCategory_Scheme": "VAT",
+    "InvoiceChargeVATRate": "5.50",
+    "DocumentChargeReasonCode": "AA",
+    "DocumentChargeReason": "Frais",
+    "DocumentChargeAmount": "5.00",
+    "DocumentChargeTaxCategory": "S",
+    "DocumentChargeTaxCategory_Scheme": "VAT",
+    "DocumentChargeVATRate": "5.50"
+   }
+  ],
+  "facts": [
+   [
+    "count(/u:Invoice/cac:AllowanceCharge)",
+    "2"
+   ],
+   [
+    "string(//cbc:AllowanceTotalAmount)",
+    "10.00"
+   ],
+   [
+    "string(//cbc:ChargeTotalAmount)",
+    "5.00"
+   ],
+   [
+    "string(/u:Invoice/cac:AllowanceCharge[cbc:ChargeIndicator='false']/cac:TaxCategory/cbc:Percent)",
+    "5.50"
+   ],
+   [
+    "string(/u:Invoice/cac:AllowanceCharge[cbc:ChargeIndicator='true']/cac:TaxCategory/cbc:Percent)",
+    "5.50"
+   ]
+  ]
+ },
+ {
+  "name": "quantity with 4 decimals (point 11)",
+  "source": "platform result, message of 2026-10-19 17:23 UTC",
+  "line": {
+   "LineQuantity": "1.3750"
+  },
+  "facts": [
+   [
+    "string(//cac:InvoiceLine/cbc:InvoicedQuantity)",
+    "1.3750"
+   ]
+  ]
+ },
+ {
+  "name": "negative quantity with a positive price (point 11)",
+  "source": "platform result, message of 2026-10-19 17:23 UTC",
+  "line": {
+   "LineQuantity": "-1.00",
+   "LineNetAmount": "-20.00"
+  },
+  "facts": [
+   [
+    "string(//cac:InvoiceLine/cbc:InvoicedQuantity)",
+    "-1.00"
+   ],
+   [
+    "string(//cac:InvoiceLine/cac:Price/cbc:PriceAmount)",
+    "20.000000"
+   ]
+  ]
+ },
+ {
+  "name": "credit note 381 with CreditedQuantity and BillingReference (point 11)",
+  "source": "platform result, message of 2026-10-19 17:23 UTC",
+  "creditNote": true,
+  "headerItems": [
+   {
+    "PaymentTerms": "30 jours nets",
+    "TaxableAmount": "200.00",
+    "TaxAmount": "11.00",
+    "TaxCategoryID": "S",
+    "TaxCategory_Scheme": "VAT",
+    "TaxRate": "5.50"
+   },
+   {
+    "PreviousInvoiceIssueID": "FA-1",
+    "PreviousInvoiceIssueDate": "2026-02-10"
+   }
+  ],
+  "facts": [
+   [
+    "count(/cn:CreditNote)",
+    "1"
+   ],
+   [
+    "count(//cac:CreditNoteLine)",
+    "1"
+   ],
+   [
+    "string(//cac:CreditNoteLine/cbc:CreditedQuantity)",
+    "10.0000"
+   ],
+   [
+    "string(//cac:BillingReference/cac:InvoiceDocumentReference/cbc:ID)",
+    "FA-1"
+   ],
+   [
+    "string(//cac:BillingReference/cac:InvoiceDocumentReference/cbc:IssueDate)",
+    "2026-02-10"
+   ]
+  ]
+ },
+ {
+  "name": "exemption code and reason on the tax subtotal and on the line (point 11)",
+  "source": "platform result, message of 2026-10-19 17:23 UTC",
+  "line": {
+   "LineVATCategory": "E",
+   "LineVATRate": "0.00",
+   "LineVATExemptionReasonCode": "VATEX-FR-FRANCHISE",
+   "LineVATExemptionReason": "TVA non applicable"
+  },
+  "header": {
+   "DocumentNetAmount": "200.00",
+   "DocumentTotalWithoutVAT": "200.00",
+   "DocumentTotalTaxAmount": "0.00",
+   "DocumentTotalWithVAT": "200.00",
+   "DocumentDueAmount": "200.00"
+  },
+  "headerItems": [
+   {
+    "PaymentTerms": "30 jours nets",
+    "TaxableAmount": "200.00",
+    "TaxAmount": "0.00",
+    "TaxCategoryID": "E",
+    "TaxCategory_Scheme": "VAT",
+    "TaxRate": "0.00",
+    "TaxExemptionCode": "VATEX-FR-FRANCHISE",
+    "TaxExemptionReason": "TVA non applicable"
+   }
+  ],
+  "facts": [
+   [
+    "string(//cac:TaxSubtotal/cac:TaxCategory/cbc:TaxExemptionReasonCode)",
+    "VATEX-FR-FRANCHISE"
+   ],
+   [
+    "string(//cac:TaxSubtotal/cac:TaxCategory/cbc:TaxExemptionReason)",
+    "TVA non applicable"
+   ],
+   [
+    "string(//cac:ClassifiedTaxCategory/cbc:TaxExemptionReasonCode)",
+    "VATEX-FR-FRANCHISE"
+   ],
+   [
+    "string(//cac:ClassifiedTaxCategory/cbc:TaxExemptionReason)",
+    "TVA non applicable"
+   ]
+  ]
+ },
+ {
+  "name": "a base amount without a percentage is passed through as is; R042 fails (point 11)",
+  "source": "platform result, message of 2026-10-19 17:23 UTC",
+  "itemList": [
+   {
+    "LineAllowanceReasonCode": "95",
+    "LineAllowanceAmount": "10.00",
+    "LineAllowanceBaseAmount": "200.00"
+   }
+  ],
+  "facts": [
+   [
+    "string(//cac:InvoiceLine/cac:AllowanceCharge/cbc:BaseAmount)",
+    "200.00"
+   ],
+   [
+    "count(//cac:InvoiceLine/cac:AllowanceCharge/cbc:MultiplierFactorNumeric)",
+    "0"
+   ]
+  ],
+  "mustFail": [
+   "PEPPOL-EN16931-R042"
+  ]
+ },
+ {
+  "name": "a price base unit different from the quantity unit is passed through as is; R130 fails (point 11)",
+  "source": "platform result, message of 2026-10-19 17:23 UTC",
+  "line": {
+   "LineItemUoM": "KGM"
+  },
+  "facts": [
+   [
+    "string(//cac:InvoiceLine/cac:Price/cbc:BaseQuantity/@unitCode)",
+    "KGM"
+   ]
+  ],
+  "mustFail": [
+   "PEPPOL-EN16931-R130"
+  ]
+ },
+ {
+  "name": "zero discount row with the gross price, next to three line allowances (the platform XML of 2026-11)",
+  "source": "platform XML sent on 2026-11, zero discount row with the gross price",
+  "line": {
+   "LineQuantity": "5.0000",
+   "LineNetAmount": "100.00",
+   "LineItemNetPrice": "35.682000",
+   "LineItemGrossPrice": "35.682000"
+  },
+  "header": {
+   "DocumentNetAmount": "100.00",
+   "DocumentTotalWithoutVAT": "100.00",
+   "DocumentTotalTaxAmount": "5.50",
+   "DocumentTotalWithVAT": "105.50",
+   "DocumentDueAmount": "105.50"
+  },
+  "headerItems": [
+   {
+    "PaymentTerms": "30 jours nets",
+    "TaxableAmount": "100.00",
+    "TaxAmount": "5.50",
+    "TaxCategoryID": "S",
+    "TaxCategory_Scheme": "VAT",
+    "TaxRate": "5.50"
+   }
+  ],
+  "itemList": [
+   {
+    "LineItemDiscount": "0.00"
+   },
+   {
+    "LineAllowanceReasonCode": "95",
+    "LineAllowanceReason": "REMISE ADDITIVE %",
+    "LineAllowancePercentage": "17.58",
+    "LineAllowanceAmount": "31.36",
+    "LineAllowanceBaseAmount": "178.40"
+   },
+   {
+    "LineAllowanceReasonCode": "95",
+    "LineAllowanceReason": "REMISE REDISTRIBUTION",
+    "LineAllowancePercentage": "2.85",
+    "LineAllowanceAmount": "4.19",
+    "LineAllowanceBaseAmount": "147.04"
+   },
+   {
+    "LineAllowanceReasonCode": "95",
+    "LineAllowanceReason": "CPV DISTRIBUTION %",
+    "LineAllowancePercentage": "30.00",
+    "LineAllowanceAmount": "42.86",
+    "LineAllowanceBaseAmount": "142.85"
+   }
+  ],
+  "facts": [
+   [
+    "string(//cac:InvoiceLine/cac:Price/cac:AllowanceCharge/cbc:Amount)",
+    "0.00"
+   ],
+   [
+    "string(//cac:InvoiceLine/cac:Price/cac:AllowanceCharge/cbc:BaseAmount)",
+    "35.682000"
+   ],
+   [
+    "count(//cac:InvoiceLine/cac:AllowanceCharge)",
+    "3"
+   ],
+   [
+    "string(//cac:InvoiceLine/cac:Price/cbc:PriceAmount)",
+    "35.682000"
+   ]
+  ]
+ }
+]

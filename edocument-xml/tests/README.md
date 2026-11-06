@@ -15,10 +15,16 @@ something shows up before it reaches the page. Nothing here is needed to use the
 | UBL 2.1 schema | the OASIS UBL 2.1 XSDs, run with libxml2 | the viewer's structure check and libxml2 agree on every document (see below) |
 | Mutated invoices | the example invoices, randomly broken (`mutate.py`) | same, on documents with missing or wrong data |
 | XRechnung (Germany) | KoSIT `xrechnung-schematron` 2.6.0 (XRechnung 3.0.2) with the Peppol rules it integrates, and the `xrechnung-testsuite` | the viewer runs the 77 official asserts themselves, compared with the official stylesheet on the test suite, aimed documents and mutants (see below) |
+| FatturaPA (Italy) | the official XSDs (`Schema_VFPA12_V1.2.3`, `Schema_VFSM10v_1.0.2`), the format specification v1.4 and the SdI controls list v2.0 | the viewer's structure check against libxml2; the specification rules and every SdI control on a sample invoice with one change each (see "Italy" below) |
 | PINT AE (UAE) | the official Peppol PINT AE 1.0.4 package (billing and self-billing): schematron, compiled XSLT, examples | the viewer runs the 302 official asserts themselves; every assert must be present, and the failures must equal the official stylesheet's on the examples, on documents aimed at single rules, on documents with one change each and on random breaks; a coverage count shows which asserts the documents reach |
 
 The official stylesheets are run with Saxon (Java); the engine runs in headless Chromium (Playwright), loading the page
 from disk.
+
+## Before a push
+
+`./check.sh` runs the quick checks (no downloads): the service worker is regenerated and current, the how-to-fix lines belong to rules, every rule message is translated, the examples pass their rules,
+the Italian layers, the converter against the platform's results, the request structure check. Run `./run.sh par` as well after a change to the rules or the engine.
 
 ## Running
 
@@ -149,6 +155,22 @@ rendered verdict, hero, fields and raw XML. Run it before and after a change tha
 - `gen-it-schema.py OUT.js XSD…` builds `rules/it-schema-data.js` from the official XSDs (`Schema_VFPA12_V1.2.3.xsd`, which is the same file as `Schema_VFPR12_v1.2.3.xsd`, and `Schema_VFSM10v_1.0.2.xsd`); keep them in `.cache/it-fatturapa/`.
 - `it/mutate.py` makes documents from a sample invoice with one change each and takes libxml2's schema verdict; `it/differential.js` compares the viewer's structure check (`rules/it-schema.js`) with it (needs the XSD with the XMLDSig import pointed at a local stub).
 - `it/check-spec.js` tests the specification rules (`rules/it-spec.js`, from the technical specification v1.4).
-- `check-samples.js` checks that the generic, French, German and UAE examples pass their rules with no warning.
+- `check-samples.js` checks that the generic, French, German and UAE examples pass their rules with no warning (`it/check-sample.js` does the same for the Italian one).
 - `it/check-sample.js` checks that the Italian example passes every layer.
 - `it/check-sdi.js` tests the controls of the Sistema di Interscambio (`rules/it-sdi.js`, from "Elenco dei controlli" v2.0 and the SdI specifications 1.8.4): every code on the sample invoice with one change each.
+
+## Units, currencies, notices
+
+- `gen-units.py` and `gen-currency.py` turn the Peppol code lists `UNECERec20-11e.xml` and `ISO4217_2015.xml` (in `.cache/peppol/structure/codelist/`) into `../lib/units-data.js` and `../lib/currency-data.js`.
+- `gen-notices.py` writes `../notices.html` from `../THIRD-PARTY-NOTICES.md`. Update the file when a source or its version changes.
+
+## The French request converter against the platform
+
+`converter/run.js` converts a base request (`converter/base.json`, invented) with one change per case from `converter/cases.json` and checks the facts the XML must show (XPath) and the rules that must
+or must not fail. The cases are what the platform really answered (the message or result each comes from is in the case); where the platform's answer is not known, the case is not there. When the platform
+changes or a new answer arrives, add a case first, then change the converter.
+
+`converter/fixes.js` tests `../lib/request-fixes.js` (the "What to change" table and the hints for the other failing rules, which name the request field behind a BT number): for each case a wrong amount is made, the proposed values are put into the request, and the rules must then pass.
+
+`converter/structure.js` tests `../lib/request-check.js`, which compares a request with the structure the provider gave (`gen-request-structure.js PROVIDER-FILE.json` writes `../lib/request-structure-fr.js`; only field names).
+The provider's own file must give no problem; each kind of problem (wrong level, unknown name, a control character in a value, a list given as one object …) must be found.

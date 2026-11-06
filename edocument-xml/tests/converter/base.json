@@ -1,0 +1,65 @@
+{
+  "req": [
+    {
+      "ProfileType": "urn:cen.eu:en16931:2017",
+      "BusinessProcessType": "B1",
+      "InvoiceNumber": "TEST-0001",
+      "InvoiceDate": "2026-03-10",
+      "DueDate": "2026-04-09",
+      "InvoiceType": "380",
+      "InvoiceCurrencyCode": "EUR",
+      "BuyerReference": "REF-001",
+      "SellerEndpoint": "102030400",
+      "SellerEndpoint_Scheme": "0225",
+      "SellerTradingName": "Exemple Fournitures SAS",
+      "SellerAddress1": "12 rue de l'Exemple",
+      "SellerCity": "Lyon",
+      "SellerPostcode": "69001",
+      "SellerCountry": "FR",
+      "SellerVATID": "FR49102030400",
+      "SellerVATID_Scheme": "VAT",
+      "SellerLegalName": "Exemple Fournitures SAS",
+      "SellerLegalID": "102030400",
+      "SellerLegalID_Scheme": "0002",
+      "BuyerEndpoint": "506070804",
+      "BuyerEndpoint_Scheme": "0225",
+      "BuyerTradingName": "Modele Services SA",
+      "BuyerAddress1": "3 place du Modele",
+      "BuyerCity": "Nantes",
+      "BuyerPostcode": "44000",
+      "BuyerCountry": "FR",
+      "BuyerVATID": "FR46506070804",
+      "BuyerVATID_Scheme": "VAT",
+      "BuyerLegalName": "Modele Services SA",
+      "BuyerLegalID": "506070804",
+      "BuyerLegalID_Scheme": "0002",
+      "DeliveryDateEffective": "2026-03-08",
+      "PaymentMeansCode": "30",
+      "BankAccountID": "FR7600000000000000000000000",
+      "DocumentTotalTaxAmount": "11.00",
+      "DocumentNetAmount": "200.00",
+      "DocumentTotalWithoutVAT": "200.00",
+      "DocumentTotalWithVAT": "211.00",
+      "DocumentDueAmount": "211.00",
+      "InvoiceHeaderItemList": [
+        { "PaymentTerms": "30 jours nets", "TaxableAmount": "200.00", "TaxAmount": "11.00", "TaxCategoryID": "S", "TaxCategory_Scheme": "VAT", "TaxRate": "5.50" }
+      ],
+      "InvoiceLineList": [
+        {
+          "InvoiceLineID": "1",
+          "LineQuantity": "10.0000",
+          "LineUOMCode": "XCS",
+          "LineNetAmount": "200.00",
+          "ItemDescription": "Article de test",
+          "ItemName": "Article de test",
+          "LineVATCategory": "S",
+          "LineVATRate": "5.50",
+          "LineItemNetPrice": "20.000000",
+          "LineItemBaseQuantity": "1.00",
+          "LineItemUoM": "XCS",
+          "LineItemGrossPrice": "20.000000"
+        }
+      ]
+    }
+  ]
+}
