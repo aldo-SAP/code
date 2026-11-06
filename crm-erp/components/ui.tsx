@@ -4,6 +4,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import MobileNav from "@/components/MobileNav";
 import NavLinks from "@/components/NavLinks";
 import { can, type User } from "@/lib/auth";
+import { tone } from "@/lib/tone";
 
 export const money = (n: number | null | undefined, c = "EUR") =>
   n == null ? "-" : new Intl.NumberFormat("en-IE", { style: "currency", currency: c }).format(n);
@@ -17,24 +18,27 @@ export function Flash({ sp }: { sp: { msg?: string; err?: string } }) {
   return null;
 }
 
-const tone: Record<string, string> = {
-  approved: "ok", requested: "warn", cancelled: "err", revoked: "err", paid: "ok", won: "ok", active: "ok", completed: "ok", ready: "ok", issued: "warn", submitted: "warn",
-  draft: "", planned: "", rejected: "err", void: "err", lost: "err", dropped: "err",
-};
 export const Badge = ({ v }: { v: string }) => <span className={`badge ${tone[v] ?? ""}`}>{v}</span>;
 
 export function Nav({ user }: { user: User }) {
-  const items: [string, string][] = user.role === "worker"
-    ? [["/timesheets", "My timesheet"], ["/leave", "My leave"], ["/account", "My account"]]
-    : [["/", "Dashboard"], ["/clients", "Clients"], ["/deals", "Pipeline"], ["/people", "People"], ["/courses", "Training"],
-       ["/projects", "Projects"], ["/timesheets", "Timesheets"], ["/leave", "Leave"], ["/team", "Team calendar"], ["/checklist", "Month end"], ["/approvals", "Approvals"], ["/invoices", "Invoices"],
-       ...(can.finance(user) ? [["/payouts", "Payouts"], ["/reports", "Margin"]] as [string, string][] : []),
-       ["/unlock", "Unlock billed hours"], ["/import", "CSV import"], ["/account", "My account"], ...(can.admin(user) ? [["/holidays", "Public holidays"], ["/audit", "Audit log"], ["/settings", "Settings"]] as [string, string][] : [])];
+  type Item = [string, string];
+  const groups: { label: string; items: Item[]; closed?: boolean }[] = user.role === "worker"
+    ? [{ label: "", items: [["/timesheets", "My timesheet"], ["/leave", "My leave"], ["/account", "My account"]] }]
+    : [
+        { label: "", items: [["/", "Dashboard"]] },
+        { label: "Sales", items: [["/clients", "Clients"], ["/deals", "Pipeline"]] },
+        { label: "Talent", items: [["/people", "People"], ["/courses", "Training"]] },
+        { label: "Delivery", items: [["/projects", "Projects"], ["/timesheets", "Timesheets"], ["/approvals", "Approvals"], ["/leave", "Leave"], ["/team", "Team calendar"], ["/checklist", "Month end"]] },
+        { label: "Finance", items: [["/invoices", "Invoices"], ...(can.finance(user) ? [["/payouts", "Payouts"], ["/reports", "Margin"]] as Item[] : [])] },
+        { label: "Admin", closed: true, items: [["/unlock", "Unlock billed hours"], ["/import", "CSV import"], ...(can.admin(user) ? [["/holidays", "Public holidays"], ["/audit", "Audit log"], ["/settings", "Settings"]] as Item[] : [])] },
+        { label: "", items: [["/account", "My account"]] },
+      ];
+  const items = groups.flatMap((g) => g.items);
   return (
     <>
       <nav className="side" aria-label="Main">
         <div className="brand">Talent CRM/ERP</div>
-        <NavLinks items={items} />
+        <NavLinks groups={groups} />
         <div className="who">{user.name}<br />{user.role}</div>
         <ThemeToggle />
         <form action={logout}><button className="sec sm" style={{ margin: "0 8px" }}>Sign out</button></form>
