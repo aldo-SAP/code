@@ -2,6 +2,7 @@ import { all, setting } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
 import { addFx, addUser, retryEmailAction, saveLeaveSettings, saveSettings, sendTestEmail, setUserActive, setUserAuth } from "@/app/actions";
 import { mailProvider, recentMail } from "@/lib/mail";
+import { defaultAllowance } from "@/lib/leave";
 import { msConfig, redirectUri } from "@/lib/msauth";
 import { Badge, CURRENCIES, Field, Flash, Hidden, today } from "@/components/ui";
 
@@ -29,6 +30,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         <div>Email sending: <b>{provider === "none" ? "not configured (messages are only logged)" : provider === "graph" ? "Microsoft 365" : "Resend"}</b>. See DEPLOY.md to set it up.</div>
         <form action={saveLeaveSettings} className="row">
           <Field label="Who gets leave requests (emails, comma separated). Empty = all managers and admins"><input name="leave_approver_emails" defaultValue={await setting("leave_approver_emails")} style={{ width: 420 }} /></Field>
+          <Field label="Default vacation days per year"><input name="default_leave_days" type="number" step="0.5" min="1" defaultValue={await defaultAllowance()} style={{ width: 120 }} /></Field>
           <button className="sec">Save</button>
         </form>
         <form action={sendTestEmail}><button className="sec">Send me a test email</button></form>

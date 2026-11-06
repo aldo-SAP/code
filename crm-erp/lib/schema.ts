@@ -125,12 +125,24 @@ ALTER TABLE leave ADD COLUMN IF NOT EXISTS decided_by INTEGER;
 ALTER TABLE leave ADD COLUMN IF NOT EXISTS decided_by_name TEXT;
 ALTER TABLE leave ADD COLUMN IF NOT EXISTS decided_at TEXT;
 ALTER TABLE leave ADD COLUMN IF NOT EXISTS decision_note TEXT;
+-- Yearly vacation allowance per person (falls back to the company default in settings: default_leave_days, 20 if unset).
+CREATE TABLE IF NOT EXISTS leave_allowance (
+  person_id INTEGER NOT NULL REFERENCES people(id) ON DELETE CASCADE, year INTEGER NOT NULL, days DOUBLE PRECISION NOT NULL, note TEXT,
+  PRIMARY KEY (person_id, year)
+);
+-- One email thread per leave request: later messages reply to the first one.
+CREATE TABLE IF NOT EXISTS email_threads (
+  thread_key TEXT PRIMARY KEY, provider TEXT NOT NULL, subject TEXT NOT NULL, graph_message_id TEXT,
+  root_message_id TEXT, last_message_id TEXT, updated_at TEXT NOT NULL DEFAULT to_char(timezone('utc', now()), 'YYYY-MM-DD HH24:MI:SS')
+);
 -- Every email the app tries to send, with the outcome, so nothing is lost silently.
 CREATE TABLE IF NOT EXISTS email_outbox (
   id SERIAL PRIMARY KEY, created_at TEXT NOT NULL DEFAULT to_char(timezone('utc', now()), 'YYYY-MM-DD HH24:MI:SS'),
   to_addr TEXT NOT NULL, subject TEXT NOT NULL, body TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'queued', error TEXT, attempts INTEGER NOT NULL DEFAULT 0, sent_at TEXT, related TEXT
 );
+ALTER TABLE email_outbox ADD COLUMN IF NOT EXISTS cc_addr TEXT;
+ALTER TABLE email_outbox ADD COLUMN IF NOT EXISTS thread_key TEXT;
 
 -- Append-only history of who did what. Triggers block edits, deletes and truncation.
 CREATE TABLE IF NOT EXISTS audit_log (

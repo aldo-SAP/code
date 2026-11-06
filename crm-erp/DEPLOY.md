@@ -73,10 +73,12 @@ Without email the app still works, but nobody is notified. Pick **one** option.
 
 **Option B: Resend** (a mail service, free for small volumes). Create an account, add and verify your domain (DNS records SPF/DKIM), create an API key, then in Render set `MAIL_PROVIDER=resend`, `RESEND_API_KEY` and `MAIL_FROM=Talent CRM <crm@yourcompany.com>`.
 
+With Microsoft 365 the thread works through the mailbox's Sent Items (replies are real reply-all messages), so do not delete the first message from the shared mailbox's Sent Items; if you do, the next update simply starts a new thread.
+
 Then in the app: **Settings, Email and leave approvals, "Send me a test email"**. Every message, sent or failed, appears in the **Email log** with a Retry button.
 
 **How leave works**
-- A worker asks for vacation under *My leave*. Managers and admins (or the list you enter in Settings) get an email with a link. The worker gets a receipt email.
+- A worker asks for vacation under *My leave*. Managers and admins (or the list you enter in Settings) get one email with a link, and the worker is in copy. Everything about that request (decision, cancellation, a later withdrawal) is sent as a reply in that same thread.
 - The link opens the request (signing in first if needed, then returning to it). The approver sees what the person is working on, any substitute, hours already logged and colleagues off, then approves or rejects. The worker is emailed the decision.
 - You cannot decide your own request. Sick days are recorded at once and the approvers are told. Managers can record leave for anyone. Everything is in the audit log.
 - Email links never approve anything by themselves: they only open the request, and a signed-in manager has to press the button. That also protects against mail scanners that open links automatically.

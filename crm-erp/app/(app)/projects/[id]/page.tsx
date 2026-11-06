@@ -21,10 +21,10 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
   return (
     <>
       <h2>{p.name} <Badge v={p.status} /></h2><Flash sp={sp} />
-      <p className="muted">Client: <Link href={`/clients/${p.client_id}`}>{p.client}</Link>
+      <div className="muted" style={{ margin: "8px 0" }}>Client: <Link href={`/clients/${p.client_id}`}>{p.client}</Link>
         <form action={setProjectStatus} style={{ display: "inline-flex", gap: 6, marginLeft: 12 }}>
           <Hidden name="rid" value={p.id} /><Hidden name="_back" value={`/projects/${p.id}`} />
-          <select name="status" defaultValue={p.status}>{["planned", "active", "paused", "done"].map((s) => <option key={s}>{s}</option>)}</select><button className="sec sm">Set status</button></form></p>
+          <select name="status" defaultValue={p.status}>{["planned", "active", "paused", "done"].map((s) => <option key={s}>{s}</option>)}</select><button className="sec sm">Set status</button></form></div>
 
       <h3>Team</h3>
       <div className="tw"><table><thead><tr><th>Person</th><th>Contract</th><th>Role</th><th>Billing</th><th>Bill rate</th>{can.finance(user) && <th>Cost rate</th>}<th>Dates</th><th></th></tr></thead><tbody>

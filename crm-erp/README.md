@@ -52,9 +52,16 @@ For `npm start` over plain HTTP locally set `INSECURE_COOKIES=1`.
 
 ### Leave
 - Workers request vacation (and "other") under *My leave*; managers/admins approve or reject with a note (required to reject) and cannot decide their own request. Sick days are recorded at once and approvers are told. Public holidays and leave for others are recorded by managers (approved at once).
-- Emails: approvers get the request with a link; the worker gets a receipt and the decision. The approver page shows assignments, substitutes, hours already logged and colleagues off in the period. Overlapping requests and weekend-only ranges are refused. Only approved leave shades the timesheet.
+- **One email thread per request.** The request goes **To the managers, Cc the employee**. The approver opens the link, decides on the web, and the decision arrives as a **reply in the same thread**. Cancellations and withdrawals reply in the same thread too. With Microsoft 365 these are real "reply all" messages sent from the shared mailbox, so Outlook and every other client group them. With Resend the same subject plus `Message-ID`/`In-Reply-To`/`References` headers are used (best effort).
+- **Withdrawing approved leave** (project needs): a manager opens the request, enters a reason and withdraws the approval. The days return to the employee's allowance and the thread is updated. Only leave that has not started; the employee can still cancel their own leave.
+- **Allowance and timeline:** each person has a yearly vacation allowance (company default in Settings, 20 days if unset; override per person and year, e.g. for carry-over). Employees see days left this year (taken, planned, waiting for approval), a 12-month timeline of when leave was or will be taken, and a history list including rejected and withdrawn items. Managers see everyone's balances, and a warning when a request exceeds what is left.
+- The approver page shows assignments, substitutes, hours already logged and colleagues off in the period. Overlapping requests and weekend-only ranges are refused. Only approved leave shades the timesheet.
 - Email goes through Microsoft 365 (Graph) or Resend; every message is kept in an email log with retry. Without a provider, messages are logged as "skipped". Setup: DEPLOY.md.
-- Not included: yearly allowance / remaining days, and automatic substitutes.
+- Not included: automatic substitutes, pro-rata allowance for people who start mid-year (set the number by hand), half days.
+
+### Phone and theme
+- Works on phones: top bar with a menu, forms and tables fit the screen (tables scroll sideways inside their own box), 16px inputs so iOS does not zoom. It can be added to the home screen (web app manifest and icons).
+- Light and dark follow the device setting by default (`prefers-color-scheme`). The Auto / Light / Dark switch in the menu overrides it and is remembered (cookie), applied on the server so there is no flash.
 
 ### Protecting history
 - **Billed hours are locked.** Once a day is on an invoice or a payout it shows as a dashed cell and cannot be edited, removed or re-approved.

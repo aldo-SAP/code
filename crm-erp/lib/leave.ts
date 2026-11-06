@@ -15,6 +15,7 @@ const isDate = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Dat
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const nowStr = () => new Date().toISOString().slice(0, 19).replace("T", " ");
 const appUrl = () => (process.env.APP_URL ?? "http://localhost:3000").replace(/\/$/, "");
+const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
 
 export async function approverEmails(excludeEmail?: string): Promise<string[]> {
   const configured = (await setting("leave_approver_emails")).split(/[,;\s]+/).filter(Boolean);
@@ -29,9 +30,59 @@ export async function personEmail(personId: number): Promise<string | null> {
   return (await get<{ email: string | null }>("SELECT email FROM people WHERE id=?", personId))?.email ?? null;
 }
 
+// ------------------------------------------------------------------ allowance and balance
+
+export async function defaultAllowance(): Promise<number> {
+  const v = Number(await setting("default_leave_days"));
+  return Number.isFinite(v) && v > 0 ? v : 20;
+}
+export async function allowanceFor(personId: number, year: number): Promise<number> {
+  const r = await get<{ days: number }>("SELECT days FROM leave_allowance WHERE person_id=? AND year=?", personId, year);
+  return r ? r.days : defaultAllowance();
+}
+
+export interface Balance { year: number; allowance: number; taken: number; planned: number; pending: number; remaining: number; remainingIfPending: number }
+
+/** Working days of vacation in `year`: taken (up to and including today), planned (approved, later) and pending (not yet decided). */
+export async function leaveBalance(personId: number, year: number, today = todayStr()): Promise<Balance> {
+  const ys = `${year}-01-01`, ye = `${year}-12-31`;
+  const rows = await all<{ from_date: string; to_date: string; status: string }>(
+    "SELECT from_date,to_date,status FROM leave WHERE person_id=? AND type='vacation' AND status IN ('approved','requested') AND to_date>=? AND from_date<=?", personId, ys, ye);
+  let taken = 0, planned = 0, pending = 0;
+  for (const r of rows) {
+    const from = r.from_date > ys ? r.from_date : ys, to = r.to_date < ye ? r.to_date : ye;
+    const total = weekdaysBetween(from, to);
+    if (r.status === "requested") { pending += total; continue; }
+    const used = to < today ? total : from > today ? 0 : weekdaysBetween(from, today);
+    taken += used; planned += total - used;
+  }
+  const allowance = await allowanceFor(personId, year);
+  return { year, allowance, taken, planned, pending, remaining: allowance - taken - planned, remainingIfPending: allowance - taken - planned - pending };
+}
+
+/** All leave of a person touching `year` (any status), oldest first, plus the balance. Used for the timeline. */
+export async function leaveTimeline(personId: number, year: number) {
+  const rows = await all<any>("SELECT * FROM leave WHERE person_id=? AND to_date>=? AND from_date<=? ORDER BY from_date, id", personId, `${year}-01-01`, `${year}-12-31`);
+  return { rows, balance: await leaveBalance(personId, year) };
+}
+
+// ------------------------------------------------------------------ one email thread per request
+
+interface LeaveRow { id: number; person_id: number; name: string; type: string; from_date: string; to_date: string; days: number }
+const threadKey = (id: number) => `leave:${id}`;
+const threadSubject = (l: Pick<LeaveRow, "name" | "from_date" | "to_date">) => `Leave request: ${l.name}, ${l.from_date} to ${l.to_date}`;
+
+/** Message in the request's thread: to the approvers, copy to the employee. The first message opens the thread, later ones reply to it. */
+async function threadMail(l: LeaveRow, text: string, opts: { exclude?: string } = {}) {
+  const worker = await personEmail(l.person_id);
+  await sendMail({ to: await approverEmails(opts.exclude), cc: worker ? [worker] : [], subject: threadSubject(l), text, thread: threadKey(l.id), related: threadKey(l.id) });
+}
+
+// ------------------------------------------------------------------ workflow
+
 export interface LeaveInput { personId: number; type: LeaveType; from: string; to: string; notes?: string }
 
-export async function createLeave(actor: User, i: LeaveInput): Promise<Result<{ id: number; status: "requested" | "approved" }>> {
+export async function createLeave(actor: User, i: LeaveInput): Promise<Result<{ id: number; status: "requested" | "approved"; warning?: string }>> {
   const manager = isManager(actor);
   if (!LEAVE_TYPES.includes(i.type)) return { ok: false, error: "Choose a leave type." };
   if (!isDate(i.from) || !isDate(i.to) || i.to < i.from) return { ok: false, error: "Check the dates: the end must not be before the start." };
@@ -46,49 +97,75 @@ export async function createLeave(actor: User, i: LeaveInput): Promise<Result<{ 
     "SELECT from_date,to_date,status FROM leave WHERE person_id=? AND status IN ('requested','approved') AND from_date<=? AND to_date>=?", i.personId, i.to, i.from);
   if (clash) return { ok: false, error: `This overlaps with ${clash.status} leave from ${clash.from_date} to ${clash.to_date}.` };
 
+  // vacation beyond the yearly allowance is allowed but flagged to the approver
+  let warning: string | undefined;
+  if (i.type === "vacation") {
+    const year = Number(i.from.slice(0, 4));
+    const b = await leaveBalance(i.personId, year);
+    const inYear = weekdaysBetween(i.from > `${year}-01-01` ? i.from : `${year}-01-01`, i.to < `${year}-12-31` ? i.to : `${year}-12-31`);
+    if (inYear > b.remainingIfPending) warning = `This is more than the ${year} allowance leaves (${plural(Math.max(0, b.remainingIfPending), "day")} left before this request).`;
+  }
+
   const pending = requiresApproval(i.type, manager);
   const status = pending ? "requested" : "approved";
   const id = await run(
     `INSERT INTO leave (person_id,type,from_date,to_date,notes,status,days,requested_by,requested_at,decided_by,decided_by_name,decided_at,decision_note) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     i.personId, i.type, i.from, i.to, i.notes?.trim() || null, status, days, actor.id, nowStr(),
     pending ? null : manager ? actor.id : null, pending ? null : manager ? actor.name : "automatic", pending ? null : nowStr(), pending ? null : manager ? null : "Reported by the worker");
-  await audit(actor, pending ? "leave_request" : "leave_record", "leave", id, `${person.name}: ${i.type} ${i.from} to ${i.to} (${days} working day${days === 1 ? "" : "s"}) ${pending ? "requested" : "recorded"}`, { details: { notes: i.notes ?? null } });
+  await audit(actor, pending ? "leave_request" : "leave_record", "leave", id, `${person.name}: ${i.type} ${i.from} to ${i.to} (${plural(days, "working day")}) ${pending ? "requested" : "recorded"}`, { details: { notes: i.notes ?? null, warning: warning ?? null } });
 
-  const range = `${i.from} to ${i.to} (${days} working day${days === 1 ? "" : "s"})`;
+  const l: LeaveRow = { id, person_id: i.personId, name: person.name, type: i.type, from_date: i.from, to_date: i.to, days };
+  const range = `${i.from} to ${i.to} (${plural(days, "working day")})`;
   const link = `${appUrl()}/leave/${id}`;
-  const workerAddr = await personEmail(i.personId);
   if (pending) {
-    await sendMail(await approverEmails(actor.email), `Leave request: ${person.name}, ${i.from} to ${i.to}`,
-      `${person.name} asks for ${i.type} leave.\n\nDates: ${range}\n${i.notes ? `Note: ${i.notes}\n` : ""}\nReview and approve or reject: ${link}`, `leave:${id}`);
-    if (workerAddr) await sendMail([workerAddr], `We received your leave request (${i.from} to ${i.to})`,
-      `Hi ${person.name},\n\nYour ${i.type} request for ${range} was sent for approval. You will get an email when it is decided.\n\nStatus and history: ${appUrl()}/leave`, `leave:${id}`);
+    await threadMail(l, `${person.name} asks for ${i.type} leave.\n\nDates: ${range}\n${i.notes ? `Note: ${i.notes}\n` : ""}${warning ? `\nHeads up: ${warning}\n` : ""}\nOpen the request to approve or reject: ${link}\n\nThe decision will be sent as a reply in this thread.`, { exclude: actor.email });
   } else if (manager && i.personId !== actor.person_id) {
-    if (workerAddr) await sendMail([workerAddr], `Leave recorded for you: ${i.from} to ${i.to}`,
-      `Hi ${person.name},\n\n${actor.name} recorded ${i.type} leave for you: ${range}.\n\nSee it here: ${appUrl()}/leave`, `leave:${id}`);
+    const workerAddr = await personEmail(i.personId);
+    if (workerAddr) await sendMail({ to: [workerAddr], cc: [actor.email], subject: threadSubject(l), thread: threadKey(id), related: threadKey(id),
+      text: `Hi ${person.name},\n\n${actor.name} recorded ${i.type} leave for you: ${range}.\n\nSee it here: ${appUrl()}/leave` });
   } else if (!manager) {
-    await sendMail(await approverEmails(), `Sick leave reported: ${person.name}, ${i.from} to ${i.to}`, `${person.name} reported ${i.type} leave for ${range}.\n\nDetails: ${link}`, `leave:${id}`);
-    if (workerAddr) await sendMail([workerAddr], `Your ${i.type} leave was recorded (${i.from} to ${i.to})`, `Hi ${person.name},\n\nYour ${i.type} leave for ${range} was recorded. Get well soon.\n\n${appUrl()}/leave`, `leave:${id}`);
+    await threadMail(l, `${person.name} reported ${i.type} leave for ${range}.\n\nDetails: ${link}`);
   }
-  return { ok: true, id, status };
+  return { ok: true, id, status, warning };
+}
+
+async function loadLeave(id: number) {
+  return get<any>("SELECT l.*, p.name FROM leave l JOIN people p ON p.id=l.person_id WHERE l.id=?", id);
 }
 
 export async function decideLeave(actor: User, id: number, decision: "approved" | "rejected", note: string): Promise<Result> {
   if (!isManager(actor)) return { ok: false, error: "Only a manager or admin can decide leave requests." };
-  const l = await get<any>("SELECT l.*, p.name FROM leave l JOIN people p ON p.id=l.person_id WHERE l.id=?", id);
+  const l = await loadLeave(id);
   if (!l) return { ok: false, error: "Request not found." };
   if (l.status !== "requested") return { ok: false, error: `This request is already ${l.status}.` };
   if (l.person_id === actor.person_id) return { ok: false, error: "You cannot decide your own request. Ask another manager." };
   if (decision === "rejected" && note.trim().length < 3) return { ok: false, error: "Please give a short reason for rejecting." };
   await run("UPDATE leave SET status=?, decided_by=?, decided_by_name=?, decided_at=?, decision_note=? WHERE id=? AND status='requested'", decision, actor.id, actor.name, nowStr(), note.trim() || null, id);
   await audit(actor, decision === "approved" ? "leave_approve" : "leave_reject", "leave", id, `${decision === "approved" ? "Approved" : "Rejected"} ${l.type} leave for ${l.name}, ${l.from_date} to ${l.to_date}`, { reason: note.trim() || undefined });
-  const addr = await personEmail(l.person_id);
-  if (addr) await sendMail([addr], `Your leave was ${decision}: ${l.from_date} to ${l.to_date}`,
-    `Hi ${l.name},\n\nYour ${l.type} leave from ${l.from_date} to ${l.to_date} (${l.days} working days) was ${decision} by ${actor.name}.\n${note.trim() ? `\nNote: ${note.trim()}\n` : ""}\nDetails: ${appUrl()}/leave`, `leave:${id}`);
+  await threadMail(l, `${decision === "approved" ? "Approved" : "Rejected"} by ${actor.name}.\n${note.trim() ? `\nNote: ${note.trim()}\n` : ""}\n${l.name}: ${l.type} leave ${l.from_date} to ${l.to_date} (${plural(l.days, "working day")}).\n${appUrl()}/leave/${id}`);
+  return { ok: true };
+}
+
+/**
+ * Take back an approved leave because of project needs. The days return to the employee (they no longer count against the allowance)
+ * and the employee and approvers are told in the same email thread. Only leave that has not started yet.
+ */
+export async function revokeLeave(actor: User, id: number, note: string): Promise<Result> {
+  if (!isManager(actor)) return { ok: false, error: "Only a manager or admin can withdraw approved leave." };
+  const l = await loadLeave(id);
+  if (!l) return { ok: false, error: "Leave not found." };
+  if (l.status !== "approved") return { ok: false, error: `Only approved leave can be withdrawn (this one is ${l.status}).` };
+  if (l.person_id === actor.person_id) return { ok: false, error: "You cannot withdraw your own leave here. Use Cancel." };
+  if (l.from_date < todayStr()) return { ok: false, error: "This leave has already started, so it cannot be withdrawn." };
+  if (note.trim().length < 3) return { ok: false, error: "Please give the employee a reason." };
+  await run("UPDATE leave SET status='revoked', decided_by=?, decided_by_name=?, decided_at=?, decision_note=? WHERE id=? AND status='approved'", actor.id, actor.name, nowStr(), note.trim(), id);
+  await audit(actor, "leave_revoke", "leave", id, `Withdrew approved ${l.type} leave for ${l.name}, ${l.from_date} to ${l.to_date}`, { reason: note.trim() });
+  await threadMail(l, `Update: ${actor.name} withdrew the approval of this leave.\n\nReason: ${note.trim()}\n\n${l.name}: ${l.type} leave ${l.from_date} to ${l.to_date}. ${plural(l.days, "working day")} go back to the employee's allowance. Please do not take these days off.\n${appUrl()}/leave/${id}`);
   return { ok: true };
 }
 
 export async function cancelLeave(actor: User, id: number): Promise<Result> {
-  const l = await get<any>("SELECT l.*, p.name FROM leave l JOIN people p ON p.id=l.person_id WHERE l.id=?", id);
+  const l = await loadLeave(id);
   if (!l) return { ok: false, error: "Request not found." };
   const manager = isManager(actor);
   if (!manager && l.person_id !== actor.person_id) return { ok: false, error: "You can only cancel your own leave." };
@@ -96,17 +173,19 @@ export async function cancelLeave(actor: User, id: number): Promise<Result> {
   if (!manager && l.status === "approved" && l.to_date < todayStr()) return { ok: false, error: "Past leave cannot be cancelled. Ask a manager." };
   await run("UPDATE leave SET status='cancelled', decision_note=?, decided_by=?, decided_by_name=?, decided_at=? WHERE id=?", `Cancelled by ${actor.name}`, actor.id, actor.name, nowStr(), id);
   await audit(actor, "leave_cancel", "leave", id, `Cancelled ${l.status} ${l.type} leave for ${l.name}, ${l.from_date} to ${l.to_date}`);
-  if (manager && l.person_id !== actor.person_id) {
-    const addr = await personEmail(l.person_id);
-    if (addr) await sendMail([addr], `Leave cancelled: ${l.from_date} to ${l.to_date}`, `Hi ${l.name},\n\n${actor.name} cancelled your ${l.type} leave from ${l.from_date} to ${l.to_date}.\n\n${appUrl()}/leave`, `leave:${id}`);
-  } else {
-    await sendMail(await approverEmails(actor.email), `Leave ${l.status === "approved" ? "cancelled" : "request withdrawn"}: ${l.name}, ${l.from_date} to ${l.to_date}`,
-      `${l.name} ${l.status === "approved" ? "cancelled approved leave" : "withdrew a leave request"} for ${l.from_date} to ${l.to_date}.`, `leave:${id}`);
-  }
+  await threadMail(l, `${actor.name} ${l.status === "approved" ? "cancelled the approved leave" : "withdrew the request"}.\n\n${l.name}: ${l.type} leave ${l.from_date} to ${l.to_date}. The days are back in the allowance.`, { exclude: actor.email });
   return { ok: true };
 }
 
-/** What an approver should know before deciding: work assigned in that period, substitutes, logged hours and colleagues off. */
+export async function setAllowance(actor: User, personId: number, year: number, days: number, note?: string): Promise<Result> {
+  if (!isManager(actor)) return { ok: false, error: "Only a manager or admin can change allowances." };
+  if (!Number.isFinite(days) || days < 0 || days > 366 || !Number.isInteger(year) || year < 2000 || year > 2100) return { ok: false, error: "Enter a valid year and number of days." };
+  await run("INSERT INTO leave_allowance (person_id,year,days,note) VALUES (?,?,?,?) ON CONFLICT (person_id,year) DO UPDATE SET days=EXCLUDED.days, note=EXCLUDED.note", personId, year, days, note?.trim() || null);
+  await audit(actor, "update", "leave_allowance", personId, `Leave allowance ${year} set to ${days} days for person #${personId}`, { reason: note?.trim() || undefined });
+  return { ok: true };
+}
+
+/** What an approver should know before deciding: work assigned in that period, substitutes, logged hours, colleagues off and the balance. */
 export async function leaveContext(l: { id: number; person_id: number; from_date: string; to_date: string }) {
   const assignments = await all<any>(
     `SELECT a.id, a.billing_type, pr.name AS project, cl.name AS client FROM assignments a JOIN projects pr ON pr.id=a.project_id JOIN clients cl ON cl.id=pr.client_id
@@ -120,5 +199,5 @@ export async function leaveContext(l: { id: number; person_id: number; from_date
      WHERE lv.id<>? AND lv.status IN ('requested','approved') AND lv.from_date<=? AND lv.to_date>=?
        AND lv.person_id IN (SELECT a2.person_id FROM assignments a2 WHERE a2.project_id IN (SELECT project_id FROM assignments WHERE person_id=?))
      ORDER BY lv.from_date`, l.id, l.to_date, l.from_date, l.person_id);
-  return { assignments, substitutes, logged: { n: logged?.n ?? 0, h: logged?.h ?? 0 }, colleagues };
+  return { assignments, substitutes, logged: { n: logged?.n ?? 0, h: logged?.h ?? 0 }, colleagues, balance: await leaveBalance(l.person_id, Number(l.from_date.slice(0, 4))) };
 }

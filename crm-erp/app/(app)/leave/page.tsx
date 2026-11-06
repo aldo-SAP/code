@@ -4,20 +4,24 @@ import { requireUser } from "@/lib/session";
 import { can } from "@/lib/auth";
 import { periodRange } from "@/lib/billing";
 import { addLeave, cancelLeaveAction, decideLeaveAction } from "@/app/actions";
-import { Badge, Field, Flash, Hidden, thisMonth, today } from "@/components/ui";
+import LeaveTimeline from "@/components/LeaveTimeline";
+import { leaveBalance } from "@/lib/leave";
+import { Badge, Field, Flash, Hidden, num, thisMonth, today } from "@/components/ui";
 
-export default async function Leave({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string; month?: string }> }) {
+export default async function Leave({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string; month?: string; year?: string }> }) {
   const user = await requireUser();
   const sp = await searchParams;
   const manager = can.manage(user);
   const month = /^\d{4}-\d{2}$/.test(sp.month ?? "") ? sp.month! : thisMonth();
-  const mine = user.person_id ? await all<any>("SELECT * FROM leave WHERE person_id=? AND status<>'cancelled' OR (person_id=? AND to_date>=?) ORDER BY from_date DESC LIMIT 40", user.person_id, user.person_id, today()) : [];
+  const year = /^\d{4}$/.test(sp.year ?? "") ? Number(sp.year) : new Date().getFullYear();
+  const open = user.person_id ? await all<any>("SELECT * FROM leave WHERE person_id=? AND (status='requested' OR (status='approved' AND to_date>=?)) ORDER BY from_date", user.person_id, today()) : [];
   const pending = manager ? await all<any>("SELECT l.*, p.name FROM leave l JOIN people p ON p.id=l.person_id WHERE l.status='requested' ORDER BY l.from_date") : [];
   const people = manager ? await all<any>("SELECT id,name FROM people WHERE stage IN ('ready','placed') ORDER BY name") : [];
   const { start, end } = periodRange(month);
   const days = Array.from({ length: Number(end.slice(8)) }, (_, k) => `${month}-${String(k + 1).padStart(2, "0")}`);
   const cal = manager ? await all<any>("SELECT l.*, p.name FROM leave l JOIN people p ON p.id=l.person_id WHERE l.status IN ('requested','approved') AND l.to_date>=? AND l.from_date<=? ORDER BY p.name, l.from_date", start, end) : [];
   const names = [...new Set(cal.map((c) => c.name))];
+  const balances = manager ? await Promise.all(people.map(async (p) => ({ p, b: await leaveBalance(p.id, year) }))) : [];
   const shift = (m: string, d: number) => { const [y, mo] = m.split("-").map(Number); return new Date(Date.UTC(y, mo - 1 + d, 1)).toISOString().slice(0, 7); };
   const types = (m: boolean) => (m ? ["vacation", "sick", "holiday", "other"] : ["vacation", "sick", "other"]);
   return (
@@ -52,12 +56,16 @@ export default async function Leave({ searchParams }: { searchParams: Promise<{ 
             <button>{manager ? "Record my leave" : "Send request"}</button>
             <span className="muted">Vacation needs approval. Sick leave is recorded at once and your managers are told. Weekends are not counted.</span>
           </form>
-          <div className="tw"><table><thead><tr><th>Type</th><th>Dates</th><th className="num">Days</th><th>Status</th><th>Decision</th><th></th></tr></thead><tbody>
-            {mine.map((l) => (
-              <tr key={l.id}><td>{l.type}</td><td><Link href={`/leave/${l.id}`}>{l.from_date} to {l.to_date}</Link></td><td className="num">{l.days}</td><td><Badge v={l.status} /></td>
-                <td className="muted">{l.decided_by_name ? `${l.decided_by_name}${l.decision_note ? `: ${l.decision_note}` : ""}` : ""}</td>
-                <td>{(l.status === "requested" || (l.status === "approved" && l.to_date >= today())) && <form action={cancelLeaveAction}><Hidden name="rid" value={l.id} /><button className="danger sm">{l.status === "requested" ? "Withdraw" : "Cancel"}</button></form>}</td></tr>))}
-            {!mine.length && <tr><td colSpan={6} className="muted">No leave yet.</td></tr>}</tbody></table></div>
+          {open.length > 0 && <>
+            <h3 style={{ fontSize: 13 }}>Open and upcoming</h3>
+            <div className="tw"><table><thead><tr><th>Type</th><th>Dates</th><th className="num">Days</th><th>Status</th><th></th></tr></thead><tbody>
+              {open.map((l) => (
+                <tr key={l.id}><td>{l.type}</td><td><Link href={`/leave/${l.id}`}>{l.from_date} to {l.to_date}</Link></td><td className="num">{l.days}</td><td><Badge v={l.status} /></td>
+                  <td><form action={cancelLeaveAction}><Hidden name="rid" value={l.id} /><button className="danger sm">{l.status === "requested" ? "Withdraw" : "Cancel"}</button></form></td></tr>))}
+            </tbody></table></div>
+          </>}
+          <h3>My year</h3>
+          <LeaveTimeline personId={user.person_id} year={year} basePath="/leave" />
         </>
       )}
       {!user.person_id && !manager && <div className="card muted">Your login is not linked to a person record. Ask an admin.</div>}
@@ -81,6 +89,11 @@ export default async function Leave({ searchParams }: { searchParams: Promise<{ 
                 })}</tr>))}
             </tbody></table></div>
           ) : <p className="muted">Nobody is off this month.</p>}
+
+          <h3>Allowances {year}</h3>
+          <div className="tw"><table><thead><tr><th>Person</th><th className="num">Allowance</th><th className="num">Taken</th><th className="num">Planned</th><th className="num">Waiting</th><th className="num">Left</th></tr></thead><tbody>
+            {balances.map(({ p, b }) => <tr key={p.id}><td><Link href={`/people/${p.id}?year=${year}`}>{p.name}</Link></td><td className="num">{num(b.allowance)}</td><td className="num">{num(b.taken)}</td><td className="num">{num(b.planned)}</td><td className="num">{num(b.pending)}</td><td className="num"><b>{num(b.remaining)}</b></td></tr>)}
+            {!balances.length && <tr><td colSpan={6} className="muted">Nobody to show.</td></tr>}</tbody></table></div>
 
           <h3>Record leave for someone</h3>
           <form action={addLeave} className="row card">

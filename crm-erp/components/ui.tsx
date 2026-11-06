@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { logout } from "@/app/actions";
+import ThemeToggle from "@/components/ThemeToggle";
+import MobileNav from "@/components/MobileNav";
 import { can, type User } from "@/lib/auth";
 
 export const money = (n: number | null | undefined, c = "EUR") =>
@@ -15,7 +17,7 @@ export function Flash({ sp }: { sp: { msg?: string; err?: string } }) {
 }
 
 const tone: Record<string, string> = {
-  approved: "ok", requested: "warn", cancelled: "err", paid: "ok", won: "ok", active: "ok", completed: "ok", ready: "ok", issued: "warn", submitted: "warn",
+  approved: "ok", requested: "warn", cancelled: "err", revoked: "err", paid: "ok", won: "ok", active: "ok", completed: "ok", ready: "ok", issued: "warn", submitted: "warn",
   draft: "", planned: "", rejected: "err", void: "err", lost: "err", dropped: "err",
 };
 export const Badge = ({ v }: { v: string }) => <span className={`badge ${tone[v] ?? ""}`}>{v}</span>;
@@ -28,12 +30,19 @@ export function Nav({ user }: { user: User }) {
        ...(can.finance(user) ? [["/payouts", "Payouts"], ["/reports", "Margin"]] as [string, string][] : []),
        ["/unlock", "Unlock billed hours"], ["/import", "CSV import"], ...(can.admin(user) ? [["/audit", "Audit log"], ["/settings", "Settings"]] as [string, string][] : [])];
   return (
-    <nav className="side">
-      <h1>Talent CRM/ERP</h1>
-      {items.map(([href, label]) => <Link key={href} href={href}>{label}</Link>)}
-      <div className="who">{user.name}<br />{user.role}</div>
-      <form action={logout}><button className="sec sm">Sign out</button></form>
-    </nav>
+    <>
+      <nav className="side" aria-label="Main">
+        <h1>Talent CRM/ERP</h1>
+        {items.map(([href, label]) => <Link key={href} href={href}>{label}</Link>)}
+        <div className="who">{user.name}<br />{user.role}</div>
+        <ThemeToggle />
+        <form action={logout}><button className="sec sm" style={{ margin: "0 8px" }}>Sign out</button></form>
+      </nav>
+      <MobileNav items={items} who={user.name}>
+        <ThemeToggle />
+        <form action={logout}><button className="sec sm">Sign out</button></form>
+      </MobileNav>
+    </>
   );
 }
 

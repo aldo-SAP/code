@@ -4,10 +4,13 @@ import { all, get } from "@/lib/db";
 import { requireManager } from "@/lib/session";
 import { can } from "@/lib/auth";
 import { addContract, enroll, updatePerson, updateEnrollment } from "@/app/actions";
+import LeaveTimeline from "@/components/LeaveTimeline";
+import { allowanceFor } from "@/lib/leave";
+import { setAllowanceAction } from "@/app/actions";
 import { Badge, CurrencySelect, Field, Flash, Hidden } from "@/components/ui";
 
 const STAGES = ["applicant", "training", "ready", "placed", "alumni"];
-export default async function Person({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string; err?: string }> }) {
+export default async function Person({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string; err?: string; year?: string }> }) {
   const user = await requireManager();
   const { id } = await params; const sp = await searchParams;
   const p = await get<any>("SELECT * FROM people WHERE id=?", Number(id));
@@ -17,7 +20,8 @@ export default async function Person({ params, searchParams }: { params: Promise
   const courses = await all<any>("SELECT id,name FROM courses ORDER BY id DESC");
   const assignments = await all<any>(`SELECT a.*, pr.name AS project, cl.name AS client FROM assignments a JOIN projects pr ON pr.id=a.project_id JOIN clients cl ON cl.id=pr.client_id WHERE a.person_id=? ORDER BY a.start_date DESC`, p.id);
   const subs = await all<any>(`SELECT s.*, pr.name AS project, a.id AS aid FROM substitutions s JOIN assignments a ON a.id=s.assignment_id JOIN projects pr ON pr.id=a.project_id WHERE s.person_id=? ORDER BY s.from_date DESC`, p.id);
-  const leave = await all<any>("SELECT * FROM leave WHERE person_id=? ORDER BY from_date DESC", p.id);
+  const leaveYear = /^\d{4}$/.test(sp.year ?? "") ? Number(sp.year) : new Date().getFullYear();
+  const allowance = await allowanceFor(p.id, leaveYear);
   const contracts = await all<any>("SELECT * FROM contracts WHERE kind='freelancer' AND person_id=? ORDER BY id DESC", p.id);
   const login = await get<any>("SELECT email,role FROM users WHERE person_id=?", p.id);
   return (
@@ -71,8 +75,13 @@ export default async function Person({ params, searchParams }: { params: Promise
       </>}
 
       <h3>Leave</h3>
-      <table><tbody>{leave.map((l) => <tr key={l.id}><td>{l.type}</td><td>{l.from_date} to {l.to_date}</td><td>{l.days} d</td><td><Badge v={l.status} /></td><td><Link href={`/leave/${l.id}`}>Open</Link></td></tr>)}
-        {!leave.length && <tr><td className="muted">No leave recorded.</td></tr>}</tbody></table>
+      <LeaveTimeline personId={p.id} year={leaveYear} basePath={`/people/${p.id}`} />
+      <form action={setAllowanceAction} className="row card" style={{ marginTop: 12 }}>
+        <Hidden name="person_id" value={p.id} /><Hidden name="year" value={leaveYear} /><Hidden name="_back" value={`/people/${p.id}?year=${leaveYear}`} />
+        <Field label={`Vacation allowance ${leaveYear} (working days)`}><input name="days" type="number" step="0.5" min="0" defaultValue={allowance} style={{ width: 120 }} /></Field>
+        <Field label="Note (e.g. carried over)"><input name="note" /></Field>
+        <button className="sec">Save allowance</button>
+      </form>
       <p><Link href="/leave">Record or approve leave</Link></p>
     </>
   );

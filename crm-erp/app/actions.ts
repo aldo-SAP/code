@@ -9,7 +9,7 @@ import { generateInvoices, generatePayouts, issueInvoice, voidInvoice } from "@/
 import { parseCsv } from "@/lib/csv";
 import { audit, noteLogin } from "@/lib/audit";
 import { safeNext } from "@/lib/nexturl";
-import { createLeave, decideLeave, cancelLeave, type LeaveType } from "@/lib/leave";
+import { createLeave, decideLeave, cancelLeave, revokeLeave, setAllowance, type LeaveType } from "@/lib/leave";
 import { sendMail, retryMail } from "@/lib/mail";
 import { billedThrough, reopenBilled } from "@/lib/history";
 import { currentUser } from "@/lib/session";
@@ -203,6 +203,18 @@ export async function decideLeaveAction(fd: FormData) {
   if (!r.ok) back(referer(fd, "/leave"), r.error, "err");
   back("/leave", s(fd, "decision") === "approve" ? "Approved. The worker was emailed." : "Rejected. The worker was emailed.");
 }
+export async function revokeLeaveAction(fd: FormData) {
+  const u = await requireManager();
+  const r = await revokeLeave(u, i(fd, "rid")!, s(fd, "note"));
+  if (!r.ok) back(referer(fd, "/leave"), r.error, "err");
+  back(referer(fd, "/leave"), "Withdrawn. The days went back to the employee and the thread was updated by email.");
+}
+export async function setAllowanceAction(fd: FormData) {
+  const u = await requireManager();
+  const r = await setAllowance(u, i(fd, "person_id")!, i(fd, "year") ?? new Date().getFullYear(), n(fd, "days") ?? NaN, s(fd, "note"));
+  if (!r.ok) back(referer(fd, "/people"), r.error, "err");
+  back(referer(fd, "/people"), "Allowance saved.");
+}
 export async function cancelLeaveAction(fd: FormData) {
   const u = await requireUser();
   const r = await cancelLeave(u, i(fd, "rid")!);
@@ -214,12 +226,14 @@ export async function saveLeaveSettings(fd: FormData) {
   const list = s(fd, "leave_approver_emails").split(/[,;\s]+/).filter(Boolean);
   if (list.some((e) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))) back("/settings", "One of the approver emails is not a valid address.", "err");
   await run("INSERT INTO settings (key,value) VALUES ('leave_approver_emails',?) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value", list.join(", "));
+  const days = n(fd, "default_leave_days");
+  if (days != null && days > 0 && days <= 366) await run("INSERT INTO settings (key,value) VALUES ('default_leave_days',?) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value", String(days));
   await audit(u, "update", "settings", null, `Leave approvers set to ${list.join(", ") || "all managers and admins"}`);
   back("/settings", "Saved");
 }
 export async function sendTestEmail() {
   const u = await requireAdmin();
-  await sendMail([u.email], "Test email from Talent CRM", "If you can read this, outgoing email works.", "test");
+  await sendMail({ to: [u.email], subject: "Test email from Talent CRM", text: "If you can read this, outgoing email works.", related: "test" });
   const last = await get<{ status: string; error: string | null }>("SELECT status,error FROM email_outbox WHERE related='test' ORDER BY id DESC LIMIT 1");
   back("/settings", last?.status === "sent" ? `Test email sent to ${u.email}.` : `Test email not sent (${last?.status}): ${last?.error ?? "unknown"}`, last?.status === "sent" ? "ok" : "err");
 }
