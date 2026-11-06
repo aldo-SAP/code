@@ -85,7 +85,13 @@ body{padding-left:env(safe-area-inset-left,0);padding-right:env(safe-area-inset-
   input[type=checkbox]{min-height:0}
   button.sm{min-height:34px;padding:4px 10px}
   .main table:not(.stack){display:block;overflow-x:auto;max-width:100%}
-  form.row{align-items:stretch}form.row>label.f,form.row>button{flex:1 1 140px}
+  /* forms: a fixed two-column grid, so no field (iPhone date inputs included) can be wider than its column */
+  form.row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:end}
+  form.row>*{min-width:0}form.row>button,form.row>span,form.row>b,form.row>p{grid-column:1/-1}
+  form.row>label.f.wide{grid-column:1/-1}
+  form.row label.f input:not([type=checkbox]),form.row label.f select{width:100%!important;max-width:100%;min-width:0}
+  input[type=date]::-webkit-date-and-time-value,input[type=month]::-webkit-date-and-time-value{text-align:left;min-width:0}
+  input[type=date]::-webkit-datetime-edit,input[type=month]::-webkit-datetime-edit{padding:0}
   .card{padding:12px}
   .ts input{width:42px;min-height:40px}
   .invoice{padding:14px}
@@ -142,3 +148,11 @@ body{padding-left:env(safe-area-inset-left,0);padding-right:env(safe-area-inset-
 label.f{min-width:0}
 input[type=month],input[type=date]{-webkit-appearance:none;appearance:none;min-width:0;max-width:100%;text-align:left;line-height:1.2;min-height:40px}
 @media (max-width:820px){input[type=month],input[type=date]{display:block;width:100%}}
+
+code{overflow-wrap:anywhere;word-break:break-word}
+.card{min-width:0;max-width:100%}
+@media (max-width:820px){
+  .kanban{grid-template-columns:1fr;overflow:visible}
+  form.card[style*="display: grid"]{grid-template-columns:minmax(0,1fr)}
+  input[type=file]{max-width:100%;min-width:0;width:100%}
+}
