@@ -46,3 +46,6 @@ label.f input,label.f select{color:var(--text);font-size:14px}
 .invoice table{background:#fff;border-color:#ddd}.invoice th{background:#f3f3f3;color:#444}.invoice th,.invoice td{border-color:#ddd}
 @media (max-width:800px){.shell{flex-direction:column}.side{width:auto;height:auto;position:static;display:flex;flex-wrap:wrap;gap:4px}.main{padding:14px}}
 @media print{.side,.no-print{display:none!important}.main{padding:0}.shell{display:block}.invoice{border:0;padding:0}}
+.cal th,.cal td{padding:2px 3px;text-align:center;font-size:12px;min-width:22px}
+.cal th:first-child,.cal td:first-child{text-align:left;white-space:nowrap;padding-right:10px}
+.cal td.we{background:var(--bg)}.cal td.a{background:var(--okbg);color:var(--ok)}.cal td.r{background:var(--warnbg);color:var(--warn)}

@@ -8,6 +8,9 @@ import { requireUser, requireManager, requireAdmin } from "@/lib/session";
 import { generateInvoices, generatePayouts, issueInvoice, voidInvoice } from "@/lib/invoicing";
 import { parseCsv } from "@/lib/csv";
 import { audit, noteLogin } from "@/lib/audit";
+import { safeNext } from "@/lib/nexturl";
+import { createLeave, decideLeave, cancelLeave, type LeaveType } from "@/lib/leave";
+import { sendMail, retryMail } from "@/lib/mail";
 import { billedThrough, reopenBilled } from "@/lib/history";
 import { currentUser } from "@/lib/session";
 
@@ -37,7 +40,7 @@ export async function login(fd: FormData) {
   }
   await noteLogin({ id: u!.id, name: u!.name }, "password");
   (await cookies()).set(SESSION_COOKIE, makeSession(u!.id, u!.role), { httpOnly: true, sameSite: "lax", path: "/", maxAge: sessionHours(u!.role) * 3600, secure: process.env.NODE_ENV === "production" && process.env.INSECURE_COOKIES !== "1" });
-  redirect(u!.role === "worker" ? "/timesheets" : "/");
+  redirect(safeNext(s(fd, "next")) ?? (u!.role === "worker" ? "/timesheets" : "/"));
 }
 export async function logout() {
   const me = await currentUser();
@@ -56,7 +59,7 @@ export async function addClient(fd: FormData) {
 }
 export async function updateClient(fd: FormData) {
   const u = await requireManager();
-  const id = i(fd, "id")!;
+  const id = i(fd, "rid")!;
   const before = await get("SELECT name,country,address,email,currency,status,notes FROM clients WHERE id=?", id);
   await run("UPDATE clients SET name=?,country=?,address=?,email=?,currency=?,status=?,notes=? WHERE id=?", s(fd, "name"), nz(s(fd, "country")), nz(s(fd, "address")), nz(s(fd, "email")), cur(fd), s(fd, "status") || "active", nz(s(fd, "notes")), id);
   await audit(u, "update", "client", id, `Updated client ${s(fd, "name")}`, { details: { before, after: await get("SELECT name,country,address,email,currency,status,notes FROM clients WHERE id=?", id) } });
@@ -71,9 +74,9 @@ export async function addContact(fd: FormData) {
 }
 export async function deleteContact(fd: FormData) {
   const u = await requireManager();
-  const c = await get("SELECT * FROM contacts WHERE id=?", i(fd, "id")!);
-  await run("DELETE FROM contacts WHERE id=?", i(fd, "id")!);
-  await audit(u, "delete", "contact", i(fd, "id"), `Removed contact ${(c as any)?.name ?? ""}`, { details: c });
+  const c = await get("SELECT * FROM contacts WHERE id=?", i(fd, "rid")!);
+  await run("DELETE FROM contacts WHERE id=?", i(fd, "rid")!);
+  await audit(u, "delete", "contact", i(fd, "rid"), `Removed contact ${(c as any)?.name ?? ""}`, { details: c });
   back(referer(fd, "/clients"));
 }
 export async function addContract(fd: FormData) {
@@ -130,15 +133,15 @@ export async function addDeal(fd: FormData) {
 }
 export async function moveDeal(fd: FormData) {
   const u = await requireManager();
-  const was = await get<{ stage: string; title: string }>("SELECT stage,title FROM deals WHERE id=?", i(fd, "id")!);
-  await run("UPDATE deals SET stage=? WHERE id=?", s(fd, "stage"), i(fd, "id")!);
-  if (was && was.stage !== s(fd, "stage")) await audit(u, "update", "deal", i(fd, "id"), `Deal "${was.title}": ${was.stage} to ${s(fd, "stage")}`);
+  const was = await get<{ stage: string; title: string }>("SELECT stage,title FROM deals WHERE id=?", i(fd, "rid")!);
+  await run("UPDATE deals SET stage=? WHERE id=?", s(fd, "stage"), i(fd, "rid")!);
+  if (was && was.stage !== s(fd, "stage")) await audit(u, "update", "deal", i(fd, "rid"), `Deal "${was.title}": ${was.stage} to ${s(fd, "stage")}`);
   back("/deals");
 }
 export async function deleteDeal(fd: FormData) {
   const u = await requireManager();
-  await audit(u, "delete", "deal", i(fd, "id"), "Deleted deal", { details: await get("SELECT * FROM deals WHERE id=?", i(fd, "id")!) });
-  await run("DELETE FROM deals WHERE id=?", i(fd, "id")!);
+  await audit(u, "delete", "deal", i(fd, "rid"), "Deleted deal", { details: await get("SELECT * FROM deals WHERE id=?", i(fd, "rid")!) });
+  await run("DELETE FROM deals WHERE id=?", i(fd, "rid")!);
   back("/deals");
 }
 
@@ -153,7 +156,7 @@ export async function addPerson(fd: FormData) {
 }
 export async function updatePerson(fd: FormData) {
   const u = await requireManager();
-  const id = i(fd, "id")!;
+  const id = i(fd, "rid")!;
   const before = await get("SELECT name,email,phone,country,worker_type,stage,skills,notes FROM people WHERE id=?", id);
   await run("UPDATE people SET name=?,email=?,phone=?,country=?,worker_type=?,stage=?,skills=?,notes=? WHERE id=?",
     s(fd, "name"), nz(s(fd, "email")), nz(s(fd, "phone")), nz(s(fd, "country")), s(fd, "worker_type") === "internal" ? "internal" : "external", s(fd, "stage"), nz(s(fd, "skills")), nz(s(fd, "notes")), id);
@@ -178,28 +181,53 @@ export async function enroll(fd: FormData) {
 export async function updateEnrollment(fd: FormData) {
   const u = await requireManager();
   const status = s(fd, "status");
-  const id = i(fd, "id")!;
+  const id = i(fd, "rid")!;
   await run("UPDATE enrollments SET status=?, progress=? WHERE id=?", status, status === "completed" ? 100 : Math.min(100, Math.max(0, i(fd, "progress") ?? 0)), id);
   await audit(u, "update", "enrollment", id, `Enrollment #${id} set to ${status}`);
   back(referer(fd, "/courses"));
 }
+/** Workers request leave for themselves (vacation waits for approval); managers record leave for anyone (approved at once). */
 export async function addLeave(fd: FormData) {
   const u = await requireUser();
-  const pid = can.manage(u) ? i(fd, "person_id")! : u.person_id!;
-  const from = s(fd, "from_date"), to = s(fd, "to_date") || from;
-  if (!isDate(from) || !isDate(to) || to < from) back(referer(fd, "/timesheets"), "Check the leave dates", "err");
-  await run("INSERT INTO leave (person_id,type,from_date,to_date,notes) VALUES (?,?,?,?,?)", pid, s(fd, "type") || "vacation", from, to, nz(s(fd, "notes")));
-  await audit(u, "create", "leave", pid, `Leave ${s(fd, "type") || "vacation"} ${from} to ${to} for person #${pid}`);
-  back(referer(fd, "/timesheets"), "Leave saved");
+  const from = s(fd, "from_date");
+  const r = await createLeave(u, {
+    personId: can.manage(u) ? (i(fd, "person_id") ?? u.person_id ?? 0) : (u.person_id ?? 0),
+    type: (s(fd, "type") || "vacation") as LeaveType, from, to: s(fd, "to_date") || from, notes: s(fd, "notes"),
+  });
+  if (!r.ok) back(referer(fd, "/leave"), r.error, "err");
+  back(referer(fd, "/leave"), r.status === "requested" ? "Request sent. You and the approvers get an email, and you will be emailed when it is decided." : "Leave recorded.");
 }
-export async function deleteLeave(fd: FormData) {
+export async function decideLeaveAction(fd: FormData) {
+  const u = await requireManager();
+  const r = await decideLeave(u, i(fd, "rid")!, s(fd, "decision") === "approve" ? "approved" : "rejected", s(fd, "note"));
+  if (!r.ok) back(referer(fd, "/leave"), r.error, "err");
+  back("/leave", s(fd, "decision") === "approve" ? "Approved. The worker was emailed." : "Rejected. The worker was emailed.");
+}
+export async function cancelLeaveAction(fd: FormData) {
   const u = await requireUser();
-  const l = await get<{ person_id: number }>("SELECT person_id FROM leave WHERE id=?", i(fd, "id")!);
-  if (l && (can.manage(u) || l.person_id === u.person_id)) {
-    await audit(u, "delete", "leave", l.person_id, "Removed leave", { details: await get("SELECT * FROM leave WHERE id=?", i(fd, "id")!) });
-    await run("DELETE FROM leave WHERE id=?", i(fd, "id")!);
-  }
-  back(referer(fd, "/timesheets"));
+  const r = await cancelLeave(u, i(fd, "rid")!);
+  if (!r.ok) back(referer(fd, "/leave"), r.error, "err");
+  back(referer(fd, "/leave"), "Leave cancelled.");
+}
+export async function saveLeaveSettings(fd: FormData) {
+  const u = await requireAdmin();
+  const list = s(fd, "leave_approver_emails").split(/[,;\s]+/).filter(Boolean);
+  if (list.some((e) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e))) back("/settings", "One of the approver emails is not a valid address.", "err");
+  await run("INSERT INTO settings (key,value) VALUES ('leave_approver_emails',?) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value", list.join(", "));
+  await audit(u, "update", "settings", null, `Leave approvers set to ${list.join(", ") || "all managers and admins"}`);
+  back("/settings", "Saved");
+}
+export async function sendTestEmail() {
+  const u = await requireAdmin();
+  await sendMail([u.email], "Test email from Talent CRM", "If you can read this, outgoing email works.", "test");
+  const last = await get<{ status: string; error: string | null }>("SELECT status,error FROM email_outbox WHERE related='test' ORDER BY id DESC LIMIT 1");
+  back("/settings", last?.status === "sent" ? `Test email sent to ${u.email}.` : `Test email not sent (${last?.status}): ${last?.error ?? "unknown"}`, last?.status === "sent" ? "ok" : "err");
+}
+export async function retryEmailAction(fd: FormData) {
+  const u = await requireAdmin();
+  await retryMail(i(fd, "rid")!);
+  await audit(u, "retry", "email", i(fd, "rid"), "Retried sending an email");
+  back("/settings", "Retried. See the email log for the result.");
 }
 
 // ------------------------------------------------------------------ projects
@@ -212,8 +240,8 @@ export async function addProject(fd: FormData) {
 }
 export async function setProjectStatus(fd: FormData) {
   const u = await requireManager();
-  await audit(u, "update", "project", i(fd, "id"), `Project status set to ${s(fd, "status")}`);
-  await run("UPDATE projects SET status=? WHERE id=?", s(fd, "status"), i(fd, "id")!);
+  await audit(u, "update", "project", i(fd, "rid"), `Project status set to ${s(fd, "status")}`);
+  await run("UPDATE projects SET status=? WHERE id=?", s(fd, "status"), i(fd, "rid")!);
   back(referer(fd, "/projects"));
 }
 /** Changing money rules for dates that are already invoiced or paid out needs a reason and an explicit tick. */
@@ -237,7 +265,7 @@ export async function addRate(fd: FormData) {
 }
 export async function deleteRate(fd: FormData) {
   const u = await requireManager();
-  const r = await get<any>("SELECT * FROM rates WHERE id=?", i(fd, "id")!);
+  const r = await get<any>("SELECT * FROM rates WHERE id=?", i(fd, "rid")!);
   if (!r) back("/projects");
   const path = `/assignments/${r.assignment_id}`;
   if (r.kind === "cost" && !can.finance(u)) back(path, "Only admins can edit cost rates", "err");
@@ -269,18 +297,18 @@ export async function addSubstitution(fd: FormData) {
 }
 export async function updateSubstitutionCost(fd: FormData) {
   const u = await requireAdmin();
-  const { sub, billed } = await substitutionBilled(i(fd, "id")!);
+  const { sub, billed } = await substitutionBilled(i(fd, "rid")!);
   if (billed) back(referer(fd, "/projects"), "This substitute's hours are already invoiced or paid out. Reopen those hours first (Unlock billed hours).", "err");
-  await run("UPDATE substitutions SET cost_amount=?, cost_currency=? WHERE id=?", n(fd, "cost_amount"), cur(fd, "cost_currency"), i(fd, "id")!);
-  await audit(u, "update", "substitution", i(fd, "id"), `Substitution cost rate changed from ${sub?.cost_amount ?? "none"} to ${n(fd, "cost_amount") ?? "none"}`);
+  await run("UPDATE substitutions SET cost_amount=?, cost_currency=? WHERE id=?", n(fd, "cost_amount"), cur(fd, "cost_currency"), i(fd, "rid")!);
+  await audit(u, "update", "substitution", i(fd, "rid"), `Substitution cost rate changed from ${sub?.cost_amount ?? "none"} to ${n(fd, "cost_amount") ?? "none"}`);
   back(referer(fd, "/projects"));
 }
 export async function deleteSubstitution(fd: FormData) {
   const u = await requireManager();
-  const { sub, billed } = await substitutionBilled(i(fd, "id")!);
+  const { sub, billed } = await substitutionBilled(i(fd, "rid")!);
   if (billed) back(referer(fd, "/projects"), "This substitute's hours are already invoiced or paid out, so the substitution cannot be removed.", "err");
-  await run("DELETE FROM substitutions WHERE id=?", i(fd, "id")!);
-  await audit(u, "delete", "substitution", i(fd, "id"), "Removed substitution", { details: sub });
+  await run("DELETE FROM substitutions WHERE id=?", i(fd, "rid")!);
+  await audit(u, "delete", "substitution", i(fd, "rid"), "Removed substitution", { details: sub });
   back(referer(fd, "/projects"));
 }
 export async function addMilestone(fd: FormData) {
@@ -294,11 +322,11 @@ export async function addMilestone(fd: FormData) {
 export async function setMilestone(fd: FormData) {
   const u = await requireManager();
   const status = s(fd, "status");
-  const m = await get<{ invoice_id: number | null; payout_id: number | null; assignment_id: number; title: string; status: string }>("SELECT invoice_id,payout_id,assignment_id,title,status FROM milestones WHERE id=?", i(fd, "id")!);
+  const m = await get<{ invoice_id: number | null; payout_id: number | null; assignment_id: number; title: string; status: string }>("SELECT invoice_id,payout_id,assignment_id,title,status FROM milestones WHERE id=?", i(fd, "rid")!);
   if (!m) back("/projects");
   if (m!.invoice_id || m!.payout_id) back(`/assignments/${m!.assignment_id}`, "This milestone is already invoiced or paid out", "err");
-  await run("UPDATE milestones SET status=?, approved_on=? WHERE id=?", status, status === "approved" ? new Date().toISOString().slice(0, 10) : null, i(fd, "id")!);
-  await audit(u, "update", "milestone", i(fd, "id"), `Milestone "${m!.title}": ${m!.status} to ${status}`);
+  await run("UPDATE milestones SET status=?, approved_on=? WHERE id=?", status, status === "approved" ? new Date().toISOString().slice(0, 10) : null, i(fd, "rid")!);
+  await audit(u, "update", "milestone", i(fd, "rid"), `Milestone "${m!.title}": ${m!.status} to ${status}`);
   back(`/assignments/${m!.assignment_id}`);
 }
 
@@ -380,7 +408,7 @@ async function db_changes(id: number): Promise<number> {
 /** Reopen hours that are part of an invoice or payout. Needs a reason and the typed word REOPEN. */
 export async function unlockBilled(fd: FormData) {
   const u = await requireManager();
-  const ids = fd.getAll("id").map((v) => Number(v)).filter(Boolean);
+  const ids = fd.getAll("rid").map((v) => Number(v)).filter(Boolean);
   const path = s(fd, "_back") || "/unlock";
   if (s(fd, "confirm") !== "REOPEN") back(path, "Type REOPEN in capital letters to confirm.", "err");
   const r = await reopenBilled({ id: u.id, name: u.name, admin: can.admin(u) }, ids, s(fd, "reason"));
@@ -398,7 +426,7 @@ export async function runInvoices(fd: FormData) {
 }
 export async function issueInv(fd: FormData) {
   const u = await requireManager();
-  const id = i(fd, "id")!;
+  const id = i(fd, "rid")!;
   let number = "";
   try { number = await issueInvoice(id); } catch (e) { back(`/invoices/${id}`, (e as Error).message, "err"); }
   await audit(u, "issue", "invoice", id, `Issued invoice ${number}`, { details: await get("SELECT number,period,currency,total,due_date FROM invoices WHERE id=?", id) });
@@ -406,13 +434,13 @@ export async function issueInv(fd: FormData) {
 }
 export async function payInv(fd: FormData) {
   const u = await requireManager();
-  await run("UPDATE invoices SET status='paid' WHERE id=? AND status='issued'", i(fd, "id")!);
-  await audit(u, "mark_paid", "invoice", i(fd, "id"), "Marked invoice as paid");
-  back(`/invoices/${i(fd, "id")}`, "Marked as paid");
+  await run("UPDATE invoices SET status='paid' WHERE id=? AND status='issued'", i(fd, "rid")!);
+  await audit(u, "mark_paid", "invoice", i(fd, "rid"), "Marked invoice as paid");
+  back(`/invoices/${i(fd, "rid")}`, "Marked as paid");
 }
 export async function voidInv(fd: FormData) {
   const u = await requireManager();
-  const id = i(fd, "id")!;
+  const id = i(fd, "rid")!;
   const inv = await get<{ status: string; number: string | null; total: number }>("SELECT status,number,total FROM invoices WHERE id=?", id);
   if (inv?.status === "issued") {
     if (s(fd, "confirm") !== "VOID" || s(fd, "reason").length < 5) back(`/invoices/${id}`, "To void an issued invoice type VOID and write a reason.", "err");
@@ -432,7 +460,7 @@ export async function runPayouts(fd: FormData) {
 }
 export async function setPayout(fd: FormData) {
   const u = await requireAdmin();
-  const id = i(fd, "id")!, status = s(fd, "status");
+  const id = i(fd, "rid")!, status = s(fd, "status");
   const was = await get<{ status: string; total: number }>("SELECT status,total FROM payouts WHERE id=?", id);
   if (was?.status === "paid" && (s(fd, "confirm") !== "REOPEN" || s(fd, "reason").length < 5))
     back(referer(fd, "/payouts"), "A paid payout is history. Type REOPEN and write a reason to change it.", "err");
@@ -457,7 +485,7 @@ export async function addUser(fd: FormData) {
 }
 export async function setUserAuth(fd: FormData) {
   const me = await requireAdmin();
-  const id = i(fd, "id")!, method = s(fd, "auth_method");
+  const id = i(fd, "rid")!, method = s(fd, "auth_method");
   if (!["microsoft", "password", "both"].includes(method)) back("/settings", "Invalid sign-in method", "err");
   if (id === me.id && method === "microsoft") back("/settings", "Keep your own admin account on 'both' or 'password' so you can never be locked out if Microsoft is misconfigured.", "err");
   await run("UPDATE users SET auth_method=? WHERE id=?", method, id);
@@ -466,7 +494,7 @@ export async function setUserAuth(fd: FormData) {
 }
 export async function setUserActive(fd: FormData) {
   const me = await requireAdmin();
-  const id = i(fd, "id")!;
+  const id = i(fd, "rid")!;
   if (id === me.id) back("/settings", "You cannot deactivate yourself", "err");
   await run("UPDATE users SET active=? WHERE id=?", i(fd, "active")!, id);
   await audit(me, "update", "user", id, `${i(fd, "active") ? "Activated" : "Deactivated"} login #${id}`);

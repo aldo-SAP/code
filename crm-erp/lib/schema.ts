@@ -116,6 +116,22 @@ CREATE TABLE IF NOT EXISTS fx_rates (
   UNIQUE (currency, as_of)
 );
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+-- Leave approval workflow (requested -> approved / rejected / cancelled). Rows created by managers are approved at once.
+ALTER TABLE leave ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'approved';
+ALTER TABLE leave ADD COLUMN IF NOT EXISTS days INTEGER;
+ALTER TABLE leave ADD COLUMN IF NOT EXISTS requested_by INTEGER;
+ALTER TABLE leave ADD COLUMN IF NOT EXISTS requested_at TEXT;
+ALTER TABLE leave ADD COLUMN IF NOT EXISTS decided_by INTEGER;
+ALTER TABLE leave ADD COLUMN IF NOT EXISTS decided_by_name TEXT;
+ALTER TABLE leave ADD COLUMN IF NOT EXISTS decided_at TEXT;
+ALTER TABLE leave ADD COLUMN IF NOT EXISTS decision_note TEXT;
+-- Every email the app tries to send, with the outcome, so nothing is lost silently.
+CREATE TABLE IF NOT EXISTS email_outbox (
+  id SERIAL PRIMARY KEY, created_at TEXT NOT NULL DEFAULT to_char(timezone('utc', now()), 'YYYY-MM-DD HH24:MI:SS'),
+  to_addr TEXT NOT NULL, subject TEXT NOT NULL, body TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'queued', error TEXT, attempts INTEGER NOT NULL DEFAULT 0, sent_at TEXT, related TEXT
+);
+
 -- Append-only history of who did what. Triggers block edits, deletes and truncation.
 CREATE TABLE IF NOT EXISTS audit_log (
   id SERIAL PRIMARY KEY, created_at TEXT NOT NULL DEFAULT to_char(timezone('utc', now()), 'YYYY-MM-DD HH24:MI:SS'),

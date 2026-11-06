@@ -31,3 +31,11 @@ services:
         sync: false          # first admin, created once on an empty database
       - key: BOOTSTRAP_ADMIN_NAME
         sync: false
+      - key: MAIL_PROVIDER
+        sync: false          # graph or resend
+      - key: MAIL_SENDER
+        sync: false          # graph: the shared mailbox address
+      - key: RESEND_API_KEY
+        sync: false
+      - key: MAIL_FROM
+        sync: false

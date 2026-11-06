@@ -20,9 +20,9 @@ export default async function InvoicePage({ params, searchParams }: { params: Pr
       <div className="no-print"><Flash sp={sp} />
         <div className="bar">
           <Link href={`/invoices?period=${inv.period}`}>&larr; Invoices</Link><Badge v={inv.status} />
-          {inv.status === "draft" && <form action={issueInv}><Hidden name="id" value={inv.id} /><button>Issue (assign number)</button></form>}
-          {inv.status === "issued" && <form action={payInv}><Hidden name="id" value={inv.id} /><button>Mark paid</button></form>}
-          {inv.status === "draft" && <form action={voidInv}><Hidden name="id" value={inv.id} /><button className="danger">Discard draft</button></form>}
+          {inv.status === "draft" && <form action={issueInv}><Hidden name="rid" value={inv.id} /><button>Issue (assign number)</button></form>}
+          {inv.status === "issued" && <form action={payInv}><Hidden name="rid" value={inv.id} /><button>Mark paid</button></form>}
+          {inv.status === "draft" && <form action={voidInv}><Hidden name="rid" value={inv.id} /><button className="danger">Discard draft</button></form>}
           {inv.status !== "void" && <Link className="btn sec" href={`/unlock?invoice=${inv.id}`}>Reopen hours of this invoice</Link>}
           <a className="btn sec" href={`/invoices/${inv.id}/csv`}>Download CSV</a>
           <PrintButton />
@@ -30,7 +30,7 @@ export default async function InvoicePage({ params, searchParams }: { params: Pr
       </div>
       {inv.status === "issued" && can.admin(user) && (
         <form action={voidInv} className="row card no-print">
-          <Hidden name="id" value={inv.id} />
+          <Hidden name="rid" value={inv.id} />
           <b>Void this issued invoice</b>
           <input name="reason" placeholder="Reason (required)" minLength={5} required style={{ minWidth: 240 }} />
           <input name="confirm" placeholder="Type VOID" required autoComplete="off" style={{ width: 110 }} />

@@ -2,8 +2,8 @@ import Link from "next/link";
 import { all, get } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { can } from "@/lib/auth";
-import { addLeave, deleteLeave, saveTimesheet } from "@/app/actions";
-import { Field, Flash, Hidden, thisMonth } from "@/components/ui";
+import { saveTimesheet } from "@/app/actions";
+import { Badge, Field, Flash, Hidden, thisMonth } from "@/components/ui";
 import { periodRange } from "@/lib/billing";
 
 const shift = (m: string, d: number) => { const [y, mo] = m.split("-").map(Number); const t = new Date(Date.UTC(y, mo - 1 + d, 1)); return t.toISOString().slice(0, 7); };
@@ -27,8 +27,8 @@ export default async function Timesheets({ searchParams }: { searchParams: Promi
       AND a.start_date<=? AND (a.end_date IS NULL OR a.end_date>=?) ORDER BY pr.name`, pid, pid, start, end, end, start);
   const subs = await all<any>("SELECT assignment_id,from_date,to_date FROM substitutions WHERE person_id=?", pid);
   const entries = new Map((await all<any>(`SELECT assignment_id,work_date,hours,status,invoice_id,payout_id FROM timesheet_entries WHERE worker_id=? AND work_date BETWEEN ? AND ?`, pid, start, end)).map((e) => [`${e.assignment_id}_${e.work_date}`, e]));
-  const leave = await all<any>("SELECT * FROM leave WHERE person_id=? AND to_date>=? AND from_date<=? ORDER BY from_date", pid, start, end);
-  const onLeave = (d: string) => leave.some((l) => l.from_date <= d && d <= l.to_date);
+  const leave = await all<any>("SELECT * FROM leave WHERE person_id=? AND status IN ('requested','approved') AND to_date>=? AND from_date<=? ORDER BY from_date", pid, start, end);
+  const onLeave = (d: string) => leave.some((l) => l.status === "approved" && l.from_date <= d && d <= l.to_date);
   const allowed = (r: any, d: string) =>
     (r.owner_id === pid && d >= r.start_date && (!r.end_date || d <= r.end_date)) || subs.some((s) => s.assignment_id === r.id && s.from_date <= d && d <= s.to_date);
   const q = (m: string) => `/timesheets?month=${m}${manager ? `&person=${pid}` : ""}`;
@@ -81,15 +81,9 @@ export default async function Timesheets({ searchParams }: { searchParams: Promi
         </form>
       )}
       <h3>Leave</h3>
-      <table><tbody>{leave.map((l) => <tr key={l.id}><td>{l.type}</td><td>{l.from_date} to {l.to_date}</td><td>{l.notes}</td>
-        <td><form action={deleteLeave}><Hidden name="id" value={l.id} /><Hidden name="_back" value={back} /><button className="danger sm">Remove</button></form></td></tr>)}
+      <table><tbody>{leave.map((l) => <tr key={l.id}><td>{l.type}</td><td>{l.from_date} to {l.to_date}</td><td><Badge v={l.status} /></td></tr>)}
         {!leave.length && <tr><td className="muted">No leave this month. Leave is not billable.</td></tr>}</tbody></table>
-      <form action={addLeave} className="row" style={{ marginTop: 8 }}>
-        <Hidden name="person_id" value={pid} /><Hidden name="_back" value={back} />
-        <Field label="Type"><select name="type"><option>vacation</option><option>sick</option><option>holiday</option><option>other</option></select></Field>
-        <Field label="From"><input type="date" name="from_date" required /></Field><Field label="To"><input type="date" name="to_date" /></Field>
-        <Field label="Notes"><input name="notes" /></Field><button className="sec">Add leave</button>
-      </form>
+      <p><Link href="/leave">Request or manage leave</Link></p>
     </>
   );
 }

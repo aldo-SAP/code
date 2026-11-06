@@ -50,6 +50,12 @@ For `npm start` over plain HTTP locally set `INSECURE_COOKIES=1`.
 - Currencies: amounts keep their own currency; the margin report converts to EUR with the rates in Settings.
 - **Roles**: admin (everything), manager (CRM, projects, approvals, invoices; no cost rates, payouts or margin), worker (own timesheet and leave only).
 
+### Leave
+- Workers request vacation (and "other") under *My leave*; managers/admins approve or reject with a note (required to reject) and cannot decide their own request. Sick days are recorded at once and approvers are told. Public holidays and leave for others are recorded by managers (approved at once).
+- Emails: approvers get the request with a link; the worker gets a receipt and the decision. The approver page shows assignments, substitutes, hours already logged and colleagues off in the period. Overlapping requests and weekend-only ranges are refused. Only approved leave shades the timesheet.
+- Email goes through Microsoft 365 (Graph) or Resend; every message is kept in an email log with retry. Without a provider, messages are logged as "skipped". Setup: DEPLOY.md.
+- Not included: yearly allowance / remaining days, and automatic substitutes.
+
 ### Protecting history
 - **Billed hours are locked.** Once a day is on an invoice or a payout it shows as a dashed cell and cannot be edited, removed or re-approved.
 - **Reopening needs three things:** a written reason, typing `REOPEN`, and the right role. Open *Unlock billed hours* (or the link on the timesheet or invoice).

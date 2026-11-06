@@ -1,4 +1,5 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { safeNext } from "./nexturl.ts";
 import { redirect } from "next/navigation";
 import { userFromSession, SESSION_COOKIE, can, type User } from "./auth.ts";
 
@@ -7,7 +8,10 @@ export async function currentUser(): Promise<User | null> {
 }
 export async function requireUser(check?: (u: User) => boolean): Promise<User> {
   const u = await currentUser();
-  if (!u) redirect("/login");
+  if (!u) {
+    const next = safeNext((await headers()).get("x-pathname"));
+    redirect(next ? `/login?next=${encodeURIComponent(next)}` : "/login");
+  }
   if (check && !check(u)) redirect("/forbidden");
   return u;
 }

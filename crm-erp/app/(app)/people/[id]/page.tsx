@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { all, get } from "@/lib/db";
 import { requireManager } from "@/lib/session";
 import { can } from "@/lib/auth";
-import { addContract, addLeave, deleteLeave, enroll, updatePerson, updateEnrollment } from "@/app/actions";
+import { addContract, enroll, updatePerson, updateEnrollment } from "@/app/actions";
 import { Badge, CurrencySelect, Field, Flash, Hidden } from "@/components/ui";
 
 const STAGES = ["applicant", "training", "ready", "placed", "alumni"];
@@ -25,7 +25,7 @@ export default async function Person({ params, searchParams }: { params: Promise
       <h2>{p.name} <Badge v={p.stage} /></h2><Flash sp={sp} />
       {(p.stage === "applicant" || p.stage === "training") && <div className="flash err">Students in training cannot be assigned to projects. Set the stage to "ready" when they finish.</div>}
       <form action={updatePerson} className="row card">
-        <Hidden name="id" value={p.id} />
+        <Hidden name="rid" value={p.id} />
         <Field label="Name"><input name="name" defaultValue={p.name} required /></Field>
         <Field label="Email"><input name="email" defaultValue={p.email ?? ""} /></Field>
         <Field label="Phone"><input name="phone" defaultValue={p.phone ?? ""} /></Field>
@@ -41,7 +41,7 @@ export default async function Person({ params, searchParams }: { params: Promise
       <h3>Training</h3>
       <table><thead><tr><th>Course</th><th>Status</th><th>Progress</th><th></th></tr></thead><tbody>
         {enrollments.map((e) => <tr key={e.id}><td>{e.course}</td><td><Badge v={e.status} /></td><td>{e.progress}%</td><td>
-          <form action={updateEnrollment} className="row"><Hidden name="id" value={e.id} /><Hidden name="_back" value={back} />
+          <form action={updateEnrollment} className="row"><Hidden name="rid" value={e.id} /><Hidden name="_back" value={back} />
             <input name="progress" type="number" defaultValue={e.progress} style={{ width: 64 }} />
             <select name="status" defaultValue={e.status}><option>enrolled</option><option>completed</option><option>dropped</option></select><button className="sec sm">Update</button></form></td></tr>)}
         {!enrollments.length && <tr><td colSpan={4} className="muted">Not enrolled in any course.</td></tr>}</tbody></table>
@@ -71,15 +71,9 @@ export default async function Person({ params, searchParams }: { params: Promise
       </>}
 
       <h3>Leave</h3>
-      <table><tbody>{leave.map((l) => <tr key={l.id}><td>{l.type}</td><td>{l.from_date} to {l.to_date}</td><td>{l.notes}</td>
-        <td><form action={deleteLeave}><Hidden name="id" value={l.id} /><Hidden name="_back" value={back} /><button className="danger sm">Remove</button></form></td></tr>)}
+      <table><tbody>{leave.map((l) => <tr key={l.id}><td>{l.type}</td><td>{l.from_date} to {l.to_date}</td><td>{l.days} d</td><td><Badge v={l.status} /></td><td><Link href={`/leave/${l.id}`}>Open</Link></td></tr>)}
         {!leave.length && <tr><td className="muted">No leave recorded.</td></tr>}</tbody></table>
-      <form action={addLeave} className="row" style={{ marginTop: 8 }}>
-        <Hidden name="person_id" value={p.id} /><Hidden name="_back" value={back} />
-        <Field label="Type"><select name="type"><option>vacation</option><option>sick</option><option>holiday</option><option>other</option></select></Field>
-        <Field label="From"><input type="date" name="from_date" required /></Field><Field label="To"><input type="date" name="to_date" /></Field>
-        <Field label="Notes"><input name="notes" /></Field><button className="sec">Add leave</button>
-      </form>
+      <p><Link href="/leave">Record or approve leave</Link></p>
     </>
   );
 }

@@ -33,6 +33,7 @@ The app creates its tables the first time it starts. It also turns on row-level 
    | `MS_TENANT_ID`, `MS_CLIENT_ID`, `MS_CLIENT_SECRET` | from step 4 below |
    | `BOOTSTRAP_ADMIN_EMAIL` | your Microsoft work email (becomes the first admin) |
    | `BOOTSTRAP_ADMIN_NAME` | your name |
+   | `MAIL_PROVIDER`, `MAIL_SENDER` (or `RESEND_API_KEY`, `MAIL_FROM`) | from step 5 |
 
    `APP_SECRET` is generated for you. Do **not** set `BOOTSTRAP_ADMIN_PASSWORD` unless you want a password login for that first admin as a break-glass account (recommended: set a long one, store it in the password manager).
 3. Wait for the first deploy to finish. Open `https://<service>.onrender.com/healthz`: it should say `ok`.
@@ -54,7 +55,33 @@ The app creates its tables the first time it starts. It also turns on row-level 
 5. Put the three values in Render (`MS_TENANT_ID`, `MS_CLIENT_ID`, `MS_CLIENT_SECRET`) and redeploy.
 6. Optional but recommended: in Entra **Conditional Access**, require MFA for this app, and optionally limit sign-in to countries you work from (needs Entra ID P1, included in Microsoft 365 Business Premium).
 
-## 5. First sign-in and checks
+## 5. Email (leave requests and decisions)
+
+Without email the app still works, but nobody is notified. Pick **one** option.
+
+**Option A: Microsoft 365 (recommended, no new vendor).** Uses the same Entra app as sign-in.
+1. Create a **shared mailbox** such as `crm@yourcompany.com` (Microsoft 365 admin center, Teams & groups, Shared mailboxes). It needs no licence.
+2. Entra app registration, **API permissions, Add a permission, Microsoft Graph, Application permissions, `Mail.Send`**, then **Grant admin consent**.
+3. **Important:** by default that permission lets the app send as *anyone* in your company. Restrict it to the one mailbox. An Exchange admin runs (PowerShell, Exchange Online module):
+   ```
+   New-DistributionGroup -Name "CRM mail sender" -Type Security -Members crm@yourcompany.com   # or use an existing mail-enabled security group
+   New-ApplicationAccessPolicy -AppId <Application (client) ID> -PolicyScopeGroupId "CRM mail sender" -AccessRight RestrictAccess -Description "Talent CRM may only send as the crm mailbox"
+   Test-ApplicationAccessPolicy -Identity crm@yourcompany.com -AppId <Application (client) ID>   # should say Granted
+   ```
+   (Microsoft is moving this to "Application RBAC for Exchange Online"; either works as long as the app is limited to that mailbox.)
+4. In Render set `MAIL_PROVIDER=graph` and `MAIL_SENDER=crm@yourcompany.com`. The three `MS_*` values are reused.
+
+**Option B: Resend** (a mail service, free for small volumes). Create an account, add and verify your domain (DNS records SPF/DKIM), create an API key, then in Render set `MAIL_PROVIDER=resend`, `RESEND_API_KEY` and `MAIL_FROM=Talent CRM <crm@yourcompany.com>`.
+
+Then in the app: **Settings, Email and leave approvals, "Send me a test email"**. Every message, sent or failed, appears in the **Email log** with a Retry button.
+
+**How leave works**
+- A worker asks for vacation under *My leave*. Managers and admins (or the list you enter in Settings) get an email with a link. The worker gets a receipt email.
+- The link opens the request (signing in first if needed, then returning to it). The approver sees what the person is working on, any substitute, hours already logged and colleagues off, then approves or rejects. The worker is emailed the decision.
+- You cannot decide your own request. Sick days are recorded at once and the approvers are told. Managers can record leave for anyone. Everything is in the audit log.
+- Email links never approve anything by themselves: they only open the request, and a signed-in manager has to press the button. That also protects against mail scanners that open links automatically.
+
+## 6. First sign-in and checks
 
 1. Open `https://crm.yourcompany.com`, press **Sign in with Microsoft** with the email you set as `BOOTSTRAP_ADMIN_EMAIL`.
 2. **Settings**: enter the company name, address and IBAN (printed on invoices). Add each staff member as a user with sign-in **Microsoft** and the same email as their Microsoft account. Freelancers without Microsoft get **password**.

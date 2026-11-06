@@ -24,7 +24,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
     <>
       <h2>{c.name}</h2><Flash sp={sp} />
       <form action={updateClient} className="row card">
-        <Hidden name="id" value={c.id} />
+        <Hidden name="rid" value={c.id} />
         <Field label="Name"><input name="name" defaultValue={c.name} required /></Field>
         <Field label="Country"><input name="country" defaultValue={c.country ?? ""} /></Field>
         <Field label="Email"><input name="email" defaultValue={c.email ?? ""} /></Field>
@@ -38,7 +38,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
       <h3>Contacts</h3>
       <table><thead><tr><th>Name</th><th>Role</th><th>Email</th><th>Phone</th><th></th></tr></thead><tbody>
         {contacts.map((x) => <tr key={x.id}><td>{x.name}</td><td>{x.role}</td><td>{x.email}</td><td>{x.phone}</td>
-          <td><form action={deleteContact}><Hidden name="id" value={x.id} /><Hidden name="_back" value={back} /><button className="danger sm">Remove</button></form></td></tr>)}
+          <td><form action={deleteContact}><Hidden name="rid" value={x.id} /><Hidden name="_back" value={back} /><button className="danger sm">Remove</button></form></td></tr>)}
         {!contacts.length && <tr><td colSpan={5} className="muted">No contacts.</td></tr>}</tbody></table>
       <form action={addContact} className="row" style={{ marginTop: 8 }}>
         <Hidden name="client_id" value={c.id} />

@@ -15,16 +15,16 @@ export function Flash({ sp }: { sp: { msg?: string; err?: string } }) {
 }
 
 const tone: Record<string, string> = {
-  approved: "ok", paid: "ok", won: "ok", active: "ok", completed: "ok", ready: "ok", issued: "warn", submitted: "warn",
+  approved: "ok", requested: "warn", cancelled: "err", paid: "ok", won: "ok", active: "ok", completed: "ok", ready: "ok", issued: "warn", submitted: "warn",
   draft: "", planned: "", rejected: "err", void: "err", lost: "err", dropped: "err",
 };
 export const Badge = ({ v }: { v: string }) => <span className={`badge ${tone[v] ?? ""}`}>{v}</span>;
 
 export function Nav({ user }: { user: User }) {
   const items: [string, string][] = user.role === "worker"
-    ? [["/timesheets", "My timesheet"]]
+    ? [["/timesheets", "My timesheet"], ["/leave", "My leave"]]
     : [["/", "Dashboard"], ["/clients", "Clients"], ["/deals", "Pipeline"], ["/people", "People"], ["/courses", "Training"],
-       ["/projects", "Projects"], ["/timesheets", "Timesheets"], ["/approvals", "Approvals"], ["/invoices", "Invoices"],
+       ["/projects", "Projects"], ["/timesheets", "Timesheets"], ["/leave", "Leave"], ["/approvals", "Approvals"], ["/invoices", "Invoices"],
        ...(can.finance(user) ? [["/payouts", "Payouts"], ["/reports", "Margin"]] as [string, string][] : []),
        ["/unlock", "Unlock billed hours"], ["/import", "CSV import"], ...(can.admin(user) ? [["/audit", "Audit log"], ["/settings", "Settings"]] as [string, string][] : [])];
   return (

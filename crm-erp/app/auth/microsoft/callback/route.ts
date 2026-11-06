@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { msConfig, exchangeCode, verifyIdToken, resolveUser } from "@/lib/msauth";
 import { readBlob, makeSession, sessionHours, SESSION_COOKIE } from "@/lib/auth";
 import { audit, noteLogin } from "@/lib/audit";
+import { safeNext } from "@/lib/nexturl";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   if (url.searchParams.get("error")) return await fail("Microsoft sign-in was cancelled or refused");
   const cookie = req.headers.get("cookie")?.split(/;\s*/).find((x) => x.startsWith("ms_flow="))?.slice(8);
-  const flow = readBlob<{ state: string; nonce: string; verifier: string }>(cookie);
+  const flow = readBlob<{ state: string; nonce: string; verifier: string; next: string | null }>(cookie);
   const code = url.searchParams.get("code");
   if (!flow || !code || url.searchParams.get("state") !== flow.state) return await fail("Sign-in session expired. Please try again");
   let claims;
@@ -30,7 +31,7 @@ export async function GET(req: Request) {
   const r = await resolveUser(claims);
   if (!r.ok) return await fail(r.error, claims.email);
   await noteLogin(r.user, "Microsoft");
-  const res = NextResponse.redirect(`${base}${r.user.role === "worker" ? "/timesheets" : "/"}`);
+  const res = NextResponse.redirect(`${base}${safeNext(flow.next) ?? (r.user.role === "worker" ? "/timesheets" : "/")}`);
   res.cookies.set(SESSION_COOKIE, makeSession(r.user.id, r.user.role), { httpOnly: true, sameSite: "lax", path: "/", maxAge: sessionHours(r.user.role) * 3600, secure: base.startsWith("https://") });
   res.cookies.delete({ name: "ms_flow", path: "/auth/microsoft" });
   return res;

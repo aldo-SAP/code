@@ -23,7 +23,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
       <h2>{p.name} <Badge v={p.status} /></h2><Flash sp={sp} />
       <p className="muted">Client: <Link href={`/clients/${p.client_id}`}>{p.client}</Link>
         <form action={setProjectStatus} style={{ display: "inline-flex", gap: 6, marginLeft: 12 }}>
-          <Hidden name="id" value={p.id} /><Hidden name="_back" value={`/projects/${p.id}`} />
+          <Hidden name="rid" value={p.id} /><Hidden name="_back" value={`/projects/${p.id}`} />
           <select name="status" defaultValue={p.status}>{["planned", "active", "paused", "done"].map((s) => <option key={s}>{s}</option>)}</select><button className="sec sm">Set status</button></form></p>
 
       <h3>Team</h3>

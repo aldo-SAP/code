@@ -35,7 +35,7 @@ export default async function AssignmentPage({ params, searchParams }: { params:
         <p className="muted">Rates are effective-dated: a new rate applies from its date onward and old invoices keep the old rate.</p>
         <table><thead><tr><th>Kind</th><th>Amount</th><th>Effective from</th><th></th></tr></thead><tbody>
           {rates.map((r) => <tr key={r.id}><td>{r.kind === "bill" ? "Bill (client pays)" : "Cost (we pay)"}</td><td>{money(r.amount, r.currency)}</td><td>{r.effective_from}</td>
-            <td><form action={deleteRate} className="row"><Hidden name="id" value={r.id} />
+            <td><form action={deleteRate} className="row"><Hidden name="rid" value={r.id} />
               {through && r.effective_from <= through && <><input name="reason" placeholder="Reason" minLength={5} style={{ width: 130 }} /><label className="f"><span><input type="checkbox" name="confirm_history" /> I know hours up to {through} are billed</span></label></>}
               <button className="danger sm">Remove</button></form></td></tr>)}
           {!rates.length && <tr><td colSpan={4} className="muted">No rates.</td></tr>}</tbody></table>
@@ -56,9 +56,9 @@ export default async function AssignmentPage({ params, searchParams }: { params:
         <p className="muted">When {a.person} is away and someone else works instead, the client invoice still shows {a.person} only, with the substitute's hours included. The substitute is paid separately (external substitutes only; internal ones are on payroll).</p>
         <table><thead><tr><th>Substitute</th><th>From</th><th>To</th><th>Reason</th>{fin && <th>Cost rate {unit}</th>}<th></th></tr></thead><tbody>
           {subs.map((s) => <tr key={s.id}><td>{s.name} <span className="muted">({s.worker_type})</span></td><td>{s.from_date}</td><td>{s.to_date}</td><td>{s.reason}</td>
-            {fin && <td><form action={updateSubstitutionCost} className="row"><Hidden name="id" value={s.id} /><Hidden name="_back" value={back} />
+            {fin && <td><form action={updateSubstitutionCost} className="row"><Hidden name="rid" value={s.id} /><Hidden name="_back" value={back} />
               {s.worker_type === "external" ? <><input name="cost_amount" type="number" step="0.01" defaultValue={s.cost_amount ?? ""} style={{ width: 90 }} placeholder="missing" /><CurrencySelect name="cost_currency" value={s.cost_currency} /><button className="sec sm">Save</button></> : <span className="muted">payroll</span>}</form></td>}
-            <td><form action={deleteSubstitution}><Hidden name="id" value={s.id} /><Hidden name="_back" value={back} /><button className="danger sm">Remove</button></form></td></tr>)}
+            <td><form action={deleteSubstitution}><Hidden name="rid" value={s.id} /><Hidden name="_back" value={back} /><button className="danger sm">Remove</button></form></td></tr>)}
           {!subs.length && <tr><td colSpan={6} className="muted">No substitutions.</td></tr>}</tbody></table>
         <form action={addSubstitution} className="row" style={{ marginTop: 8 }}>
           <Hidden name="assignment_id" value={a.id} />
@@ -76,7 +76,7 @@ export default async function AssignmentPage({ params, searchParams }: { params:
         <table><thead><tr><th>Milestone</th><th>Due</th><th className="num">Bill</th>{fin && <th className="num">Cost</th>}<th>Status</th><th></th></tr></thead><tbody>
           {milestones.map((m) => <tr key={m.id}><td>{m.title}</td><td>{m.due_date}</td><td className="num">{money(m.bill_amount, m.bill_currency)}</td>{fin && <td className="num">{money(m.cost_amount, m.cost_currency)}</td>}
             <td><Badge v={m.status} />{m.invoice_id ? " invoiced" : ""}</td>
-            <td>{!m.invoice_id && !m.payout_id && <form action={setMilestone} className="row"><Hidden name="id" value={m.id} />
+            <td>{!m.invoice_id && !m.payout_id && <form action={setMilestone} className="row"><Hidden name="rid" value={m.id} />
               {m.status !== "approved" && <button name="status" value="approved" className="sec sm">Approve</button>}
               {m.status === "approved" && <button name="status" value="planned" className="sec sm">Unapprove</button>}
               {m.status !== "cancelled" && <button name="status" value="cancelled" className="danger sm">Cancel</button>}</form>}</td></tr>)}

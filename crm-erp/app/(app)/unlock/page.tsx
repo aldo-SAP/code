@@ -31,7 +31,7 @@ export default async function Unlock({ searchParams }: { searchParams: Promise<{
         <form action={unlockBilled}>
           <Hidden name="_back" value={back} />
           <div className="tw"><table><thead><tr><th></th><th>Date</th><th>Worker</th><th>Project</th><th className="num">Hours</th><th>Invoice</th><th>Payout</th></tr></thead><tbody>
-            {rows.map((r) => <tr key={r.id}><td><input type="checkbox" name="id" value={r.id} defaultChecked disabled={blocked} /></td><td>{r.work_date}</td><td>{r.worker}</td><td>{r.project}</td><td className="num">{num(r.hours)}</td>
+            {rows.map((r) => <tr key={r.id}><td><input type="checkbox" name="rid" value={r.id} defaultChecked disabled={blocked} /></td><td>{r.work_date}</td><td>{r.worker}</td><td>{r.project}</td><td className="num">{num(r.hours)}</td>
               <td>{r.invoice_id ? <><Link href={`/invoices/${r.invoice_id}`}>{r.invoice_number ?? `Draft #${r.invoice_id}`}</Link> <Badge v={r.invoice_status!} /></> : "-"}</td>
               <td>{r.payout_id ? <Badge v={r.payout_status!} /> : "-"}</td></tr>)}
           </tbody></table></div>

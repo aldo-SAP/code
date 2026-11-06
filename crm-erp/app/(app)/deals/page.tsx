@@ -22,11 +22,11 @@ export default async function Deals({ searchParams }: { searchParams: Promise<{ 
                 <div className="deal" key={d.id}>
                   <b>{d.title}</b><br /><span className="muted">{d.client ?? d.company_name ?? "-"}</span><br />{money(d.value, d.currency)}
                   <form action={moveDeal} style={{ display: "flex", gap: 4, marginTop: 6 }}>
-                    <Hidden name="id" value={d.id} />
+                    <Hidden name="rid" value={d.id} />
                     <select name="stage" defaultValue={d.stage}>{STAGES.map((s) => <option key={s}>{s}</option>)}</select>
                     <button className="sec sm">Move</button>
                   </form>
-                  <form action={deleteDeal}><Hidden name="id" value={d.id} /><button className="danger sm" style={{ marginTop: 4 }}>Delete</button></form>
+                  <form action={deleteDeal}><Hidden name="rid" value={d.id} /><button className="danger sm" style={{ marginTop: 4 }}>Delete</button></form>
                 </div>
               ))}
             </div>

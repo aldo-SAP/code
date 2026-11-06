@@ -1,6 +1,7 @@
 import { all, setting } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
-import { addFx, addUser, saveSettings, setUserActive, setUserAuth } from "@/app/actions";
+import { addFx, addUser, retryEmailAction, saveLeaveSettings, saveSettings, sendTestEmail, setUserActive, setUserAuth } from "@/app/actions";
+import { mailProvider, recentMail } from "@/lib/mail";
 import { msConfig, redirectUri } from "@/lib/msauth";
 import { Badge, CURRENCIES, Field, Flash, Hidden, today } from "@/components/ui";
 
@@ -10,6 +11,8 @@ export default async function Settings({ searchParams }: { searchParams: Promise
   const users = await all<any>("SELECT u.*, p.name AS person FROM users u LEFT JOIN people p ON p.id=u.person_id ORDER BY u.id");
   const people = await all<any>("SELECT id,name FROM people ORDER BY name");
   const ms = msConfig();
+  const provider = mailProvider();
+  const emails = await recentMail(25);
   const fx = await all<any>("SELECT * FROM fx_rates ORDER BY currency, as_of DESC");
   return (
     <>
@@ -21,6 +24,22 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         <Field label="Registration / tax no."><input name="company_vat_or_reg" defaultValue={await setting("company_vat_or_reg")} /></Field>
         <Field label="IBAN / payment details"><input name="company_iban" defaultValue={await setting("company_iban")} /></Field><button>Save</button>
       </form>
+      <h3>Email and leave approvals</h3>
+      <div className="card" style={{ display: "grid", gap: 10 }}>
+        <div>Email sending: <b>{provider === "none" ? "not configured (messages are only logged)" : provider === "graph" ? "Microsoft 365" : "Resend"}</b>. See DEPLOY.md to set it up.</div>
+        <form action={saveLeaveSettings} className="row">
+          <Field label="Who gets leave requests (emails, comma separated). Empty = all managers and admins"><input name="leave_approver_emails" defaultValue={await setting("leave_approver_emails")} style={{ width: 420 }} /></Field>
+          <button className="sec">Save</button>
+        </form>
+        <form action={sendTestEmail}><button className="sec">Send me a test email</button></form>
+      </div>
+      <details><summary className="muted" style={{ cursor: "pointer", margin: "8px 0" }}>Email log ({emails.length} latest)</summary>
+        <div className="tw"><table><thead><tr><th>When (UTC)</th><th>To</th><th>Subject</th><th>Status</th><th></th></tr></thead><tbody>
+          {emails.map((e) => <tr key={e.id}><td style={{ whiteSpace: "nowrap" }}>{e.created_at}</td><td>{e.to_addr}</td><td>{e.subject}</td>
+            <td><Badge v={e.status === "sent" ? "approved" : e.status === "failed" ? "rejected" : "draft"} /> {e.status}{e.error ? <span className="muted"> {e.error}</span> : null}</td>
+            <td>{e.status !== "sent" && provider !== "none" && <form action={retryEmailAction}><Hidden name="rid" value={e.id} /><button className="sec sm">Retry</button></form>}</td></tr>)}
+          {!emails.length && <tr><td colSpan={5} className="muted">No emails yet.</td></tr>}</tbody></table></div>
+      </details>
       <h3>Backup</h3>
       <div className="card">
         <a className="btn" href="/backup">Download full data export (JSON)</a>
@@ -35,8 +54,8 @@ export default async function Settings({ searchParams }: { searchParams: Promise
       <h3>Users</h3>
       <table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Sign-in</th><th>Linked person</th><th></th></tr></thead><tbody>
         {users.map((u) => <tr key={u.id}><td>{u.name}</td><td>{u.email}</td><td><Badge v={u.role} /></td>
-          <td><form action={setUserAuth} className="row"><Hidden name="id" value={u.id} /><select name="auth_method" defaultValue={u.auth_method}><option value="password">password</option><option value="microsoft">Microsoft</option><option value="both">both</option></select><button className="sec sm">Save</button></form>{u.ms_oid ? <span className="muted">Microsoft linked</span> : null}</td><td>{u.person}</td>
-          <td><form action={setUserActive}><Hidden name="id" value={u.id} /><button name="active" value={u.active ? 0 : 1} className="sec sm">{u.active ? "Deactivate" : "Activate"}</button></form></td></tr>)}</tbody></table>
+          <td><form action={setUserAuth} className="row"><Hidden name="rid" value={u.id} /><select name="auth_method" defaultValue={u.auth_method}><option value="password">password</option><option value="microsoft">Microsoft</option><option value="both">both</option></select><button className="sec sm">Save</button></form>{u.ms_oid ? <span className="muted">Microsoft linked</span> : null}</td><td>{u.person}</td>
+          <td><form action={setUserActive}><Hidden name="rid" value={u.id} /><button name="active" value={u.active ? 0 : 1} className="sec sm">{u.active ? "Deactivate" : "Activate"}</button></form></td></tr>)}</tbody></table>
       <form action={addUser} className="row card" style={{ marginTop: 8 }}>
         <Field label="Name"><input name="name" /></Field><Field label="Email"><input name="email" type="email" required /></Field>
         <Field label="Sign-in"><select name="auth_method" defaultValue={ms ? "microsoft" : "password"}><option value="microsoft">Microsoft (staff)</option><option value="password">password (freelancers without Microsoft)</option><option value="both">both</option></select></Field>

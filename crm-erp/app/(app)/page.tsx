@@ -10,10 +10,10 @@ export default async function Dashboard() {
   const user = await requireUser();
   if (user.role === "worker") redirect("/timesheets");
   const c = async (sql: string) => (await get<{ n: number }>(sql))!.n;
-  const [clients, projects, awaiting, drafts, unpaid] = await Promise.all([
+  const [clients, projects, awaiting, drafts, unpaid, leaveWaiting] = await Promise.all([
     c("SELECT COUNT(*) n FROM clients WHERE status='active'"), c("SELECT COUNT(*) n FROM projects WHERE status='active'"),
     c("SELECT COUNT(DISTINCT worker_id||'-'||substr(work_date,1,7)) n FROM timesheet_entries WHERE status='submitted'"),
-    c("SELECT COUNT(*) n FROM invoices WHERE status='draft'"), c("SELECT COUNT(*) n FROM invoices WHERE status='issued'")]);
+    c("SELECT COUNT(*) n FROM invoices WHERE status='draft'"), c("SELECT COUNT(*) n FROM invoices WHERE status='issued'"), c("SELECT COUNT(*) n FROM leave WHERE status='requested'")]);
   const stages = await all<{ stage: string; n: number }>("SELECT stage, COUNT(*) n FROM people GROUP BY stage");
   const pipeline = await all<{ stage: string; n: number; v: number }>("SELECT stage, COUNT(*) n, SUM(value) v FROM deals WHERE stage NOT IN ('won','lost') GROUP BY stage");
   const period = thisMonth();
@@ -29,6 +29,7 @@ export default async function Dashboard() {
         {stat("Active projects", projects, "/projects")}
         {stat("Open deals", pipeline.reduce((s, p) => s + p.n, 0), "/deals")}
         {stat("Timesheets awaiting approval", awaiting, "/approvals")}
+        {stat("Leave requests waiting", leaveWaiting, "/leave")}
         {stat("Draft invoices", drafts, "/invoices")}
         {stat("Unpaid invoices", unpaid, "/invoices")}
         {m && stat(`Margin ${period}`, money(m.revenue - m.cost), "/reports")}
