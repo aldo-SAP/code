@@ -31,7 +31,7 @@ export function MfaSetupForm({ secret, uri, qr }: { secret: string; uri: string;
         </li>
         <li>Enter the 6-digit code the app shows now.</li>
       </ol>
-      <form action={action} className="row">
+      <form action={action} className="row" data-no-busy>
         <label className="f">6-digit code<input name="code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9 ]*" maxLength={7} required autoFocus style={{ width: 160 }} /></label>
         <button disabled={pending}>{pending ? "Checking..." : "Turn on"}</button>
       </form>
@@ -45,7 +45,7 @@ export function RegenForm() {
   const [state, action, pending] = useActionState<MfaFormState, FormData>(regenRecoveryAction, {});
   if (state.codes) return <Codes codes={state.codes} />;
   return (
-    <form action={action} className="row">
+    <form action={action} className="row" data-no-busy>
       <label className="f">Current 6-digit code<input name="code" inputMode="numeric" autoComplete="one-time-code" maxLength={7} required style={{ width: 160 }} /></label>
       <button className="sec" disabled={pending}>New recovery codes</button>
       {state.error && <span className="flash err" role="alert">{state.error}</span>}

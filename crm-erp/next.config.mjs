@@ -1,6 +1,3 @@
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-const root = path.dirname(fileURLToPath(import.meta.url));
 const prod = process.env.NODE_ENV === "production";
 const appHost = process.env.APP_URL ? new URL(process.env.APP_URL).host : null;
 
@@ -20,6 +17,7 @@ const csp = [
 export default {
   reactStrictMode: true,
   poweredByHeader: false,
+  agentRules: false, // Next 16.4 otherwise writes an AGENTS.md of AI-tool instructions into the project on `next dev`
   serverExternalPackages: ["@electric-sql/pglite", "postgres"],
   experimental: appHost ? { serverActions: { allowedOrigins: [appHost] } } : {},
   async headers() {
@@ -36,10 +34,6 @@ export default {
       ],
     }];
   },
-  webpack(config) {
-    config.resolve.alias["@"] = root;
-    // lib/ files import each other with explicit .ts so they also run under plain node (tests, seed)
-    config.resolve.extensionAlias = { ".ts": [".ts", ".tsx", ".js"], ".js": [".ts", ".tsx", ".js"] };
-    return config;
-  },
+  // Turbopack (the Next 16 default) reads the "@/*" paths and the explicit .ts imports from tsconfig.json, so no bundler settings are needed.
+  turbopack: {},
 };

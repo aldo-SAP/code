@@ -17,15 +17,21 @@ export default function UxEnhancer() {
       const ev = e as SubmitEvent;
       const form = ev.target as HTMLFormElement;
       const btn = ev.submitter as HTMLElement | null;
-      if (form.dataset.busy) { ev.preventDefault(); ev.stopPropagation(); return; }
+      if (!form.hasAttribute("data-no-busy") && form.dataset.busy) { ev.preventDefault(); ev.stopPropagation(); return; }
       const wantsConfirm = btn?.dataset.confirm || (btn?.classList.contains("danger") && !form.querySelector("[required]"));
       if (wantsConfirm) {
         const text = btn!.dataset.confirm || `${(btn!.textContent ?? "").trim()}? This cannot be undone.`;
         if (!window.confirm(text)) { ev.preventDefault(); ev.stopPropagation(); return; }
       }
+      if (form.hasAttribute("data-no-busy")) return;   // forms that show their result in place manage their own pending state
       form.dataset.busy = "1";
       form.setAttribute("aria-busy", "true");
-      window.setTimeout(() => { delete form.dataset.busy; form.removeAttribute("aria-busy"); }, 12000);
+      const release = () => { delete form.dataset.busy; form.removeAttribute("aria-busy"); obs.disconnect(); window.clearTimeout(timer); };
+      // the page re-rendering (even to the same address) means the action finished; a timer is the backstop
+      const started = Date.now();
+      const obs = new MutationObserver(() => { if (Date.now() - started > 200) release(); });
+      obs.observe(document.querySelector("main") ?? document.body, { childList: true, subtree: true });
+      const timer = window.setTimeout(release, 8000);
     };
     document.addEventListener("submit", onSubmit, true);
     return () => document.removeEventListener("submit", onSubmit, true);

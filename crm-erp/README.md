@@ -4,7 +4,7 @@ CRM + light ERP for an IT company that trains students and places them with fore
 (hourly, daily-rate, monthly or fixed-price), with substitutions, external freelancers,
 timesheets, client invoices, payouts and margin.
 
-Next.js 15 + PostgreSQL. In production the database is Supabase Postgres; locally it is an embedded Postgres
+Next.js 16 (Turbopack) + PostgreSQL. In production the database is Supabase Postgres; locally it is an embedded Postgres
 (PGlite, no install) stored in `data/pgdata`, so local behaviour matches production. Everything is async SQL through `lib/db.ts`.
 
 - **Go live:** see [DEPLOY.md](DEPLOY.md) (Supabase + Render + Cloudflare + Microsoft, step by step, plus backups and a security checklist).
