@@ -8,7 +8,7 @@ export default async function Payouts({ searchParams }: { searchParams: Promise<
   await requireAdmin();
   const sp = await searchParams;
   const period = sp.period ?? thisMonth();
-  const rows = all<any>("SELECT p.*, per.name FROM payouts p JOIN people per ON per.id=p.person_id WHERE p.period=? ORDER BY p.kind, per.name", period);
+  const rows = await all<any>("SELECT p.*, per.name FROM payouts p JOIN people per ON per.id=p.person_id WHERE p.period=? ORDER BY p.kind, per.name", period);
   return (
     <>
       <h2>Payouts</h2><Flash sp={sp} />

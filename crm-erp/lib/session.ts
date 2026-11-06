@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { userFromSession, SESSION_COOKIE, can, type User } from "./auth.ts";
 
 export async function currentUser(): Promise<User | null> {
-  return userFromSession((await cookies()).get(SESSION_COOKIE)?.value);
+  return await userFromSession((await cookies()).get(SESSION_COOKIE)?.value);
 }
 export async function requireUser(check?: (u: User) => boolean): Promise<User> {
   const u = await currentUser();

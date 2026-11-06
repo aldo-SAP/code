@@ -7,8 +7,8 @@ const STAGES = ["lead", "qualified", "proposal", "negotiation", "won", "lost"];
 export default async function Deals({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
   await requireManager();
   const sp = await searchParams;
-  const deals = all<any>("SELECT d.*, c.name AS client FROM deals d LEFT JOIN clients c ON c.id=d.client_id ORDER BY d.id DESC");
-  const clients = all<any>("SELECT id,name FROM clients ORDER BY name");
+  const deals = await all<any>("SELECT d.*, c.name AS client FROM deals d LEFT JOIN clients c ON c.id=d.client_id ORDER BY d.id DESC");
+  const clients = await all<any>("SELECT id,name FROM clients ORDER BY name");
   return (
     <>
       <h2>Pipeline</h2><Flash sp={sp} />

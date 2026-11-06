@@ -10,10 +10,10 @@ export default async function Unlock({ searchParams }: { searchParams: Promise<{
   const user = await requireManager();
   const sp = await searchParams;
   const admin = can.admin(user);
-  const people = all<any>("SELECT id,name FROM people WHERE stage IN ('ready','placed') ORDER BY name");
+  const people = await all<any>("SELECT id,name FROM people WHERE stage IN ('ready','placed') ORDER BY name");
   const month = sp.month ?? thisMonth();
-  const rows = sp.invoice ? billedEntries("t.invoice_id=?", Number(sp.invoice))
-    : sp.person ? billedEntries("t.worker_id=? AND substr(t.work_date,1,7)=?", Number(sp.person), month) : [];
+  const rows = sp.invoice ? await billedEntries("t.invoice_id=?", Number(sp.invoice))
+    : sp.person ? await billedEntries("t.worker_id=? AND substr(t.work_date,1,7)=?", Number(sp.person), month) : [];
   const paid = rows.some((r) => r.invoice_status === "paid" || r.payout_status === "paid");
   const needAdmin = rows.some((r) => r.invoice_status === "issued" || r.payout_status === "approved");
   const blocked = paid || (needAdmin && !admin);

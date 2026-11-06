@@ -4,8 +4,8 @@ import { requireManager } from "@/lib/session";
 import { reopenEntries, reviewEntries } from "@/app/actions";
 import { Flash, Hidden, num } from "@/components/ui";
 
-function groups(status: string, extra = "") {
-  const rows = all<any>(`SELECT t.id,t.work_date,t.hours,t.worker_id,t.assignment_id,w.name AS worker,pr.name AS project,o.name AS owner,a.person_id AS owner_id,a.hours_per_day
+async function groups(status: string, extra = "") {
+  const rows = await all<any>(`SELECT t.id,t.work_date,t.hours,t.worker_id,t.assignment_id,w.name AS worker,pr.name AS project,o.name AS owner,a.person_id AS owner_id,a.hours_per_day
     FROM timesheet_entries t JOIN people w ON w.id=t.worker_id JOIN assignments a ON a.id=t.assignment_id JOIN projects pr ON pr.id=a.project_id JOIN people o ON o.id=a.person_id
     WHERE t.status=? ${extra} ORDER BY w.name, pr.name, t.work_date`, status);
   const map = new Map<string, any>();
@@ -21,8 +21,8 @@ function groups(status: string, extra = "") {
 export default async function Approvals({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
   await requireManager();
   const sp = await searchParams;
-  const submitted = groups("submitted");
-  const approved = groups("approved", "AND t.invoice_id IS NULL AND t.payout_id IS NULL");
+  const submitted = await groups("submitted");
+  const approved = await groups("approved", "AND t.invoice_id IS NULL AND t.payout_id IS NULL");
   const row = (g: any, actions: React.ReactNode) => (
     <tr key={`${g.worker_id}${g.assignment_id}${g.month}`}>
       <td><Link href={`/timesheets?person=${g.worker_id}&month=${g.month}`}>{g.worker}</Link>{g.owner_id !== g.worker_id && <span className="muted"> (for {g.owner})</span>}</td>

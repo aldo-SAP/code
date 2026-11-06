@@ -64,16 +64,16 @@ export type Resolved = { ok: true; user: User } | { ok: false; error: string };
  * Maps a verified Microsoft identity to a user an admin created beforehand. Nobody is created automatically.
  * First sign-in binds the Microsoft account id (oid) to the user; later sign-ins match on oid.
  */
-export function resolveUser(claims: Claims): Resolved {
+export async function resolveUser(claims: Claims): Promise<Resolved> {
   const cols = "id,email,name,role,person_id,active,auth_method,ms_oid";
-  let u = get<any>(`SELECT ${cols} FROM users WHERE ms_oid=?`, claims.oid);
+  let u = await get<any>(`SELECT ${cols} FROM users WHERE ms_oid=?`, claims.oid);
   if (!u) {
-    u = get<any>(`SELECT ${cols} FROM users WHERE lower(email)=?`, claims.email);
+    u = await get<any>(`SELECT ${cols} FROM users WHERE lower(email)=?`, claims.email);
     if (u?.ms_oid && u.ms_oid !== claims.oid) return { ok: false, error: "This user is already linked to a different Microsoft account." };
   }
   if (!u) return { ok: false, error: `No access for ${claims.email}. Ask an admin to add you first.` };
   if (!u.active) return { ok: false, error: "This account is deactivated." };
   if (u.auth_method === "password") return { ok: false, error: "This account signs in with a password, not Microsoft." };
-  if (!u.ms_oid) run("UPDATE users SET ms_oid=? WHERE id=?", claims.oid, u.id);
+  if (!u.ms_oid) await run("UPDATE users SET ms_oid=? WHERE id=?", claims.oid, u.id);
   return { ok: true, user: { id: u.id, email: u.email, name: u.name, role: u.role, person_id: u.person_id } };
 }

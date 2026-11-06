@@ -7,13 +7,15 @@ import { Badge, Field, Flash, Hidden } from "@/components/ui";
 export default async function Courses({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
   await requireManager();
   const sp = await searchParams;
-  const courses = all<any>("SELECT * FROM courses ORDER BY id DESC");
-  const people = all<any>("SELECT id,name FROM people WHERE stage IN ('applicant','training') ORDER BY name");
+  const courses = await all<any>("SELECT * FROM courses ORDER BY id DESC");
+  const enrollments: Record<number, any[]> = {};
+  for (const c of courses) enrollments[c.id] = await all<any>("SELECT e.*, p.name FROM enrollments e JOIN people p ON p.id=e.person_id WHERE course_id=? ORDER BY p.name", c.id);
+  const people = await all<any>("SELECT id,name FROM people WHERE stage IN ('applicant','training') ORDER BY name");
   return (
     <>
       <h2>Training</h2><Flash sp={sp} />
       {courses.map((c) => {
-        const en = all<any>("SELECT e.*, p.name FROM enrollments e JOIN people p ON p.id=e.person_id WHERE course_id=? ORDER BY p.name", c.id);
+        const en = enrollments[c.id] ?? [];
         return (
           <div className="card" key={c.id}>
             <b>{c.name}</b> <span className="muted">{c.start_date ?? "?"} to {c.end_date ?? "?"}</span>

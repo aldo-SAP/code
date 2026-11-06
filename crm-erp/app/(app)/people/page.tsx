@@ -11,8 +11,8 @@ export default async function People({ searchParams }: { searchParams: Promise<{
   const where: string[] = [], args: string[] = [];
   if (sp.stage) { where.push("stage=?"); args.push(sp.stage); }
   if (sp.type) { where.push("worker_type=?"); args.push(sp.type); }
-  if (sp.q) { where.push("(name LIKE ? OR skills LIKE ?)"); args.push(`%${sp.q}%`, `%${sp.q}%`); }
-  const rows = all<any>(`SELECT * FROM people ${where.length ? "WHERE " + where.join(" AND ") : ""} ORDER BY name`, ...args);
+  if (sp.q) { where.push("(name ILIKE ? OR skills ILIKE ?)"); args.push(`%${sp.q}%`, `%${sp.q}%`); }
+  const rows = await all<any>(`SELECT * FROM people ${where.length ? "WHERE " + where.join(" AND ") : ""} ORDER BY name`, ...args);
   return (
     <>
       <h2>People</h2><Flash sp={sp} />

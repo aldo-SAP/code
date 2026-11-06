@@ -1,0 +1,33 @@
+# Render blueprint: one always-on web service in Frankfurt. Secrets are entered in the Render dashboard (sync: false).
+services:
+  - type: web
+    name: talent-crm
+    runtime: node
+    region: frankfurt
+    plan: starter
+    rootDir: crm-erp
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 22.12.0
+      - key: NODE_ENV
+        value: production
+      - key: APP_URL
+        sync: false          # https://crm.yourcompany.com
+      - key: DATABASE_URL
+        sync: false          # Supabase "Session pooler" connection string
+      - key: MS_TENANT_ID
+        sync: false
+      - key: MS_CLIENT_ID
+        sync: false
+      - key: MS_CLIENT_SECRET
+        sync: false
+      - key: APP_SECRET
+        generateValue: true  # signs session cookies
+      - key: BOOTSTRAP_ADMIN_EMAIL
+        sync: false          # first admin, created once on an empty database
+      - key: BOOTSTRAP_ADMIN_NAME
+        sync: false

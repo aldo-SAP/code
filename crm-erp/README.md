@@ -4,8 +4,11 @@ CRM + light ERP for an IT company that trains students and places them with fore
 (hourly, daily-rate, monthly or fixed-price), with substitutions, external freelancers,
 timesheets, client invoices, payouts and margin.
 
-Next.js 15 + SQLite (Node's built-in `node:sqlite`, so Node >= 22.13 and no native modules).
-Data lives in `data/app.db` (git-ignored).
+Next.js 15 + PostgreSQL. In production the database is Supabase Postgres; locally it is an embedded Postgres
+(PGlite, no install) stored in `data/pgdata`, so local behaviour matches production. Everything is async SQL through `lib/db.ts`.
+
+- **Go live:** see [DEPLOY.md](DEPLOY.md) (Supabase + Render + Cloudflare + Microsoft, step by step, plus backups and a security checklist).
+- **Hosting file:** `../render.yaml` at the repository root; settings in `.env.example`.
 
 ## Run locally
 
@@ -14,10 +17,12 @@ cd crm-erp
 npm install
 npm run seed:demo      # admin@example.com / changeme123 + sample data (use `npm run seed` for admin only)
 npm run dev            # http://localhost:3000
-npm test               # billing and invoicing tests
+npm test               # unit and integration tests on embedded Postgres
 ```
-Set `ADMIN_EMAIL` / `ADMIN_PASSWORD` before seeding to choose your own login. For `npm start` over plain HTTP
-(no TLS) set `INSECURE_COOKIES=1`.
+Set `ADMIN_EMAIL` / `ADMIN_PASSWORD` before seeding to choose your own login. To use a real Postgres instead of the embedded one,
+set `DATABASE_URL` (and `DATABASE_SSL=off` for a server without SSL). To also run the tests against a real server:
+`TEST_DATABASE_URL=postgres://user@host:5432/postgres npm test` (each test file gets its own throwaway database).
+For `npm start` over plain HTTP locally set `INSECURE_COOKIES=1`.
 
 ## How it models your business
 
@@ -74,8 +79,14 @@ Staff sign in with their Microsoft work account; freelancers without one keep a 
 - Password sign-in: scrypt hashes, signed httpOnly cookies, and 5 failed attempts per email lock password login for 15 minutes. Every attempt is in the audit log.
 - Keep your own admin on `both` so a Microsoft misconfiguration or an expired client secret cannot lock you out.
 
+## Security measures built in
+- Database: row-level security with no policies on every table (public API roles read nothing); the audit log is append-only (edit, delete and truncate are blocked by triggers).
+- Web: CSP, HSTS, no framing, `nosniff`, no caching of pages, server actions restricted to your own domain.
+- Sessions: signed httpOnly cookies; 8 hours for admins, 12 for managers, 7 days for workers.
+- Sign-in: Microsoft (staff), passwords with 5-attempt lockout (freelancers), IP and country on every audit entry, a `login_new_country` alert, failed attempts logged.
+- Not yet built: authenticator-app codes (TOTP) for password users.
+
 ### Known limits (v1)
 - No VAT (amounts only, as requested). Invoices print to PDF from the browser or export as CSV.
 - Substitution on a **monthly** or **fixed** assignment is not priced; substitutions apply to hourly/daily work.
 - Cost rates do not apply to leave; leave is informational and non-billable.
-- `node:sqlite` is marked experimental in Node 22 but is stable enough for a single-server app; the schema is plain SQL if you later move to Postgres.

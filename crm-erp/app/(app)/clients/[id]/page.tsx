@@ -10,15 +10,15 @@ import { Badge, CurrencySelect, Field, Flash, Hidden, money } from "@/components
 export default async function ClientPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string; err?: string }> }) {
   const user = await requireManager();
   const fin = can.finance(user);
-  const people = all<any>("SELECT id,name,worker_type FROM people WHERE stage IN ('ready','placed') ORDER BY name");
+  const people = await all<any>("SELECT id,name,worker_type FROM people WHERE stage IN ('ready','placed') ORDER BY name");
   const { id } = await params; const sp = await searchParams;
-  const c = get<any>("SELECT * FROM clients WHERE id=?", Number(id));
+  const c = await get<any>("SELECT * FROM clients WHERE id=?", Number(id));
   if (!c) notFound();
-  const contacts = all<any>("SELECT * FROM contacts WHERE client_id=?", c.id);
-  const contracts = all<any>("SELECT k.*, per.name AS person, a.id AS aid, pr.name AS project FROM contracts k LEFT JOIN assignments a ON a.client_contract_id=k.id LEFT JOIN people per ON per.id=a.person_id LEFT JOIN projects pr ON pr.id=a.project_id WHERE k.kind='client' AND k.client_id=? ORDER BY k.id DESC", c.id);
-  const projects = all<any>("SELECT p.*, (SELECT COUNT(*) FROM assignments a WHERE a.project_id=p.id) AS people FROM projects p WHERE p.client_id=? ORDER BY p.id DESC", c.id);
-  const deals = all<any>("SELECT * FROM deals WHERE client_id=?", c.id);
-  const invoices = all<any>("SELECT * FROM invoices WHERE client_id=? ORDER BY id DESC LIMIT 12", c.id);
+  const contacts = await all<any>("SELECT * FROM contacts WHERE client_id=?", c.id);
+  const contracts = await all<any>("SELECT k.*, per.name AS person, a.id AS aid, pr.name AS project FROM contracts k LEFT JOIN assignments a ON a.client_contract_id=k.id LEFT JOIN people per ON per.id=a.person_id LEFT JOIN projects pr ON pr.id=a.project_id WHERE k.kind='client' AND k.client_id=? ORDER BY k.id DESC", c.id);
+  const projects = await all<any>("SELECT p.*, (SELECT COUNT(*) FROM assignments a WHERE a.project_id=p.id) AS people FROM projects p WHERE p.client_id=? ORDER BY p.id DESC", c.id);
+  const deals = await all<any>("SELECT * FROM deals WHERE client_id=?", c.id);
+  const invoices = await all<any>("SELECT * FROM invoices WHERE client_id=? ORDER BY id DESC LIMIT 12", c.id);
   const back = `/clients/${c.id}`;
   return (
     <>

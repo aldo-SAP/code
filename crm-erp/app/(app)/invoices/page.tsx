@@ -8,8 +8,8 @@ export default async function Invoices({ searchParams }: { searchParams: Promise
   await requireManager();
   const sp = await searchParams;
   const period = sp.period ?? thisMonth();
-  const rows = all<any>("SELECT i.*, c.name AS client FROM invoices i JOIN clients c ON c.id=i.client_id WHERE i.period=? ORDER BY c.name, i.id", period);
-  const open = all<any>("SELECT i.*, c.name AS client FROM invoices i JOIN clients c ON c.id=i.client_id WHERE i.status='issued' AND i.period<>? ORDER BY i.due_date", period);
+  const rows = await all<any>("SELECT i.*, c.name AS client FROM invoices i JOIN clients c ON c.id=i.client_id WHERE i.period=? ORDER BY c.name, i.id", period);
+  const open = await all<any>("SELECT i.*, c.name AS client FROM invoices i JOIN clients c ON c.id=i.client_id WHERE i.status='issued' AND i.period<>? ORDER BY i.due_date", period);
   return (
     <>
       <h2>Invoices</h2><Flash sp={sp} />

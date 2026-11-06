@@ -10,16 +10,16 @@ const STAGES = ["applicant", "training", "ready", "placed", "alumni"];
 export default async function Person({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string; err?: string }> }) {
   const user = await requireManager();
   const { id } = await params; const sp = await searchParams;
-  const p = get<any>("SELECT * FROM people WHERE id=?", Number(id));
+  const p = await get<any>("SELECT * FROM people WHERE id=?", Number(id));
   if (!p) notFound();
   const back = `/people/${p.id}`;
-  const enrollments = all<any>("SELECT e.*, c.name AS course FROM enrollments e JOIN courses c ON c.id=e.course_id WHERE person_id=?", p.id);
-  const courses = all<any>("SELECT id,name FROM courses ORDER BY id DESC");
-  const assignments = all<any>(`SELECT a.*, pr.name AS project, cl.name AS client FROM assignments a JOIN projects pr ON pr.id=a.project_id JOIN clients cl ON cl.id=pr.client_id WHERE a.person_id=? ORDER BY a.start_date DESC`, p.id);
-  const subs = all<any>(`SELECT s.*, pr.name AS project, a.id AS aid FROM substitutions s JOIN assignments a ON a.id=s.assignment_id JOIN projects pr ON pr.id=a.project_id WHERE s.person_id=? ORDER BY s.from_date DESC`, p.id);
-  const leave = all<any>("SELECT * FROM leave WHERE person_id=? ORDER BY from_date DESC", p.id);
-  const contracts = all<any>("SELECT * FROM contracts WHERE kind='freelancer' AND person_id=? ORDER BY id DESC", p.id);
-  const login = get<any>("SELECT email,role FROM users WHERE person_id=?", p.id);
+  const enrollments = await all<any>("SELECT e.*, c.name AS course FROM enrollments e JOIN courses c ON c.id=e.course_id WHERE person_id=?", p.id);
+  const courses = await all<any>("SELECT id,name FROM courses ORDER BY id DESC");
+  const assignments = await all<any>(`SELECT a.*, pr.name AS project, cl.name AS client FROM assignments a JOIN projects pr ON pr.id=a.project_id JOIN clients cl ON cl.id=pr.client_id WHERE a.person_id=? ORDER BY a.start_date DESC`, p.id);
+  const subs = await all<any>(`SELECT s.*, pr.name AS project, a.id AS aid FROM substitutions s JOIN assignments a ON a.id=s.assignment_id JOIN projects pr ON pr.id=a.project_id WHERE s.person_id=? ORDER BY s.from_date DESC`, p.id);
+  const leave = await all<any>("SELECT * FROM leave WHERE person_id=? ORDER BY from_date DESC", p.id);
+  const contracts = await all<any>("SELECT * FROM contracts WHERE kind='freelancer' AND person_id=? ORDER BY id DESC", p.id);
+  const login = await get<any>("SELECT email,role FROM users WHERE person_id=?", p.id);
   return (
     <>
       <h2>{p.name} <Badge v={p.stage} /></h2><Flash sp={sp} />

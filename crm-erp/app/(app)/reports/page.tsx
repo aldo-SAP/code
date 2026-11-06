@@ -5,7 +5,7 @@ import { Field, money, thisMonth } from "@/components/ui";
 export default async function Reports({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
   await requireAdmin();
   const period = (await searchParams).period ?? thisMonth();
-  const m = marginReport(period);
+  const m = await marginReport(period);
   const pct = (r: number, c: number) => (r ? `${Math.round(((r - c) / r) * 100)}%` : "-");
   return (
     <>

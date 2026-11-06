@@ -9,9 +9,9 @@ import { Badge, Hidden, money, num } from "@/components/ui";
 export default async function PayoutPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdmin();
   const { id } = await params;
-  const p = get<any>("SELECT p.*, per.name, per.worker_type FROM payouts p JOIN people per ON per.id=p.person_id WHERE p.id=?", Number(id));
+  const p = await get<any>("SELECT p.*, per.name, per.worker_type FROM payouts p JOIN people per ON per.id=p.person_id WHERE p.id=?", Number(id));
   if (!p) notFound();
-  const lines = all<any>("SELECT * FROM payout_lines WHERE payout_id=? ORDER BY id", p.id);
+  const lines = await all<any>("SELECT * FROM payout_lines WHERE payout_id=? ORDER BY id", p.id);
   const set = (status: string, label: string) => (
     <form action={setPayout} className="row"><Hidden name="id" value={p.id} /><Hidden name="_back" value={`/payouts/${p.id}`} />
       {p.status === "paid" && <><input name="reason" placeholder="Reason (required)" required minLength={5} /><input name="confirm" placeholder="Type REOPEN" required autoComplete="off" style={{ width: 120 }} /></>}

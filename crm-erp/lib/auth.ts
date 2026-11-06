@@ -43,21 +43,22 @@ export function readBlob<T = any>(token: string | undefined): T | null {
 }
 
 export const SESSION_COOKIE = "session";
-export const SESSION_DAYS = 14;
+/** Shorter sessions for more powerful roles: admins 8 hours, managers 12 hours, workers 7 days. */
+export const sessionHours = (role: string) => (role === "admin" ? 8 : role === "manager" ? 12 : 24 * 7);
 
-export function makeSession(userId: number): string {
-  const exp = Date.now() + SESSION_DAYS * 86400_000;
+export function makeSession(userId: number, role: string): string {
+  const exp = Date.now() + sessionHours(role) * 3600_000;
   const v = `${userId}.${exp}`;
   return `${v}.${sign(v)}`;
 }
-export function userFromSession(token: string | undefined): User | null {
+export async function userFromSession(token: string | undefined): Promise<User | null> {
   if (!token) return null;
   const [id, exp, sig] = token.split(".");
   if (!id || !exp || !sig) return null;
   const expected = sign(`${id}.${exp}`);
   if (sig.length !== expected.length || !timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
   if (Number(exp) < Date.now()) return null;
-  return get<User>("SELECT id,email,name,role,person_id FROM users WHERE id=? AND active=1", Number(id)) ?? null;
+  return await get<User>("SELECT id,email,name,role,person_id FROM users WHERE id=? AND active=1", Number(id)) ?? null;
 }
 
 /** What each role may do. Finance = cost rates, payouts, margins. */

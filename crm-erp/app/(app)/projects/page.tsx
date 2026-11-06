@@ -6,7 +6,7 @@ import { Badge, Flash } from "@/components/ui";
 export default async function Projects({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
   await requireManager();
   const sp = await searchParams;
-  const rows = all<any>(`SELECT p.*, c.name AS client, (SELECT COUNT(*) FROM assignments a WHERE a.project_id=p.id) AS people FROM projects p JOIN clients c ON c.id=p.client_id ORDER BY p.status='active' DESC, p.id DESC`);
+  const rows = await all<any>(`SELECT p.*, c.name AS client, (SELECT COUNT(*) FROM assignments a WHERE a.project_id=p.id) AS people FROM projects p JOIN clients c ON c.id=p.client_id ORDER BY p.status='active' DESC, p.id DESC`);
   return (
     <>
       <h2>Projects</h2><Flash sp={sp} />

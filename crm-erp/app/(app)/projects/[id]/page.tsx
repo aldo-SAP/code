@@ -10,13 +10,13 @@ import { Badge, CurrencySelect, Field, Flash, Hidden } from "@/components/ui";
 export default async function ProjectPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string; err?: string }> }) {
   const user = await requireManager();
   const { id } = await params; const sp = await searchParams;
-  const p = get<any>("SELECT p.*, c.name AS client, c.currency, c.id AS cid FROM projects p JOIN clients c ON c.id=p.client_id WHERE p.id=?", Number(id));
+  const p = await get<any>("SELECT p.*, c.name AS client, c.currency, c.id AS cid FROM projects p JOIN clients c ON c.id=p.client_id WHERE p.id=?", Number(id));
   if (!p) notFound();
-  const rows = all<any>(`SELECT a.*, per.name AS person, per.worker_type, k.title AS contract,
-      (SELECT amount||' '||currency FROM rates r WHERE r.assignment_id=a.id AND r.kind='bill' AND r.effective_from<=date('now') ORDER BY effective_from DESC LIMIT 1) AS bill,
-      (SELECT amount||' '||currency FROM rates r WHERE r.assignment_id=a.id AND r.kind='cost' AND r.effective_from<=date('now') ORDER BY effective_from DESC LIMIT 1) AS cost
+  const rows = await all<any>(`SELECT a.*, per.name AS person, per.worker_type, k.title AS contract,
+      (SELECT amount||' '||currency FROM rates r WHERE r.assignment_id=a.id AND r.kind='bill' AND r.effective_from<=to_char(current_date,'YYYY-MM-DD') ORDER BY effective_from DESC LIMIT 1) AS bill,
+      (SELECT amount||' '||currency FROM rates r WHERE r.assignment_id=a.id AND r.kind='cost' AND r.effective_from<=to_char(current_date,'YYYY-MM-DD') ORDER BY effective_from DESC LIMIT 1) AS cost
     FROM assignments a JOIN people per ON per.id=a.person_id LEFT JOIN contracts k ON k.id=a.client_contract_id WHERE a.project_id=? ORDER BY a.start_date`, p.id);
-  const people = all<any>("SELECT id,name,worker_type FROM people WHERE stage IN ('ready','placed') ORDER BY name");
+  const people = await all<any>("SELECT id,name,worker_type FROM people WHERE stage IN ('ready','placed') ORDER BY name");
   const per = (bt: string) => ({ hourly: "/h", daily: "/day", monthly: "/month", fixed: "" }[bt] ?? "");
   return (
     <>

@@ -9,11 +9,15 @@ import { money, thisMonth } from "@/components/ui";
 export default async function Dashboard() {
   const user = await requireUser();
   if (user.role === "worker") redirect("/timesheets");
-  const c = (sql: string) => get<{ n: number }>(sql)!.n;
-  const stages = all<{ stage: string; n: number }>("SELECT stage, COUNT(*) n FROM people GROUP BY stage");
-  const pipeline = all<{ stage: string; n: number; v: number }>("SELECT stage, COUNT(*) n, SUM(value) v FROM deals WHERE stage NOT IN ('won','lost') GROUP BY stage");
+  const c = async (sql: string) => (await get<{ n: number }>(sql))!.n;
+  const [clients, projects, awaiting, drafts, unpaid] = await Promise.all([
+    c("SELECT COUNT(*) n FROM clients WHERE status='active'"), c("SELECT COUNT(*) n FROM projects WHERE status='active'"),
+    c("SELECT COUNT(DISTINCT worker_id||'-'||substr(work_date,1,7)) n FROM timesheet_entries WHERE status='submitted'"),
+    c("SELECT COUNT(*) n FROM invoices WHERE status='draft'"), c("SELECT COUNT(*) n FROM invoices WHERE status='issued'")]);
+  const stages = await all<{ stage: string; n: number }>("SELECT stage, COUNT(*) n FROM people GROUP BY stage");
+  const pipeline = await all<{ stage: string; n: number; v: number }>("SELECT stage, COUNT(*) n, SUM(value) v FROM deals WHERE stage NOT IN ('won','lost') GROUP BY stage");
   const period = thisMonth();
-  const m = can.finance(user) ? marginReport(period) : null;
+  const m = can.finance(user) ? await marginReport(period) : null;
   const stat = (label: string, value: string | number, href?: string) => (
     <div className="stat">{href ? <Link href={href}><b>{value}</b></Link> : <b>{value}</b>}<span>{label}</span></div>
   );
@@ -21,12 +25,12 @@ export default async function Dashboard() {
     <>
       <h2>Dashboard</h2>
       <div className="grid">
-        {stat("Active clients", c("SELECT COUNT(*) n FROM clients WHERE status='active'"), "/clients")}
-        {stat("Active projects", c("SELECT COUNT(*) n FROM projects WHERE status='active'"), "/projects")}
+        {stat("Active clients", clients, "/clients")}
+        {stat("Active projects", projects, "/projects")}
         {stat("Open deals", pipeline.reduce((s, p) => s + p.n, 0), "/deals")}
-        {stat("Timesheets awaiting approval", c("SELECT COUNT(DISTINCT worker_id||'-'||substr(work_date,1,7)) n FROM timesheet_entries WHERE status='submitted'"), "/approvals")}
-        {stat("Draft invoices", c("SELECT COUNT(*) n FROM invoices WHERE status='draft'"), "/invoices")}
-        {stat("Unpaid invoices", c("SELECT COUNT(*) n FROM invoices WHERE status='issued'"), "/invoices")}
+        {stat("Timesheets awaiting approval", awaiting, "/approvals")}
+        {stat("Draft invoices", drafts, "/invoices")}
+        {stat("Unpaid invoices", unpaid, "/invoices")}
         {m && stat(`Margin ${period}`, money(m.revenue - m.cost), "/reports")}
       </div>
       <h3>Talent by stage</h3>

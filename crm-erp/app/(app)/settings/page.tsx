@@ -7,20 +7,25 @@ import { Badge, CURRENCIES, Field, Flash, Hidden, today } from "@/components/ui"
 export default async function Settings({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
   await requireAdmin();
   const sp = await searchParams;
-  const users = all<any>("SELECT u.*, p.name AS person FROM users u LEFT JOIN people p ON p.id=u.person_id ORDER BY u.id");
-  const people = all<any>("SELECT id,name FROM people ORDER BY name");
+  const users = await all<any>("SELECT u.*, p.name AS person FROM users u LEFT JOIN people p ON p.id=u.person_id ORDER BY u.id");
+  const people = await all<any>("SELECT id,name FROM people ORDER BY name");
   const ms = msConfig();
-  const fx = all<any>("SELECT * FROM fx_rates ORDER BY currency, as_of DESC");
+  const fx = await all<any>("SELECT * FROM fx_rates ORDER BY currency, as_of DESC");
   return (
     <>
       <h2>Settings</h2><Flash sp={sp} />
       <h3>Company (shown on invoices)</h3>
       <form action={saveSettings} className="row card">
-        <Field label="Company name"><input name="company_name" defaultValue={setting("company_name")} /></Field>
-        <Field label="Address"><input name="company_address" defaultValue={setting("company_address")} /></Field>
-        <Field label="Registration / tax no."><input name="company_vat_or_reg" defaultValue={setting("company_vat_or_reg")} /></Field>
-        <Field label="IBAN / payment details"><input name="company_iban" defaultValue={setting("company_iban")} /></Field><button>Save</button>
+        <Field label="Company name"><input name="company_name" defaultValue={await setting("company_name")} /></Field>
+        <Field label="Address"><input name="company_address" defaultValue={await setting("company_address")} /></Field>
+        <Field label="Registration / tax no."><input name="company_vat_or_reg" defaultValue={await setting("company_vat_or_reg")} /></Field>
+        <Field label="IBAN / payment details"><input name="company_iban" defaultValue={await setting("company_iban")} /></Field><button>Save</button>
       </form>
+      <h3>Backup</h3>
+      <div className="card">
+        <a className="btn" href="/backup">Download full data export (JSON)</a>
+        <p className="muted" style={{ marginBottom: 0 }}>Supabase also keeps its own daily backups. Download an export about once a week and keep it somewhere safe outside the hosting accounts. Every download is logged.</p>
+      </div>
       <h3>Microsoft sign-in</h3>
       <div className="card">
         {ms ? <>Active for tenant <code>{ms.tenant}</code>. Redirect URI registered in Entra must be exactly: <code>{redirectUri(ms)}</code></>

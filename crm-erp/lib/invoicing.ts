@@ -41,14 +41,14 @@ interface Bucket {
   client_id: number; currency: string; net_days: number; lines: LineDraft[]; entryIds: number[]; milestoneIds: number[];
 }
 
-export function generateInvoices(period: string): { invoiceIds: number[]; warnings: string[] } {
+export async function generateInvoices(period: string): Promise<{ invoiceIds: number[]; warnings: string[] }> {
   const { end } = periodRange(period);
   const warnings: string[] = [];
-  return tx(() => {
-    for (const d of all<{ id: number }>("SELECT id FROM invoices WHERE period=? AND status='draft'", period)) {
-      run("UPDATE timesheet_entries SET invoice_id=NULL WHERE invoice_id=?", d.id);
-      run("UPDATE milestones SET invoice_id=NULL WHERE invoice_id=?", d.id);
-      run("DELETE FROM invoices WHERE id=?", d.id);
+  return await tx(async () => {
+    for (const d of await all<{ id: number }>("SELECT id FROM invoices WHERE period=? AND status='draft'", period)) {
+      await run("UPDATE timesheet_entries SET invoice_id=NULL WHERE invoice_id=?", d.id);
+      await run("UPDATE milestones SET invoice_id=NULL WHERE invoice_id=?", d.id);
+      await run("DELETE FROM invoices WHERE id=?", d.id);
     }
     const buckets = new Map<string, Bucket>();
     const bucketFor = (a: AssignmentRow, currency: string, milestoneId?: number) => {
@@ -59,11 +59,11 @@ export function generateInvoices(period: string): { invoiceIds: number[]; warnin
       return b;
     };
 
-    for (const a of all<AssignmentRow>(ASSIGNMENTS_SQL)) {
-      const rates = ratesOf(a.id);
+    for (const a of await all<AssignmentRow>(ASSIGNMENTS_SQL)) {
+      const rates = await ratesOf(a.id);
       const who = a.person_name;
       if (a.billing_type === "hourly" || a.billing_type === "daily") {
-        const entries = approvedEntries(a.id, end);
+        const entries = await approvedEntries(a.id, end);
         const names = new Map(entries.map((e) => [e.worker_id, e.worker_name]));
         const priced = priceEntries(a.billing_type, a.hours_per_day, entries, (e) => rateAt(rates, "bill", e.work_date));
         if (priced.missing.length)
@@ -87,7 +87,7 @@ export function generateInvoices(period: string): { invoiceIds: number[]; warnin
           if (lineMonths.has(`${e.work_date.slice(0, 7)}|${r.amount}`)) bucketFor(a, r.currency).entryIds.push(e.id);
         }
       } else if (a.billing_type === "monthly") {
-        const done = get(
+        const done = await get(
           `SELECT 1 FROM invoice_lines l JOIN invoices i ON i.id=l.invoice_id
            WHERE l.assignment_id=? AND l.kind='monthly' AND i.period=? AND i.status<>'void'`, a.id, period);
         if (done) continue;
@@ -101,7 +101,7 @@ export function generateInvoices(period: string): { invoiceIds: number[]; warnin
           quantity: Math.round(fraction * 10000) / 10000, unit: "month", unit_price: rate.amount, amount: round2(rate.amount * fraction),
         });
       } else {
-        const ms = all<MilestoneRow>(
+        const ms = await all<MilestoneRow>(
           "SELECT * FROM milestones WHERE assignment_id=? AND status='approved' AND invoice_id IS NULL AND approved_on<=? AND bill_amount>0",
           a.id, end);
         for (const m of ms) {
@@ -120,41 +120,41 @@ export function generateInvoices(period: string): { invoiceIds: number[]; warnin
     for (const b of buckets.values()) {
       if (!b.lines.length) continue;
       const total = round2(b.lines.reduce((s, l) => s + l.amount, 0));
-      const id = run("INSERT INTO invoices (client_id,period,currency,net_days,total) VALUES (?,?,?,?,?)", b.client_id, period, b.currency, b.net_days, total);
+      const id = await run("INSERT INTO invoices (client_id,period,currency,net_days,total) VALUES (?,?,?,?,?)", b.client_id, period, b.currency, b.net_days, total);
       for (const l of b.lines)
-        run(`INSERT INTO invoice_lines (invoice_id,project_id,assignment_id,person_id,kind,description,detail,quantity,unit,unit_price,amount)
+        await run(`INSERT INTO invoice_lines (invoice_id,project_id,assignment_id,person_id,kind,description,detail,quantity,unit,unit_price,amount)
              VALUES (?,?,?,?,?,?,?,?,?,?,?)`, id, l.project_id, l.assignment_id, l.person_id, l.kind, l.description, l.detail, l.quantity, l.unit, l.unit_price, l.amount);
-      for (const e of b.entryIds) run("UPDATE timesheet_entries SET invoice_id=? WHERE id=?", id, e);
-      for (const m of b.milestoneIds) run("UPDATE milestones SET invoice_id=? WHERE id=?", id, m);
+      for (const e of b.entryIds) await run("UPDATE timesheet_entries SET invoice_id=? WHERE id=?", id, e);
+      for (const m of b.milestoneIds) await run("UPDATE milestones SET invoice_id=? WHERE id=?", id, m);
       invoiceIds.push(id);
     }
     return { invoiceIds, warnings };
   });
 }
 
-export function issueInvoice(id: number, today = new Date().toISOString().slice(0, 10)): string {
-  return tx(() => {
-    const inv = get<{ status: string; net_days: number; number: string | null }>("SELECT status,net_days,number FROM invoices WHERE id=?", id);
+export async function issueInvoice(id: number, today = new Date().toISOString().slice(0, 10)): Promise<string> {
+  return await tx(async () => {
+    const inv = await get<{ status: string; net_days: number; number: string | null }>("SELECT status,net_days,number FROM invoices WHERE id=?", id);
     if (!inv || inv.status !== "draft") throw new Error("Only draft invoices can be issued");
     const year = today.slice(0, 4);
-    const last = get<{ n: string }>("SELECT MAX(number) AS n FROM invoices WHERE number LIKE ?", `${year}-%`)?.n;
+    const last = (await get<{ n: string }>("SELECT MAX(number) AS n FROM invoices WHERE number LIKE ?", `${year}-%`))?.n;
     const number = `${year}-${String((last ? Number(last.split("-")[1]) : 0) + 1).padStart(4, "0")}`;
     const due = new Date(today + "T00:00:00Z");
     due.setUTCDate(due.getUTCDate() + inv.net_days);
-    run("UPDATE invoices SET status='issued', number=?, issue_date=?, due_date=? WHERE id=?", number, today, due.toISOString().slice(0, 10), id);
+    await run("UPDATE invoices SET status='issued', number=?, issue_date=?, due_date=? WHERE id=?", number, today, due.toISOString().slice(0, 10), id);
     return number;
   });
 }
 
 /** Voiding releases the underlying hours/milestones so they can be invoiced again. */
-export function voidInvoice(id: number) {
-  tx(() => {
-    const inv = get<{ status: string }>("SELECT status FROM invoices WHERE id=?", id);
+export async function voidInvoice(id: number) {
+  await tx(async () => {
+    const inv = await get<{ status: string }>("SELECT status FROM invoices WHERE id=?", id);
     if (!inv || inv.status === "paid" || inv.status === "void") throw new Error("Paid or void invoices cannot be voided");
-    run("UPDATE timesheet_entries SET invoice_id=NULL WHERE invoice_id=?", id);
-    run("UPDATE milestones SET invoice_id=NULL WHERE invoice_id=?", id);
-    if (inv.status === "draft") run("DELETE FROM invoices WHERE id=?", id);
-    else run("UPDATE invoices SET status='void' WHERE id=?", id);
+    await run("UPDATE timesheet_entries SET invoice_id=NULL WHERE invoice_id=?", id);
+    await run("UPDATE milestones SET invoice_id=NULL WHERE invoice_id=?", id);
+    if (inv.status === "draft") await run("DELETE FROM invoices WHERE id=?", id);
+    else await run("UPDATE invoices SET status='void' WHERE id=?", id);
   });
 }
 
@@ -171,14 +171,14 @@ interface PayBucket { person_id: number; currency: string; type: "internal" | "e
  * internal people -> payroll cost allocation. A substitute is paid at the cost
  * rate set on the substitution; internal substitutes need none (payroll).
  */
-export function generatePayouts(period: string): { payoutIds: number[]; warnings: string[] } {
+export async function generatePayouts(period: string): Promise<{ payoutIds: number[]; warnings: string[] }> {
   const { end } = periodRange(period);
   const warnings: string[] = [];
-  return tx(() => {
-    for (const d of all<{ id: number }>("SELECT id FROM payouts WHERE period=? AND status='draft'", period)) {
-      run("UPDATE timesheet_entries SET payout_id=NULL WHERE payout_id=?", d.id);
-      run("UPDATE milestones SET payout_id=NULL WHERE payout_id=?", d.id);
-      run("DELETE FROM payouts WHERE id=?", d.id);
+  return await tx(async () => {
+    for (const d of await all<{ id: number }>("SELECT id FROM payouts WHERE period=? AND status='draft'", period)) {
+      await run("UPDATE timesheet_entries SET payout_id=NULL WHERE payout_id=?", d.id);
+      await run("UPDATE milestones SET payout_id=NULL WHERE payout_id=?", d.id);
+      await run("DELETE FROM payouts WHERE id=?", d.id);
     }
     const buckets = new Map<string, PayBucket>();
     const bucketFor = (personId: number, type: "internal" | "external", currency: string) => {
@@ -187,20 +187,20 @@ export function generatePayouts(period: string): { payoutIds: number[]; warnings
       if (!b) buckets.set(key, (b = { person_id: personId, currency, type, lines: [], entryIds: [], milestoneIds: [] }));
       return b;
     };
-    const types = new Map(all<{ id: number; worker_type: "internal" | "external" }>("SELECT id,worker_type FROM people").map((p) => [p.id, p.worker_type]));
-    const names = new Map(all<{ id: number; name: string }>("SELECT id,name FROM people").map((p) => [p.id, p.name]));
+    const types = new Map((await all<{ id: number; worker_type: "internal" | "external" }>("SELECT id,worker_type FROM people")).map((p) => [p.id, p.worker_type]));
+    const names = new Map((await all<{ id: number; name: string }>("SELECT id,name FROM people")).map((p) => [p.id, p.name]));
 
-    for (const a of all<AssignmentRow>(ASSIGNMENTS_SQL)) {
-      const rates = ratesOf(a.id);
+    for (const a of await all<AssignmentRow>(ASSIGNMENTS_SQL)) {
+      const rates = await ratesOf(a.id);
       if (a.billing_type === "hourly" || a.billing_type === "daily") {
-        const subs = all<{ person_id: number; from_date: string; to_date: string; cost_amount: number | null; cost_currency: string }>(
+        const subs = await all<{ person_id: number; from_date: string; to_date: string; cost_amount: number | null; cost_currency: string }>(
           "SELECT person_id,from_date,to_date,cost_amount,cost_currency FROM substitutions WHERE assignment_id=?", a.id);
         const costFor = (e: { work_date: string; worker_id: number }) => {
           if (e.worker_id === a.person_id) return rateAt(rates, "cost", e.work_date);
           const s = subs.find((s) => s.person_id === e.worker_id && s.from_date <= e.work_date && e.work_date <= s.to_date && s.cost_amount != null);
           return s ? { amount: s.cost_amount!, currency: s.cost_currency } : undefined;
         };
-        const pending = all<EntryRow>(
+        const pending = await all<EntryRow>(
           `SELECT t.id,t.work_date,t.hours,t.worker_id,w.name AS worker_name FROM timesheet_entries t
            JOIN people w ON w.id=t.worker_id WHERE t.assignment_id=? AND t.status='approved' AND t.work_date<=? AND t.payout_id IS NULL
            ORDER BY t.work_date`, a.id, end);
@@ -227,7 +227,7 @@ export function generatePayouts(period: string): { payoutIds: number[]; warnings
           }
         }
       } else if (a.billing_type === "monthly") {
-        const done = get(
+        const done = await get(
           `SELECT 1 FROM payout_lines l JOIN payouts p ON p.id=l.payout_id
            WHERE l.assignment_id=? AND l.kind='monthly' AND p.period=?`, a.id, period);
         if (done) continue;
@@ -240,7 +240,7 @@ export function generatePayouts(period: string): { payoutIds: number[]; warnings
           quantity: Math.round(fraction * 10000) / 10000, unit: "month", unit_price: rate.amount, amount: round2(rate.amount * fraction),
         });
       } else {
-        for (const m of all<MilestoneRow>(
+        for (const m of await all<MilestoneRow>(
           "SELECT * FROM milestones WHERE assignment_id=? AND status='approved' AND payout_id IS NULL AND approved_on<=? AND cost_amount>0", a.id, end)) {
           const b = bucketFor(a.person_id, a.person_type, m.cost_currency);
           b.lines.push({
@@ -256,12 +256,12 @@ export function generatePayouts(period: string): { payoutIds: number[]; warnings
     for (const b of buckets.values()) {
       if (!b.lines.length) continue;
       const total = round2(b.lines.reduce((s, l) => s + l.amount, 0));
-      const id = run("INSERT INTO payouts (person_id,period,currency,kind,total) VALUES (?,?,?,?,?)", b.person_id, period, b.currency, b.type === "internal" ? "payroll" : "contractor", total);
+      const id = await run("INSERT INTO payouts (person_id,period,currency,kind,total) VALUES (?,?,?,?,?)", b.person_id, period, b.currency, b.type === "internal" ? "payroll" : "contractor", total);
       for (const l of b.lines)
-        run(`INSERT INTO payout_lines (payout_id,project_id,assignment_id,kind,description,quantity,unit,unit_price,amount) VALUES (?,?,?,?,?,?,?,?,?)`,
+        await run(`INSERT INTO payout_lines (payout_id,project_id,assignment_id,kind,description,quantity,unit,unit_price,amount) VALUES (?,?,?,?,?,?,?,?,?)`,
           id, l.project_id, l.assignment_id, l.kind, l.description, l.quantity, l.unit, l.unit_price, l.amount);
-      for (const e of b.entryIds) run("UPDATE timesheet_entries SET payout_id=? WHERE id=?", id, e);
-      for (const m of b.milestoneIds) run("UPDATE milestones SET payout_id=? WHERE id=?", id, m);
+      for (const e of b.entryIds) await run("UPDATE timesheet_entries SET payout_id=? WHERE id=?", id, e);
+      for (const m of b.milestoneIds) await run("UPDATE milestones SET payout_id=? WHERE id=?", id, m);
       payoutIds.push(id);
     }
     return { payoutIds, warnings };
@@ -270,36 +270,36 @@ export function generatePayouts(period: string): { payoutIds: number[]; warnings
 
 // ---------------------------------------------------------------- margin
 
-export function fxRate(currency: string, date: string): number | undefined {
+export async function fxRate(currency: string, date: string): Promise<number | undefined> {
   if (currency === "EUR") return 1;
-  return get<{ rate_to_eur: number }>("SELECT rate_to_eur FROM fx_rates WHERE currency=? AND as_of<=? ORDER BY as_of DESC LIMIT 1", currency, date)?.rate_to_eur;
+  return (await get<{ rate_to_eur: number }>("SELECT rate_to_eur FROM fx_rates WHERE currency=? AND as_of<=? ORDER BY as_of DESC LIMIT 1", currency, date))?.rate_to_eur;
 }
 
 export interface MarginRow { assignment_id: number; project: string; person: string; revenue: number; cost: number; margin: number }
 
 /** Revenue (non-void invoices) minus cost (payouts) for a period, in EUR, per assignment. */
-export function marginReport(period: string): { rows: MarginRow[]; revenue: number; cost: number; warnings: string[] } {
+export async function marginReport(period: string): Promise<{ rows: MarginRow[]; revenue: number; cost: number; warnings: string[] }> {
   const { end } = periodRange(period);
   const warnings: string[] = [];
   const acc = new Map<number, MarginRow>();
-  const row = (assignmentId: number) => {
+  const row = async (assignmentId: number) => {
     let r = acc.get(assignmentId);
     if (!r) {
-      const a = get<{ project: string; person: string }>(
-        "SELECT p.name AS project, per.name AS person FROM assignments a JOIN projects p ON p.id=a.project_id JOIN people per ON per.id=a.person_id WHERE a.id=?", assignmentId)!;
+      const a = (await get<{ project: string; person: string }>(
+        "SELECT p.name AS project, per.name AS person FROM assignments a JOIN projects p ON p.id=a.project_id JOIN people per ON per.id=a.person_id WHERE a.id=?", assignmentId))!;
       acc.set(assignmentId, (r = { assignment_id: assignmentId, project: a.project, person: a.person, revenue: 0, cost: 0, margin: 0 }));
     }
     return r;
   };
-  const add = (rows: { assignment_id: number; currency: string; amount: number }[], field: "revenue" | "cost") => {
+  const add = async (rows: { assignment_id: number; currency: string; amount: number }[], field: "revenue" | "cost") => {
     for (const x of rows) {
-      const eur = toEur(x.amount, x.currency, fxRate(x.currency, end));
+      const eur = toEur(x.amount, x.currency, await fxRate(x.currency, end));
       if (eur === undefined) { warnings.push(`No exchange rate for ${x.currency} on ${end}; amounts excluded.`); continue; }
-      row(x.assignment_id)[field] += eur;
+      (await row(x.assignment_id))[field] += eur;
     }
   };
-  add(all(`SELECT l.assignment_id, i.currency, l.amount FROM invoice_lines l JOIN invoices i ON i.id=l.invoice_id WHERE i.period=? AND i.status<>'void'`, period), "revenue");
-  add(all(`SELECT l.assignment_id, p.currency, l.amount FROM payout_lines l JOIN payouts p ON p.id=l.payout_id WHERE p.period=?`, period), "cost");
+  await add(await all(`SELECT l.assignment_id, i.currency, l.amount FROM invoice_lines l JOIN invoices i ON i.id=l.invoice_id WHERE i.period=? AND i.status<>'void'`, period), "revenue");
+  await add(await all(`SELECT l.assignment_id, p.currency, l.amount FROM payout_lines l JOIN payouts p ON p.id=l.payout_id WHERE p.period=?`, period), "cost");
   const rows = [...acc.values()].map((r) => ({ ...r, revenue: round2(r.revenue), cost: round2(r.cost), margin: round2(r.revenue - r.cost) }));
   return {
     rows, warnings: [...new Set(warnings)],

@@ -10,17 +10,17 @@ import { Badge, CurrencySelect, Field, Flash, Hidden, money, today } from "@/com
 export default async function AssignmentPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string; err?: string }> }) {
   const user = await requireManager();
   const { id } = await params; const sp = await searchParams;
-  const a = get<any>(`SELECT a.*, pr.name AS project, pr.client_id, per.name AS person, per.worker_type, cl.currency AS client_currency, k.title AS contract, k.payment_terms, k.net_days
+  const a = await get<any>(`SELECT a.*, pr.name AS project, pr.client_id, per.name AS person, per.worker_type, cl.currency AS client_currency, k.title AS contract, k.payment_terms, k.net_days
     FROM assignments a JOIN projects pr ON pr.id=a.project_id JOIN people per ON per.id=a.person_id JOIN clients cl ON cl.id=pr.client_id LEFT JOIN contracts k ON k.id=a.client_contract_id WHERE a.id=?`, Number(id));
   if (!a) notFound();
   const fin = can.finance(user);
-  const rates = all<any>(`SELECT * FROM rates WHERE assignment_id=? ${fin ? "" : "AND kind='bill'"} ORDER BY kind, effective_from DESC`, a.id);
-  const subs = all<any>("SELECT s.*, p.name, p.worker_type FROM substitutions s JOIN people p ON p.id=s.person_id WHERE assignment_id=? ORDER BY from_date DESC", a.id);
-  const milestones = all<any>("SELECT * FROM milestones WHERE assignment_id=? ORDER BY id", a.id);
-  const candidates = all<any>("SELECT id,name,worker_type FROM people WHERE stage IN ('ready','placed') AND id<>? ORDER BY name", a.person_id);
-  const hours = all<any>(`SELECT status, SUM(hours) h FROM timesheet_entries WHERE assignment_id=? GROUP BY status`, a.id);
+  const rates = await all<any>(`SELECT * FROM rates WHERE assignment_id=? ${fin ? "" : "AND kind='bill'"} ORDER BY kind, effective_from DESC`, a.id);
+  const subs = await all<any>("SELECT s.*, p.name, p.worker_type FROM substitutions s JOIN people p ON p.id=s.person_id WHERE assignment_id=? ORDER BY from_date DESC", a.id);
+  const milestones = await all<any>("SELECT * FROM milestones WHERE assignment_id=? ORDER BY id", a.id);
+  const candidates = await all<any>("SELECT id,name,worker_type FROM people WHERE stage IN ('ready','placed') AND id<>? ORDER BY name", a.person_id);
+  const hours = await all<any>(`SELECT status, SUM(hours) h FROM timesheet_entries WHERE assignment_id=? GROUP BY status`, a.id);
   const back = `/assignments/${a.id}`;
-  const through = billedThrough(a.id);
+  const through = await billedThrough(a.id);
   const unit = { hourly: "per hour", daily: "per day", monthly: "per month", fixed: "" }[a.billing_type as string];
   return (
     <>

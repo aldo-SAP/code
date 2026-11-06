@@ -7,7 +7,7 @@ import { Badge, CurrencySelect, Field, Flash } from "@/components/ui";
 export default async function Clients({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
   await requireManager();
   const sp = await searchParams;
-  const rows = all<any>(`SELECT c.*, (SELECT COUNT(*) FROM projects p WHERE p.client_id=c.id AND p.status='active') AS projects FROM clients c ORDER BY c.name`);
+  const rows = await all<any>(`SELECT c.*, (SELECT COUNT(*) FROM projects p WHERE p.client_id=c.id AND p.status='active') AS projects FROM clients c ORDER BY c.name`);
   return (
     <>
       <h2>Clients</h2><Flash sp={sp} />
