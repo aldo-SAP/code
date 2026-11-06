@@ -6,6 +6,7 @@ import { saveTimesheet } from "@/app/actions";
 import { Badge, Field, Flash, Hidden, thisMonth } from "@/components/ui";
 import { periodRange } from "@/lib/billing";
 import { personHolidays } from "@/lib/holidays";
+import TimesheetFields, { type Cell } from "@/components/TimesheetFields";
 
 const shift = (m: string, d: number) => { const [y, mo] = m.split("-").map(Number); const t = new Date(Date.UTC(y, mo - 1 + d, 1)); return t.toISOString().slice(0, 7); };
 
@@ -53,29 +54,19 @@ export default async function Timesheets({ searchParams }: { searchParams: Promi
       {!rows.length ? <div className="card muted">No assignments or substitutions in this month.</div> : (
         <form action={saveTimesheet}>
           <Hidden name="month" value={month} /><Hidden name="person_id" value={pid} />
-          <div className="tw"><table className="ts">
-            <thead><tr><th style={{ textAlign: "left" }}>Assignment</th>{days.map((d) => <th key={d} className={[0, 6].includes(new Date(d).getUTCDay()) ? "we" : ""}>{Number(d.slice(8))}</th>)}<th>Total</th></tr></thead>
-            <tbody>{rows.map((r) => {
-              let total = 0;
-              return (
-                <tr key={r.id}>
-                  <td style={{ textAlign: "left", whiteSpace: "nowrap" }}>{r.project}{r.owner_id !== pid && <><br /><span className="muted">substituting {r.owner}</span></>}</td>
-                  {days.map((d) => {
-                    const e = entries.get(`${r.id}_${d}`);
-                    if (e) total += e.hours;
-                    const ok = allowed(r, d);
-                    const isBilled = !!e && (e.invoice_id != null || e.payout_id != null);
-                    const locked = e && (e.status === "approved" || isBilled || (e.status === "submitted" && !manager));
-                    const wk = [0, 6].includes(new Date(d).getUTCDay());
-                    return <td key={d} className={onLeave(d) ? "lv" : holidays.has(d) ? "ph" : wk ? "we" : ""} title={holidays.get(d)}>
-                      <input name={`h_${r.id}_${d}`} defaultValue={e?.hours ?? ""} disabled={!ok || !!locked} className={isBilled ? "billed" : e?.status ?? ""} title={isBilled ? "Billed: locked. Use Unlock billed hours to change." : undefined} inputMode="decimal" aria-label={`${r.project} ${d}`} /></td>;
-                  })}
-                  <td className="num"><b>{total}</b></td>
-                </tr>
-              );
-            })}</tbody>
-          </table></div>
-          <div className="bar" style={{ marginTop: 12 }}>
+          <TimesheetFields days={days} rows={rows.map((r) => {
+            const cells: Record<string, Cell> = {};
+            let total = 0;
+            for (const d of days) {
+              const e = entries.get(`${r.id}_${d}`);
+              if (e) total += e.hours;
+              const isBilled = !!e && (e.invoice_id != null || e.payout_id != null);
+              const locked = !!e && (e.status === "approved" || isBilled || (e.status === "submitted" && !manager));
+              cells[d] = { v: e ? String(e.hours) : "", status: e?.status ?? "", disabled: !allowed(r, d) || locked, billed: isBilled, leave: onLeave(d), holiday: holidays.get(d), weekend: [0, 6].includes(new Date(d).getUTCDay()) };
+            }
+            return { id: r.id, project: r.project, substituting: r.owner_id !== pid ? r.owner : undefined, cells, total };
+          })} />
+          <div className="bar ts-actions" style={{ marginTop: 12 }}>
             <button name="intent" value="save" className="sec">Save draft</button>
             <button name="intent" value="submit">Submit month for approval{pending ? ` (${pending} day(s) pending)` : ""}</button>
             <span className="muted">Submitted days are locked until a manager approves or rejects them.</span>
