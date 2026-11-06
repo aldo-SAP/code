@@ -12,6 +12,7 @@ step "service worker is current (gen-sw.js)"      bash -c 'node gen-sw.js >/dev/
 step "help lines belong to rules"                  node check-help.js
 step "every rule message is translated"            node check-all-translations.js
 step "examples pass their rules (check-samples)"   node check-samples.js
+step "e-report: details in a header extension"  node check-ereport-ext.js
 step "Italy: the example passes every layer"       node it/check-sample.js
 step "Italy: specification rules"                  node it/check-spec.js
 step "Italy: SdI controls"                         node it/check-sdi.js

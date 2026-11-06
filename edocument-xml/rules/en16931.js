@@ -334,6 +334,39 @@
     each("CHK-22", items(byPath(R, "PaymentMeans/PayeeFinancialAccount/FinancialInstitutionBranch/ID"), txt),
       (el) => /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(txt(el).toUpperCase()), "BIC codes (BT-86) must be 8 or 11 characters (bank, country, location, branch)");
 
+    // ---------- Header extensions (this tool's own CHK- checks) ----------
+    // Documents that carry extra data in UBL extensions (registration data, amounts in the tax currency, a tax exchange rate, report details). The checks only run when
+    // such an extension is there; the lists and the conditions are those the extension's publisher defines for its own elements.
+    const byName = (name) => allEls.filter((e) => e.localName === name);
+    if (["RegistrationData", "ADAID", "PaymentInKind", "RestrictedInformation", "TaxSubtotalExtension", "LegalMonetaryTotalExtension"].some((nm) => byName(nm).length)) {
+      const cur = (e) => e.getAttribute("currencyID") || "";
+      const exch = items(byName("TaxExchangeRate"), () => "Tax exchange rate");
+      each("CHK-25", exch, (el) => ["SourceCurrencyCode", "TargetCurrencyCode", "CalculationRate"].every((n) => txt(first(el, n) || el.ownerDocument.createElement("x")) !== ""),
+        "A tax exchange rate needs its source currency, target currency and calculation rate");
+      each("CHK-26", exch.filter((o) => first(o.el, "MathematicOperatorCode")), (el) => txt(first(el, "MathematicOperatorCode")) === "Multiply", "The tax exchange rate operator must be “Multiply”");
+      each("CHK-27", exch.filter((o) => val(o.el, "SourceCurrencyCode") && val(o.el, "TargetCurrencyCode")), (el) => val(el, "SourceCurrencyCode") !== val(el, "TargetCurrencyCode"),
+        "The source and target currency of a tax exchange rate should be different", true);
+      const tcur = val(R, "TaxCurrencyCode");
+      each("CHK-28", items(allEls.filter((e) => /^TaxCurrency/.test(e.localName) && e.hasAttribute("currencyID")), (el) => el.localName), (el) => cur(el) === tcur,
+        "Amounts in the tax currency must use the VAT accounting currency code (BT-6)");
+      each("CHK-29", items(byPath(R, "LegalMonetaryTotal").concat(allEls.filter((e) => e.localName === "PaymentInKind")).map((e) => first(e, "Amount")).filter(Boolean), () => "Payment in kind"),
+        (el) => cur(el) === docCur, "The payment in kind amount must be in the invoice currency (BT-5)");
+      const IDT = (list, listId) => (el) => list.includes(txt(el)) && (el.getAttribute("listID") || "") === listId;
+      each("CHK-30", items(allEls.filter((e) => e.localName === "IDType" && e.parentNode && e.parentNode.localName === "RegistrationData"), txt),
+        IDT(["IT:Ufficio", "IT:NumeroREA", "IT:CapitaleSociale", "IT:SocioUnico", "IT:StatoLiquidazione", "ES:Book", "ES:RegisterOfCompaniesLocation", "ES:Sheet", "ES:Folio", "ES:Section", "ES:Volume",
+          "ES:AdditionalRegistrationData", "FR:DenomSociete", "FR:TypeSociete", "FR:CapitalSocial", "FR:RCSNumber", "FR:APE", "MY:CertEx", "PH:SellerType"], "PUF-001-REGISTRATIONDATA"),
+        "A registration data type must be one of the extension’s list, with its list identifier");
+      each("CHK-31", items(allEls.filter((e) => e.localName === "IDType" && e.parentNode && e.parentNode.localName === "ADAID"), txt),
+        IDT(["FR:ServiceCode", "ES:OficinaContable", "ES:OrganoGestor", "ES:UnidadTramitadora", "ES:OrganoProponente", "GEN:UnitCode"], "PUF-002-ADAID"),
+        "An additional party identifier type must be one of the extension’s list, with its list identifier");
+      const lineAmts = allEls.filter((e) => e.localName === "Amount" && e.parentNode && e.parentNode.localName === "AllowanceCharge" && e.parentNode.parentNode &&
+        ["InvoiceLine", "CreditNoteLine", "Price"].includes(e.parentNode.parentNode.localName));
+      each("CHK-32", items(lineAmts, () => "Line allowance or charge"), (el) => cur(el) === docCur, "Line and price allowance or charge amounts must be in the invoice currency (BT-5)");
+      const lineSubs = items(allEls.filter((e) => e.localName === "TaxSubtotal" && e.parentNode && e.parentNode.parentNode && ["InvoiceLine", "CreditNoteLine"].includes(e.parentNode.parentNode.localName)), () => "Line VAT breakdown");
+      each("CHK-33", lineSubs, (el) => !!first(el, "TaxCategory/Percent") && !!first(el, "TaxCategory/ID") && !!first(el, "TaxCategory/TaxScheme/ID"),
+        "A VAT breakdown on a line needs the category code, the rate and the tax scheme");
+    }
+
     // ---------- Extra rule sets ----------
     // They get the same document model and reporting helpers as the rules above.
     const ctx = {

@@ -49,6 +49,20 @@
     };
     const taxId = (party, name) => { const e = vatId(party); return e ? from(el(name, txt(e), { qualifyingId: "VAT" }), e) : null; };
 
+    // Some documents carry the report's own details in a header extension (key/value pairs: entryType, reportPeriodStart, …) and the billing framework (BT-23) in the type code's name
+    // attribute instead of ProfileID. They are read here when they are present; nothing changes for a document without them.
+    const info = {};
+    Array.from(R.getElementsByTagNameNS("*", "RestrictedInformation")).forEach((ri) => {
+      const k = Array.from(ri.children).find((c) => c.localName === "Key"), v = Array.from(ri.children).find((c) => c.localName === "Value");
+      if (k && v && txt(k) !== "") info[txt(k)] = { value: txt(v), el: v };
+    });
+    const hasInfo = Object.keys(info).length > 0;
+    const typeEl = first(R, cn ? "CreditNoteTypeCode" : "InvoiceTypeCode");
+    const FRAMEWORKS_ER = ["B1", "S1", "M1", "B2", "S2", "M2", "B4", "S4", "M4", "S5", "S6", "B7", "S7"];
+    const profileEl = first(R, "ProfileID");
+    const bt23 = profileEl && FRAMEWORKS_ER.includes(txt(profileEl)) ? profileEl : null;
+    const nameAttr = typeEl && typeEl.getAttribute("name") ? typeEl.getAttribute("name") : "";
+
     const inv = el("Invoice");
     add(inv, [
       leaf("ID", first(R, "ID")), leafDate("IssueDate", first(R, "IssueDate")), leaf("TypeCode", first(R, cn ? "CreditNoteTypeCode" : "InvoiceTypeCode")),
@@ -59,7 +73,11 @@
       const t = txt(n), m = /^#([A-Za-z0-9]{3})#([\s\S]*)$/.exec(t);
       add(inv, [add(el("IncludedNote"), [m ? from(el("Subject", m[1]), n) : null, from(el("Content", m ? m[2].trim() : t), n)])]);
     });
-    add(inv, [add(el("BusinessProcess"), [leaf("ID", first(R, "ProfileID")), leaf("TypeID", first(R, "CustomizationID"))], true)]);
+    // BT-23: ProfileID, or (when that is not a framework) the name attribute of the type code. BT-24: CustomizationID; a document with report details in its extension
+    // does not carry the e-reporting identifier (the platform sets it), so it is taken as given.
+    add(inv, [add(el("BusinessProcess"), [
+      bt23 || !nameAttr ? leaf("ID", profileEl) : from(el("ID", nameAttr), typeEl),
+      hasInfo ? el("TypeID", "urn.cpro.gouv.fr:1p0:ereporting") : leaf("TypeID", first(R, "CustomizationID"))], true)]);
     byPath(R, "BillingReference").forEach((b) => {
       const d = first(b, "InvoiceDocumentReference");
       if (d) add(inv, [add(el("ReferencedDocument"), [leaf("ID", first(d, "ID")), leafDate("IssueDate", first(d, "IssueDate"))])]);
@@ -119,7 +137,7 @@
     const now = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14);
     const report = doc.documentElement;
     add(report, [add(el("ReportDocument"), [
-      el("Id", "REPORT-" + now), add(el("IssueDateTime"), [el("DateTimeString", now)]), el("TypeCode", "IN"),
+      el("Id", info.issuerAssignedReportId && info.issuerAssignedReportId.value ? info.issuerAssignedReportId.value : "REPORT-" + now), add(el("IssueDateTime"), [el("DateTimeString", now)]), el("TypeCode", "IN"),
       add(el("Sender"), [el("Id", "0000", { schemeId: "0238" }), el("Name", "PLATFORM"), el("RoleCode", "WK")]),
       add(el("Issuer"), [el("Id", "000000000", { schemeId: "0002" }), el("Name", "DECLARANT"), el("RoleCode", "SE")])
     ])]);
@@ -127,7 +145,8 @@
     const d0 = new Date(Date.parse(val(R, "IssueDate").slice(0, 10) + "T00:00:00Z")), d1 = new Date(d0.getTime() + 86400000);
     const ymd = (d) => (isNaN(d) ? "" : d.toISOString().slice(0, 10).replace(/-/g, ""));
     const okPeriod = !isNaN(d0) && d0.getUTCFullYear() >= 2000 && d0.getUTCFullYear() < 2099;
-    add(report, [add(el("TransactionsReport"), [add(el("ReportPeriod"), [el("StartDate", okPeriod ? ymd(d0) : "20260101"), el("EndDate", okPeriod ? ymd(d1) : "20260102")]), inv])]);
+    const given = (k) => (info[k] && /^\d{4}-\d{2}-\d{2}$/.test(info[k].value) ? date(info[k].value) : "");
+    add(report, [add(el("TransactionsReport"), [add(el("ReportPeriod"), [el("StartDate", given("reportPeriodStart") || (okPeriod ? ymd(d0) : "20260101")), el("EndDate", given("reportPeriodEnd") || (okPeriod ? ymd(d1) : "20260102"))]), inv])]);
     return { doc, xml: pretty(doc), src };
   }
 
@@ -202,7 +221,9 @@
       const ok = (refs.length >= 1 && refs.every((r) => kids(r, "IssueDate").length)) || (lines.length && lines.every((l) => down(l, "ReferencedDocument/ID").length && down(l, "ReferencedDocument/IssueDate").length));
       rule("G1.32", at(E("TypeCode")[0]), !!ok, "E-report: a credit note must refer to the invoice it corrects, with its date (on the document or on every line)");
     }
-    rule("G6.28", at(E("Buyer")[0] || E("TypeCode")[0]), E("Buyer/CompanyId").length > 0, "E-report: the buyer identifier (BT-47) is required for a B2B international transmission");
+    // the buyer identifier is for B2B transmissions: a document marked B2C (#BAR#) is not asked for one
+    const barB2C = byPath(R, "Note").some((n) => /#BAR#\s*B2C\b/.test(txt(n)));
+    if (!barB2C) rule("G6.28", at(E("Buyer")[0] || E("TypeCode")[0]), E("Buyer/CompanyId").length > 0, "E-report: the buyer identifier (BT-47) is required for a B2B international transmission");
     // parties
     [["Seller", "seller", "BT-30"], ["Buyer", "buyer", "BT-47"]].forEach(([p, who, bt]) => {
       const c = E(p + "/CompanyId");
