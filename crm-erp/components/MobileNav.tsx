@@ -1,25 +1,27 @@
 "use client";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import Icon from "@/components/icons";
+import NavLinks, { type NavGroup } from "@/components/NavLinks";
 
-/** Phone navigation: a sticky top bar with a menu that closes after you pick a page. */
-export default function MobileNav({ items, who, children }: { items: [string, string][]; who: string; children: React.ReactNode }) {
+/** Phone navigation: a sticky top bar with a hamburger button (icon and the word Menu) that opens the same grouped menu. Closes after you pick a page. */
+export default function MobileNav({ groups, logo, children }: { groups: NavGroup[]; logo: React.ReactNode; children: React.ReactNode }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
   useEffect(() => setOpen(false), [path]);
-  const current = items.find(([h]) => (h === "/" ? path === "/" : path.startsWith(h)));
+  const items = groups.flatMap((g) => g.items);
+  const current = items.filter(([h]) => (h === "/" ? path === "/" : path === h || path.startsWith(h + "/"))).sort((a, b) => b[0].length - a[0].length)[0];
   return (
     <header className="topbar">
       <div className="bar0">
-        <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls="mobile-menu">{open ? "Close" : "Menu"}</button>
-        <b style={{ flex: 1, textAlign: "center" }}>{current?.[1] ?? "Talent CRM"}</b>
-        <span className="muted" style={{ fontSize: 12 }}>{who}</span>
+        <button type="button" className="menubtn" onClick={() => setOpen(!open)} aria-expanded={open} aria-controls="mobile-menu"><Icon name={open ? "close" : "menu"} size={20} /><span>{open ? "Close" : "Menu"}</span></button>
+        <b className="pagetitle">{current?.[1] ?? "Home"}</b>
+        <span className="logo-sm">{logo}</span>
       </div>
       {open && (
-        <nav id="mobile-menu" className="menu">
-          {items.map(([href, label]) => <Link key={href} href={href} aria-current={current?.[0] === href ? "page" : undefined}>{label}</Link>)}
-          <div style={{ display: "flex", gap: 10, alignItems: "center", padding: "8px 10px", flexWrap: "wrap" }}>{children}</div>
+        <nav id="mobile-menu" className="menu" aria-label="Main">
+          <NavLinks groups={groups} />
+          {children}
         </nav>
       )}
     </header>
