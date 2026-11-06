@@ -10,8 +10,8 @@ export default async function Projects({ searchParams }: { searchParams: Promise
   return (
     <>
       <h1>Projects</h1><Flash sp={sp} />
-      <table><thead><tr><th>Project</th><th>Client</th><th>People</th><th>Status</th></tr></thead><tbody>
-        {rows.map((p) => <tr key={p.id}><td><Link href={`/projects/${p.id}`}>{p.name}</Link></td><td><Link href={`/clients/${p.client_id}`}>{p.client}</Link></td><td>{p.people}</td><td><Badge v={p.status} /></td></tr>)}
+      <table><thead><tr><th>Project</th><th>Client</th><th className="num">People</th><th>Status</th></tr></thead><tbody>
+        {rows.map((p) => <tr key={p.id}><td><Link href={`/projects/${p.id}`}>{p.name}</Link></td><td><Link href={`/clients/${p.client_id}`}>{p.client}</Link></td><td className="num">{p.people}</td><td><Badge v={p.status} /></td></tr>)}
         {!rows.length && <tr><td colSpan={4} className="muted">No projects. Create one from a client page.</td></tr>}</tbody></table>
     </>
   );

@@ -85,6 +85,7 @@ body{padding-left:env(safe-area-inset-left,0);padding-right:env(safe-area-inset-
   input[type=checkbox]{min-height:0}
   button.sm{min-height:34px;padding:4px 10px}
   .main table:not(.stack){display:block;overflow-x:auto;max-width:100%}
+  .main table:not(.stack):not(:has(thead)){display:table;width:100%}   /* short lists without a header fill the width so amounts stay at the right edge */
   /* forms: a fixed two-column grid, so no field (iPhone date inputs included) can be wider than its column */
   form.row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:end}
   form.row>*{min-width:0}form.row>button,form.row>span,form.row>b,form.row>p{grid-column:1/-1}
@@ -107,6 +108,7 @@ body{padding-left:env(safe-area-inset-left,0);padding-right:env(safe-area-inset-
   .stack td{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;border:0;padding:6px 0;text-align:right;white-space:normal}
   .stack td::before{content:attr(data-label);color:var(--muted);font-size:12px;text-align:left;flex:none;max-width:40%;padding-top:2px}
   .stack td[data-label=""]::before{content:none}
+  .stack td.num[data-label=""]{justify-content:flex-end}
   .stack td:empty{display:none}
   .stack td[colspan]{display:block;text-align:left}
   .stack td[colspan]::before{content:none}
