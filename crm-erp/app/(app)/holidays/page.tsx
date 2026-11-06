@@ -6,6 +6,7 @@ import { addHolidayAction, addHolidaysBulkAction, copyHolidayYearAction, deleteH
 import { Field, Flash, Hidden } from "@/components/ui";
 import { fmtDate } from "@/lib/dates";
 import PageHead from "@/components/PageHead";
+import DataTable, { type Row } from "@/components/DataTable";
 
 const WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -21,6 +22,8 @@ export default async function Holidays({ searchParams }: { searchParams: Promise
   const rows = await holidaysIn(country, year);
   const followers = await all<any>("SELECT id,name,country FROM people WHERE holiday_country=? ORDER BY name", country);
   const back = `/holidays?country=${country}&year=${year}`;
+  const holRows: Row[] = rows.map((h) => ({ id: h.day, date: { t: fmtDate(h.day), s: h.day }, day: WD[new Date(h.day + "T00:00:00Z").getUTCDay()], name: h.name,
+    remove: { t: "", forms: [{ action: deleteHolidayAction, hidden: { country, day: h.day, _back: back }, buttons: [{ label: "Remove", variant: "danger" }] }] } }));
   return (
     <>
       <PageHead title="Public holidays" sub="One calendar per country. Each person follows the calendar set on their page." /><Flash sp={sp} />
@@ -34,11 +37,8 @@ export default async function Holidays({ searchParams }: { searchParams: Promise
       </form>
 
       <h2>{countryName(country)} {year}: {rows.length} day{rows.length === 1 ? "" : "s"}</h2>
-      <div className="tw"><table><thead><tr><th>Date</th><th></th><th>Holiday</th><th></th></tr></thead><tbody>
-        {rows.map((h) => (
-          <tr key={h.day}><td style={{ whiteSpace: "nowrap" }}>{fmtDate(h.day)}</td><td className="muted">{WD[new Date(h.day + "T00:00:00Z").getUTCDay()]}</td><td>{h.name}</td>
-            <td><form action={deleteHolidayAction}><Hidden name="country" value={country} /><Hidden name="day" value={h.day} /><Hidden name="_back" value={back} /><button className="danger sm">Remove</button></form></td></tr>))}
-        {!rows.length && <tr><td colSpan={4} className="muted">No public holidays entered for {countryName(country)} in {year} yet.</td></tr>}</tbody></table></div>
+      <DataTable rows={holRows} empty={`No public holidays entered for ${countryName(country)} in ${year} yet.`} pageSize={25}
+        cols={[{ key: "date", label: "Date", filter: "none" }, { key: "day", label: "Day", filter: "select" }, { key: "name", label: "Holiday" }, { key: "remove", label: "", filter: "none", sort: false }]} />
       <p className="muted">{followers.length ? <>Following this calendar: {followers.map((p, k) => <span key={p.id}>{k > 0 && ", "}<Link href={`/people/${p.id}`}>{p.name}</Link>{p.country && p.country !== countryName(country) ? ` (lives in ${p.country})` : ""}</span>)}.</> : "Nobody follows this calendar yet. Set it on a person's page."}</p>
 
       <h2>Add one day</h2>

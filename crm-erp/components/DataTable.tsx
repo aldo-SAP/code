@@ -5,9 +5,11 @@ import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel
 import { tone } from "@/lib/tone";
 
 /** A cell is plain text, a number, or text with a link, a status badge and a small second line. */
-export type Cell = string | number | null | { t: string; s?: string | number; href?: string; badge?: boolean; bad?: boolean; sub?: string; detail?: string };
+/** A small form shown in a cell: hidden fields, an optional text box, and one or more buttons. `action` is a server action. */
+export interface CellForm { action: (fd: FormData) => void | Promise<void>; hidden: Record<string, string | number>; input?: { name: string; placeholder: string }; buttons: { label: string; variant?: "danger" | "sec"; name?: string; value?: string }[] }
+export type Cell = string | number | null | { t: string; s?: string | number; href?: string; badge?: boolean; bad?: boolean; muted?: boolean; sub?: string; detail?: string; forms?: CellForm[] };
 export type Row = { id: string | number } & Record<string, Cell>;
-export interface Col { key: string; label: string; filter?: "text" | "select" | "none"; num?: boolean; phoneHidden?: boolean }
+export interface Col { key: string; label: string; filter?: "text" | "select" | "none"; num?: boolean; phoneHidden?: boolean; sort?: false }
 
 const text = (c: Cell) => (c == null ? "" : typeof c === "object" ? c.t : String(c));
 const sortKey = (c: Cell) => (typeof c === "number" ? c : c != null && typeof c === "object" ? (c.s ?? c.t.toLowerCase()) : String(c ?? "").toLowerCase());
@@ -27,7 +29,7 @@ export default function DataTable({ cols, rows, tabs, tabLabel = "All", empty = 
   const columns = useMemo<ColumnDef<Row>[]>(() => cols.map((c) => ({
     id: c.key, accessorFn: (r) => sortKey(r[c.key]), header: c.label, meta: c,
     filterFn: (row, id, v: string) => (c.filter === "select" ? text(row.original[c.key]) === v : text(row.original[c.key]).toLowerCase().includes(v.toLowerCase())),
-    sortUndefined: "last",
+    sortUndefined: "last", enableSorting: c.sort !== false,
   })), [cols]);
   const columnFilters = useMemo(() => Object.entries(filters).filter(([, v]) => v).map(([id, value]) => ({ id, value })), [filters]);
   const table = useReactTable({
@@ -45,8 +47,14 @@ export default function DataTable({ cols, rows, tabs, tabLabel = "All", empty = 
   const render = (c: Cell) => {
     if (c == null || c === "") return "-";
     if (typeof c !== "object") return c;
+    if (c.forms) return <span className="cellforms">{c.forms.map((f, i) => (
+      <form key={i} action={f.action} className="cellform">
+        {Object.entries(f.hidden).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
+        {f.input && <input name={f.input.name} placeholder={f.input.placeholder} aria-label={f.input.placeholder} />}
+        {f.buttons.map((b) => <button key={b.label} name={b.name} value={b.value} className={`sm ${b.variant ?? ""}`}>{b.label}</button>)}
+      </form>))}</span>;
     const inner = c.badge || c.bad ? <span className={`badge ${c.bad ? "err" : tone[c.t] ?? ""}`}>{c.t}</span> : c.t;
-    return <>{c.href ? <Link href={c.href}>{inner}</Link> : inner}{c.sub && <><br /><span className="muted">{c.sub}</span></>}{c.detail && <details><summary className="muted" style={{ cursor: "pointer" }}>details</summary><pre style={{ whiteSpace: "pre-wrap", fontSize: 12, margin: 4 }}>{c.detail}</pre></details>}</>;
+    return <>{c.href ? <Link href={c.href}>{inner}</Link> : c.muted ? <span className="muted">{inner}</span> : inner}{c.sub && <><br /><span className="muted">{c.sub}</span></>}{c.detail && <details><summary className="muted" style={{ cursor: "pointer" }}>details</summary><pre style={{ whiteSpace: "pre-wrap", fontSize: 12, margin: 4 }}>{c.detail}</pre></details>}</>;
   };
   return (
     <div className="card dt">
@@ -65,8 +73,8 @@ export default function DataTable({ cols, rows, tabs, tabLabel = "All", empty = 
             const c = h.column.columnDef.meta as Col, dir = h.column.getIsSorted(), idx = h.column.getSortIndex();
             return (
               <th key={h.id} scope="col" className={`sort${c.num ? " num" : ""}${c.phoneHidden ? " hide-s" : ""}`} aria-sort={dir ? (dir === "asc" ? "ascending" : "descending") : "none"}>
-                <button type="button" onClick={h.column.getToggleSortingHandler()} title="Sort. Shift+click to add another column.">
-                  {c.label}<span className="ar" aria-hidden="true">{dir ? (dir === "asc" ? "▲" : "▼") : "↕"}{dir && sorting.length > 1 ? <sup>{idx + 1}</sup> : null}</span>
+                <button type="button" disabled={!h.column.getCanSort()} onClick={h.column.getToggleSortingHandler()} title={h.column.getCanSort() ? "Sort. Shift+click to add another column." : undefined}>
+                  {c.label}{h.column.getCanSort() && <span className="ar" aria-hidden="true">{dir ? (dir === "asc" ? "▲" : "▼") : "↕"}{dir && sorting.length > 1 ? <sup>{idx + 1}</sup> : null}</span>}
                 </button>
               </th>
             );

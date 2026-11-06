@@ -347,3 +347,8 @@ h3.small{font-size:13px;margin:14px 0 0;color:var(--muted);text-transform:upperc
 }
 @media (max-width:820px){.side{display:none}}
 button.navhead:hover{background:none;color:var(--text)}
+
+.cellforms{display:flex;gap:6px;flex-wrap:wrap;align-items:center}.cellform{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:0}
+.cellform input[name]:not([type=hidden]){height:30px;font-size:13px;width:180px}
+.dt th.sort button:disabled{cursor:default;color:inherit}
+@media (max-width:820px){.cellform input[name]:not([type=hidden]){width:100%}.cellform{width:100%}}

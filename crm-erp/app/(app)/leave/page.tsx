@@ -10,6 +10,7 @@ import { countryName, holidayCountryOf, personHolidays } from "@/lib/holidays";
 import { Badge, Field, Flash, Hidden, num, thisMonth, today } from "@/components/ui";
 import { fmtMonth, fmtMonthShort, fmtRange } from "@/lib/dates";
 import PageHead from "@/components/PageHead";
+import DataTable, { type Row } from "@/components/DataTable";
 
 export default async function Leave({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string; month?: string; year?: string }> }) {
   const user = await requireUser();
@@ -30,6 +31,12 @@ export default async function Leave({ searchParams }: { searchParams: Promise<{ 
   const balances = manager ? await Promise.all(people.map(async (p) => ({ p, b: await leaveBalance(p.id, year) }))) : [];
   const shift = (m: string, d: number) => { const [y, mo] = m.split("-").map(Number); return new Date(Date.UTC(y, mo - 1 + d, 1)).toISOString().slice(0, 7); };
   const types = (m: boolean) => (m ? ["vacation", "sick", "holiday", "other"] : ["vacation", "sick", "other"]);
+  const pendingRows: Row[] = pending.map((l) => ({ id: l.id, person: { t: l.name, href: `/leave/${l.id}` }, type: l.type, dates: { t: fmtRange(l.from_date, l.to_date), s: l.from_date }, days: l.days, note: l.notes,
+    decision: l.person_id === user.person_id ? { t: "your own request: another manager decides", muted: true }
+      : { t: "", forms: [{ action: decideLeaveAction, hidden: { rid: l.id }, input: { name: "note", placeholder: "Note (required to reject)" }, buttons: [{ label: "Approve", name: "decision", value: "approve" }, { label: "Reject", name: "decision", value: "reject", variant: "danger" }] }] } }));
+  const openRows: Row[] = open.map((l) => ({ id: l.id, type: l.type, dates: { t: fmtRange(l.from_date, l.to_date), s: l.from_date, href: `/leave/${l.id}` }, days: l.days, status: { t: l.status, badge: true },
+    cancel: { t: "", forms: [{ action: cancelLeaveAction, hidden: { rid: l.id }, buttons: [{ label: l.status === "requested" ? "Withdraw" : "Cancel", variant: "danger" }] }] } }));
+  const allowRows: Row[] = balances.map(({ p, b }) => ({ id: p.id, person: { t: p.name, href: `/people/${p.id}?year=${year}` }, allowance: num(b.allowance), taken: num(b.taken), planned: num(b.planned), waiting: num(b.pending), left: { t: num(b.remaining), s: b.remaining } }));
   return (
     <>
       <PageHead title="Leave" sub="Requests, allowances and who is away." /><Flash sp={sp} />
@@ -37,16 +44,8 @@ export default async function Leave({ searchParams }: { searchParams: Promise<{ 
       {manager && (
         <>
           <h2>Waiting for your decision ({pending.length})</h2>
-          <div className="tw"><table><thead><tr><th>Person</th><th>Type</th><th>Dates</th><th className="num">Working days</th><th>Note</th><th>Decision</th></tr></thead><tbody>
-            {pending.map((l) => (
-              <tr key={l.id}>
-                <td><Link href={`/leave/${l.id}`}>{l.name}</Link></td><td>{l.type}</td><td>{fmtRange(l.from_date, l.to_date)}</td><td className="num">{l.days}</td><td>{l.notes}</td>
-                <td>{l.person_id === user.person_id ? <span className="muted">your own request: another manager decides</span> : (
-                  <form action={decideLeaveAction} className="row"><Hidden name="rid" value={l.id} />
-                    <input aria-label="Note (required to reject)" name="note" placeholder="Note (required to reject)" style={{ width: 190 }} />
-                    <button name="decision" value="approve" className="sm">Approve</button><button name="decision" value="reject" className="danger sm">Reject</button></form>)}</td>
-              </tr>))}
-            {!pending.length && <tr><td colSpan={6} className="muted">No requests waiting.</td></tr>}</tbody></table></div>
+          <DataTable rows={pendingRows} empty="No requests waiting."
+            cols={[{ key: "person", label: "Person" }, { key: "type", label: "Type", filter: "select" }, { key: "dates", label: "Dates", filter: "none" }, { key: "days", label: "Working days", num: true, filter: "none" }, { key: "note", label: "Note", phoneHidden: true }, { key: "decision", label: "Decision", filter: "none", sort: false }]} />
         </>
       )}
 
@@ -64,11 +63,8 @@ export default async function Leave({ searchParams }: { searchParams: Promise<{ 
           </form>
           {open.length > 0 && <>
             <h2 style={{ fontSize: 13 }}>Open and upcoming</h2>
-            <div className="tw"><table><thead><tr><th>Type</th><th>Dates</th><th className="num">Days</th><th>Status</th><th></th></tr></thead><tbody>
-              {open.map((l) => (
-                <tr key={l.id}><td>{l.type}</td><td><Link href={`/leave/${l.id}`}>{fmtRange(l.from_date, l.to_date)}</Link></td><td className="num">{l.days}</td><td><Badge v={l.status} /></td>
-                  <td><form action={cancelLeaveAction}><Hidden name="rid" value={l.id} /><button className="danger sm">{l.status === "requested" ? "Withdraw" : "Cancel"}</button></form></td></tr>))}
-            </tbody></table></div>
+            <DataTable rows={openRows} empty="Nothing open."
+              cols={[{ key: "type", label: "Type", filter: "select" }, { key: "dates", label: "Dates", filter: "none" }, { key: "days", label: "Days", num: true, filter: "none" }, { key: "status", label: "Status", filter: "select" }, { key: "cancel", label: "", filter: "none", sort: false }]} />
           </>}
           <h2>My year</h2>
           <LeaveTimeline personId={user.person_id} year={year} basePath="/leave" />
@@ -98,9 +94,8 @@ export default async function Leave({ searchParams }: { searchParams: Promise<{ 
           ) : <p className="muted">Nobody is off this month.</p>}
 
           <h2>Allowances {year}</h2>
-          <div className="tw"><table><thead><tr><th>Person</th><th className="num">Allowance</th><th className="num">Taken</th><th className="num">Planned</th><th className="num">Waiting</th><th className="num">Left</th></tr></thead><tbody>
-            {balances.map(({ p, b }) => <tr key={p.id}><td><Link href={`/people/${p.id}?year=${year}`}>{p.name}</Link></td><td className="num">{num(b.allowance)}</td><td className="num">{num(b.taken)}</td><td className="num">{num(b.planned)}</td><td className="num">{num(b.pending)}</td><td className="num"><b>{num(b.remaining)}</b></td></tr>)}
-            {!balances.length && <tr><td colSpan={6} className="muted">Nobody to show.</td></tr>}</tbody></table></div>
+          <DataTable rows={allowRows} empty="Nobody to show." initialSort={[{ id: "person", desc: false }]}
+            cols={[{ key: "person", label: "Person" }, { key: "allowance", label: "Allowance", num: true, filter: "none" }, { key: "taken", label: "Taken", num: true, filter: "none" }, { key: "planned", label: "Planned", num: true, filter: "none" }, { key: "waiting", label: "Waiting", num: true, filter: "none" }, { key: "left", label: "Left", num: true, filter: "none" }]} />
 
           <h2>Add leave for someone (no approval needed)</h2>
           <form action={addLeave} className="row card">
