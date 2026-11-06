@@ -1,4 +1,4 @@
-import { scryptSync, randomBytes, timingSafeEqual, createHmac } from "node:crypto";
+import { scryptSync, randomBytes, timingSafeEqual, createHmac, createCipheriv, createDecipheriv } from "node:crypto";
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 import { get } from "./db.ts";
 
@@ -26,6 +26,21 @@ function secret(): string {
   }
   return readFileSync(f, "utf8");
 }
+/** Key for encrypting stored secrets (authenticator seeds), derived from the app secret. */
+function deriveKey(purpose: string): Buffer { return scryptSync(secret(), "talent-crm:" + purpose, 32); }
+export function encryptSecret(plain: string, purpose = "totp"): string {
+  const iv = randomBytes(12), c = createCipheriv("aes-256-gcm", deriveKey(purpose), iv);
+  const enc = Buffer.concat([c.update(plain, "utf8"), c.final()]);
+  return [iv, c.getAuthTag(), enc].map((b) => b.toString("base64url")).join(".");
+}
+export function decryptSecret(token: string, purpose = "totp"): string {
+  const [iv, tag, enc] = token.split(".").map((p) => Buffer.from(p, "base64url"));
+  const d = createDecipheriv("aes-256-gcm", deriveKey(purpose), iv);
+  d.setAuthTag(tag);
+  return Buffer.concat([d.update(enc), d.final()]).toString("utf8");
+}
+export const keyedHash = (v: string, purpose = "recovery") => createHmac("sha256", deriveKey(purpose)).update(v).digest("hex");
+
 const sign = (v: string) => createHmac("sha256", secret()).update(v).digest("hex");
 
 /** Short-lived signed blob (used to carry the Microsoft login state through the redirect). */

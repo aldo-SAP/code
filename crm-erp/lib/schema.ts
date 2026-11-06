@@ -149,6 +149,16 @@ CREATE TABLE IF NOT EXISTS email_outbox (
 ALTER TABLE email_outbox ADD COLUMN IF NOT EXISTS cc_addr TEXT;
 ALTER TABLE email_outbox ADD COLUMN IF NOT EXISTS thread_key TEXT;
 
+-- Authenticator-app (TOTP) sign-in for password users. Secrets are stored encrypted; recovery codes only as keyed hashes.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_pending TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_enabled INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_last_step BIGINT NOT NULL DEFAULT 0;
+CREATE TABLE IF NOT EXISTS recovery_codes (
+  id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, code_hash TEXT NOT NULL, used_at TEXT
+);
+CREATE INDEX IF NOT EXISTS ix_recovery_user ON recovery_codes(user_id);
+
 -- Append-only history of who did what. Triggers block edits, deletes and truncation.
 CREATE TABLE IF NOT EXISTS audit_log (
   id SERIAL PRIMARY KEY, created_at TEXT NOT NULL DEFAULT to_char(timezone('utc', now()), 'YYYY-MM-DD HH24:MI:SS'),

@@ -185,3 +185,4 @@ main:focus{outline:none}
 :focus-visible{outline:2px solid var(--brand);outline-offset:2px}
 .kanban .col h3{margin:0 0 8px;font-size:12px;text-transform:uppercase;color:var(--muted)}
 .kanban .col h2{margin:0 0 8px;font-size:12px;text-transform:uppercase;color:var(--muted)}
+.codes{list-style:none;margin:8px 0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}.codes code{display:block;padding:6px 10px;background:var(--bg);border:1px solid var(--line);border-radius:6px;font-size:15px;letter-spacing:.5px}

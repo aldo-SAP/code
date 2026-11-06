@@ -87,8 +87,10 @@ Then in the app: **Settings, Email and leave approvals, "Send me a test email"**
 
 1. Open `https://crm.yourcompany.com`, press **Sign in with Microsoft** with the email you set as `BOOTSTRAP_ADMIN_EMAIL`.
 2. **Settings**: enter the company name, address and IBAN (printed on invoices). Add each staff member as a user with sign-in **Microsoft** and the same email as their Microsoft account. Freelancers without Microsoft get **password**.
-3. Keep your own admin on **both**, so a Microsoft problem never locks you out.
-4. **Test a restore once before relying on it** (see below).
+3. Keep your own admin on **both**, so a Microsoft problem never locks you out. Because that account has a password, protect it: open **My account** and set up an authenticator app, and save the recovery codes somewhere safe (a password manager, not the same phone).
+4. **Settings, Authenticator app**: set "Who must use an authenticator" to **Admins and managers** (or **Everyone** if freelancers sign in with passwords). People are then asked to set it up at their next password sign-in. Microsoft sign-ins are not affected.
+5. Lost phone: an admin presses **Reset** next to the person in Settings, and they set up a new one. If the only admin is locked out, run `npm run mfa:reset -- admin@company.com` with the production `DATABASE_URL` from a trusted computer.
+6. **Test a restore once before relying on it** (see below).
 
 ## Backups and restore
 

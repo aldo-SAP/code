@@ -1,8 +1,9 @@
 import { all, setting } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
-import { addFx, addUser, retryEmailAction, saveLeaveSettings, saveSettings, sendTestEmail, setUserActive, setUserAuth } from "@/app/actions";
+import { addFx, addUser, adminResetMfaAction, retryEmailAction, saveMfaPolicy, saveLeaveSettings, saveSettings, sendTestEmail, setUserActive, setUserAuth } from "@/app/actions";
 import { mailProvider, recentMail } from "@/lib/mail";
 import { defaultAllowance } from "@/lib/leave";
+import { mfaPolicy } from "@/lib/mfa";
 import { msConfig, redirectUri } from "@/lib/msauth";
 import { Badge, CURRENCIES, Field, Flash, Hidden, today } from "@/components/ui";
 import { fmtDate, fmtDateTime } from "@/lib/dates";
@@ -10,7 +11,7 @@ import { fmtDate, fmtDateTime } from "@/lib/dates";
 export default async function Settings({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
   await requireAdmin();
   const sp = await searchParams;
-  const users = await all<any>("SELECT u.*, p.name AS person FROM users u LEFT JOIN people p ON p.id=u.person_id ORDER BY u.id");
+  const users = await all<any>("SELECT u.id,u.email,u.name,u.role,u.active,u.auth_method,u.ms_oid,u.totp_enabled, p.name AS person FROM users u LEFT JOIN people p ON p.id=u.person_id ORDER BY u.id");
   const people = await all<any>("SELECT id,name FROM people ORDER BY name");
   const ms = msConfig();
   const provider = mailProvider();
@@ -54,10 +55,22 @@ export default async function Settings({ searchParams }: { searchParams: Promise
           : <>Not configured. Set <code>MS_TENANT_ID</code>, <code>MS_CLIENT_ID</code>, <code>MS_CLIENT_SECRET</code> and <code>APP_URL</code> on the server (see the README), then restart.</>}
         <p className="muted" style={{ marginBottom: 0 }}>Only users you create below can sign in. Nobody is created automatically. Keep your own admin on "both" as a safety net.</p>
       </div>
+      <h2>Authenticator app (password sign-ins)</h2>
+      <form action={saveMfaPolicy} className="row card">
+        <Field label="Who must use an authenticator app after their password">
+          <select name="mfa_policy" defaultValue={await mfaPolicy()}>
+            <option value="off">Nobody (optional, people can turn it on themselves)</option>
+            <option value="privileged">Admins and managers</option>
+            <option value="all">Everyone who signs in with a password</option>
+          </select>
+        </Field>
+        <button className="sec">Save</button>
+        <span className="muted">Microsoft sign-ins use Microsoft's own MFA and are not affected. People who must have one are asked to set it up at their next password sign-in.</span>
+      </form>
       <h2>Users</h2>
-      <table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Sign-in</th><th>Linked person</th><th></th></tr></thead><tbody>
+      <table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Sign-in</th><th>Authenticator</th><th>Linked person</th><th></th></tr></thead><tbody>
         {users.map((u) => <tr key={u.id}><td>{u.name}</td><td>{u.email}</td><td><Badge v={u.role} /></td>
-          <td><form action={setUserAuth} className="row"><Hidden name="rid" value={u.id} /><select name="auth_method" aria-label={`Sign-in method for ${u.name}`} defaultValue={u.auth_method}><option value="password">password</option><option value="microsoft">Microsoft</option><option value="both">both</option></select><button className="sec sm">Save</button></form>{u.ms_oid ? <span className="muted">Microsoft linked</span> : null}</td><td>{u.person}</td>
+          <td><form action={setUserAuth} className="row"><Hidden name="rid" value={u.id} /><select name="auth_method" aria-label={`Sign-in method for ${u.name}`} defaultValue={u.auth_method}><option value="password">password</option><option value="microsoft">Microsoft</option><option value="both">both</option></select><button className="sec sm">Save</button></form>{u.ms_oid ? <span className="muted">Microsoft linked</span> : null}</td><td>{u.auth_method === "microsoft" ? <span className="muted">Microsoft</span> : u.totp_enabled ? <form action={adminResetMfaAction} className="row"><Hidden name="rid" value={u.id} /><Badge v="approved" /><button className="danger sm" aria-label={`Reset authenticator for ${u.name}`}>Reset</button></form> : <span className="muted">not set up</span>}</td><td>{u.person}</td>
           <td><form action={setUserActive}><Hidden name="rid" value={u.id} /><button name="active" value={u.active ? 0 : 1} className="sec sm">{u.active ? "Deactivate" : "Activate"}</button></form></td></tr>)}</tbody></table>
       <form action={addUser} className="row card" style={{ marginTop: 8 }}>
         <Field label="Name"><input name="name" /></Field><Field label="Email"><input name="email" type="email" required /></Field>

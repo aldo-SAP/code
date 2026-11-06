@@ -3,7 +3,8 @@ import { cookies } from "next/headers";
 import { randomBytes } from "node:crypto";
 import { redirect } from "next/navigation";
 import { get, run, tx } from "@/lib/db";
-import { hashPassword, verifyPassword, makeSession, sessionHours, SESSION_COOKIE, can } from "@/lib/auth";
+import { hashPassword, verifyPassword, makeSession, sessionHours, signBlob, readBlob, SESSION_COOKIE, can } from "@/lib/auth";
+import { adminResetMfa, confirmEnrollment, disableMfa, mfaRequiredFor, mfaStatus, recentFailures, regenerateRecovery, verifyMfa } from "@/lib/mfa";
 import { requireUser, requireManager, requireAdmin } from "@/lib/session";
 import { generateInvoices, generatePayouts, issueInvoice, voidInvoice } from "@/lib/invoicing";
 import { parseCsv } from "@/lib/csv";
@@ -29,19 +30,113 @@ function back(path: string, msg?: string, kind: "ok" | "err" = "ok"): never {
 const referer = (fd: FormData, fallback: string) => s(fd, "_back") || fallback;
 
 // ------------------------------------------------------------------ auth
+const secureCookie = () => process.env.NODE_ENV === "production" && process.env.INSECURE_COOKIES !== "1";
+const PENDING = "mfa_pending";
+
+async function openSession(u: { id: number; role: string }) {
+  (await cookies()).set(SESSION_COOKIE, makeSession(u.id, u.role), { httpOnly: true, sameSite: "lax", path: "/", maxAge: sessionHours(u.role) * 3600, secure: secureCookie() });
+}
+async function setPending(uid: number, purpose: "verify" | "enroll", next: string | null) {
+  (await cookies()).set(PENDING, signBlob({ uid, purpose, next }, 5 * 60_000), { httpOnly: true, sameSite: "lax", path: "/login", maxAge: 300, secure: secureCookie() });
+}
+async function readPending(purpose: "verify" | "enroll") {
+  const b = readBlob<{ uid: number; purpose: string; next: string | null }>((await cookies()).get(PENDING)?.value);
+  return b && b.purpose === purpose ? b : null;
+}
+
 export async function login(fd: FormData) {
   const email = s(fd, "email").toLowerCase();
-  const recent = (await get<{ n: number }>("SELECT COUNT(*) n FROM audit_log WHERE action='login_failed' AND user_name=? AND created_at > ?", email, new Date(Date.now() - 15 * 60_000).toISOString().slice(0, 19).replace("T", " ")))!.n;
-  if (recent >= 5) back("/login", "Too many failed attempts. Try again in 15 minutes.", "err");
-  const u = await get<{ id: number; password_hash: string; role: string; auth_method: string; name: string }>("SELECT id,password_hash,role,auth_method,name FROM users WHERE email=? AND active=1", email);
+  if ((await recentFailures(email)) >= 5) back("/login", "Too many failed attempts. Try again in 15 minutes.", "err");
+  const u = await get<{ id: number; password_hash: string; role: string; auth_method: string; name: string; totp_enabled: number }>("SELECT id,password_hash,role,auth_method,name,totp_enabled FROM users WHERE email=? AND active=1", email);
   if (u?.auth_method === "microsoft") back("/login", "This account signs in with Microsoft. Use the Microsoft button.", "err");
   if (!u || !verifyPassword(String(fd.get("password") ?? ""), u.password_hash)) {
     await audit({ id: null, name: email || "unknown" }, "login_failed", "user", null, "Failed sign-in attempt");
     back("/login", "Wrong email or password", "err");
   }
+  const next = safeNext(s(fd, "next"));
+  // password correct: second step if the account has an authenticator, or must get one
+  if (u!.totp_enabled) { await setPending(u!.id, "verify", next); redirect("/login/verify"); }
+  if (await mfaRequiredFor(u!.role)) { await setPending(u!.id, "enroll", next); redirect("/login/setup"); }
   await noteLogin({ id: u!.id, name: u!.name }, "password");
-  (await cookies()).set(SESSION_COOKIE, makeSession(u!.id, u!.role), { httpOnly: true, sameSite: "lax", path: "/", maxAge: sessionHours(u!.role) * 3600, secure: process.env.NODE_ENV === "production" && process.env.INSECURE_COOKIES !== "1" });
-  redirect(safeNext(s(fd, "next")) ?? (u!.role === "worker" ? "/timesheets" : "/"));
+  await openSession(u!);
+  redirect(next ?? (u!.role === "worker" ? "/timesheets" : "/"));
+}
+
+/** Step two of a password sign-in: authenticator code or recovery code. */
+export async function verifyMfaAction(fd: FormData) {
+  const pending = await readPending("verify");
+  if (!pending) back("/login", "Your sign-in timed out. Start again.", "err");
+  const u = (await get<{ id: number; email: string; name: string; role: string }>("SELECT id,email,name,role FROM users WHERE id=? AND active=1", pending!.uid))!;
+  if ((await recentFailures(u.email)) >= 5) back("/login/verify", "Too many failed attempts. Try again in 15 minutes.", "err");
+  const r = await verifyMfa(u.id, String(fd.get("code") ?? ""));
+  if (!r.ok) {
+    await audit({ id: null, name: u.email }, "login_failed", "user", u.id, "Wrong authenticator or recovery code");
+    back("/login/verify", "That code is not right. Codes change every 30 seconds.", "err");
+  }
+  (await cookies()).delete({ name: PENDING, path: "/login" });
+  if (r.method === "recovery") await audit({ id: u.id, name: u.name }, "mfa_recovery_used", "user", u.id, `Signed in with a recovery code (${r.recoveryLeft} left)`);
+  await noteLogin({ id: u.id, name: u.name }, r.method === "recovery" ? "password and recovery code" : "password and authenticator");
+  await openSession(u);
+  redirect(pending!.next ?? (u.role === "worker" ? "/timesheets" : "/"));
+}
+
+export interface MfaFormState { error?: string; codes?: string[]; href?: string; finish?: boolean }
+
+/** Confirms a new authenticator. Used both during a required first sign-in and from the Account page. */
+export async function confirmMfaAction(_prev: MfaFormState, fd: FormData): Promise<MfaFormState> {
+  const pending = await readPending("enroll");
+  const me = pending ? null : await currentUser();
+  const uid = pending?.uid ?? me?.id;
+  if (!uid) return { error: "Your sign-in timed out. Start again." };
+  const u = (await get<{ id: number; email: string; name: string; role: string }>("SELECT id,email,name,role FROM users WHERE id=? AND active=1", uid))!;
+  if ((await recentFailures(u.email)) >= 5) return { error: "Too many failed attempts. Try again in 15 minutes." };
+  const r = await confirmEnrollment({ id: u.id, name: u.name }, String(fd.get("code") ?? ""));
+  if (!r.ok) {
+    await audit({ id: null, name: u.email }, "login_failed", "user", u.id, "Wrong code while setting up the authenticator");
+    return { error: r.error };
+  }
+  // During a required first sign-in the session is opened by finishMfaLoginAction, after the person has seen their recovery codes.
+  // (Changing cookies here would refresh the page and the codes would never be shown.)
+  return pending ? { codes: r.codes, finish: true } : { codes: r.codes, href: "/account" };
+}
+
+export async function finishMfaLoginAction() {
+  const pending = await readPending("enroll");
+  if (!pending) redirect("/login");
+  const u = (await get<{ id: number; name: string; role: string }>("SELECT id,name,role FROM users WHERE id=? AND active=1", pending!.uid))!;
+  if (!(await mfaStatus(u.id)).enabled) back("/login/setup", "Finish setting up the authenticator first.", "err");
+  (await cookies()).delete({ name: PENDING, path: "/login" });
+  await noteLogin({ id: u.id, name: u.name }, "password and authenticator (first setup)");
+  await openSession(u);
+  redirect(pending!.next ?? (u.role === "worker" ? "/timesheets" : "/"));
+}
+
+export async function regenRecoveryAction(_prev: MfaFormState, fd: FormData): Promise<MfaFormState> {
+  const me = await requireUser();
+  if ((await recentFailures(me.email)) >= 5) return { error: "Too many failed attempts. Try again in 15 minutes." };
+  const r = await regenerateRecovery({ id: me.id, name: me.name }, String(fd.get("code") ?? ""));
+  if (!r.ok) { await audit({ id: null, name: me.email }, "login_failed", "user", me.id, "Wrong code for recovery codes"); return { error: r.error }; }
+  return { codes: r.codes };
+}
+export async function disableMfaAction(fd: FormData) {
+  const me = await requireUser();
+  if ((await recentFailures(me.email)) >= 5) back("/account", "Too many failed attempts. Try again in 15 minutes.", "err");
+  if (await mfaRequiredFor(me.role)) back("/account", "Your company requires an authenticator for your role, so it cannot be turned off.", "err");
+  const r = await disableMfa({ id: me.id, name: me.name }, String(fd.get("code") ?? ""));
+  if (!r.ok) { await audit({ id: null, name: me.email }, "login_failed", "user", me.id, "Wrong code when turning off the authenticator"); back("/account", r.error, "err"); }
+  back("/account", "Authenticator turned off.");
+}
+export async function adminResetMfaAction(fd: FormData) {
+  const u = await requireAdmin();
+  await adminResetMfa({ id: u.id, name: u.name }, i(fd, "rid")!);
+  back("/settings", "Authenticator reset. They can set up a new one at their next password sign-in.");
+}
+export async function saveMfaPolicy(fd: FormData) {
+  const u = await requireAdmin();
+  const v = ["off", "privileged", "all"].includes(s(fd, "mfa_policy")) ? s(fd, "mfa_policy") : "off";
+  await run("INSERT INTO settings (key,value) VALUES ('mfa_policy',?) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value", v);
+  await audit(u, "update", "settings", null, `Authenticator policy for password sign-ins set to ${v}`);
+  back("/settings", "Saved");
 }
 export async function logout() {
   const me = await currentUser();

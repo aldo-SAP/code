@@ -24,11 +24,11 @@ export const Badge = ({ v }: { v: string }) => <span className={`badge ${tone[v]
 
 export function Nav({ user }: { user: User }) {
   const items: [string, string][] = user.role === "worker"
-    ? [["/timesheets", "My timesheet"], ["/leave", "My leave"]]
+    ? [["/timesheets", "My timesheet"], ["/leave", "My leave"], ["/account", "My account"]]
     : [["/", "Dashboard"], ["/clients", "Clients"], ["/deals", "Pipeline"], ["/people", "People"], ["/courses", "Training"],
        ["/projects", "Projects"], ["/timesheets", "Timesheets"], ["/leave", "Leave"], ["/approvals", "Approvals"], ["/invoices", "Invoices"],
        ...(can.finance(user) ? [["/payouts", "Payouts"], ["/reports", "Margin"]] as [string, string][] : []),
-       ["/unlock", "Unlock billed hours"], ["/import", "CSV import"], ...(can.admin(user) ? [["/holidays", "Public holidays"], ["/audit", "Audit log"], ["/settings", "Settings"]] as [string, string][] : [])];
+       ["/unlock", "Unlock billed hours"], ["/import", "CSV import"], ["/account", "My account"], ...(can.admin(user) ? [["/holidays", "Public holidays"], ["/audit", "Audit log"], ["/settings", "Settings"]] as [string, string][] : [])];
   return (
     <>
       <nav className="side" aria-label="Main">

@@ -103,7 +103,8 @@ Staff sign in with their Microsoft work account; freelancers without one keep a 
 - Web: CSP, HSTS, no framing, `nosniff`, no caching of pages, server actions restricted to your own domain.
 - Sessions: signed httpOnly cookies; 8 hours for admins, 12 for managers, 7 days for workers.
 - Sign-in: Microsoft (staff), passwords with 5-attempt lockout (freelancers), IP and country on every audit entry, a `login_new_country` alert, failed attempts logged.
-- Not yet built: authenticator-app codes (TOTP) for password users.
+- **Authenticator app (TOTP) for password sign-ins:** standard 6-digit codes (Microsoft Authenticator, Google Authenticator, 1Password...), checked with one step of clock drift, never accepted twice. The secret is stored encrypted (AES-256-GCM, key derived from `APP_SECRET`); ten one-time recovery codes are stored only as keyed hashes. Wrong codes count towards the same 5-failures-in-15-minutes lock as passwords. People set it up on *My account*; Settings lets an admin require it for nobody / admins and managers / everyone with a password, and reset someone's authenticator (lost phone). Every enable, disable, reset and recovery-code use is in the audit log. Microsoft sign-ins use Microsoft's MFA instead.
+- If the only admin loses their phone and recovery codes: `DATABASE_URL=... npm run mfa:reset -- admin@company.com` (needs database access).
 
 ### Known limits (v1)
 - No VAT (amounts only, as requested). Invoices print to PDF from the browser or export as CSV.
