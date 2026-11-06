@@ -25,7 +25,7 @@ export default async function MonthEnd({ searchParams }: { searchParams: Promise
       <p className="muted">A checklist for closing {fmtMonth(period)}, and a way to nudge people who still owe hours.</p>
       <form className="row card"><Field label="Month"><input type="month" name="month" defaultValue={period} /></Field><button className="sec">Show</button></form>
       <h2>Checklist</h2>
-      <ul className="steps">{steps.map((st, k) => <li key={k} className="card row"><span aria-hidden>{st.done ? "✓" : "○"}</span><span className="wide" style={{ flex: "1 1 14rem" }}>{st.text}</span>{!st.done && <Link className="btn sec" href={st.href}>{st.cta}</Link>}</li>)}</ul>
+      <ul className="steps">{steps.map((st, k) => <li key={k} className="card row"><span aria-hidden>{st.done ? "✓" : "○"}</span><span className="wide">{st.text}</span>{!st.done && <Link className="btn sec" href={st.href}>{st.cta}</Link>}</li>)}</ul>
       <h2 id="hours">Hours for {fmtMonth(period)}</h2>
       <div className="tablewrap"><table><thead><tr><th>Person</th><th>Status</th><th className="num">Saved</th><th className="num">Submitted</th><th className="num">Approved</th><th>Last reminder</th><th /></tr></thead><tbody>
         {people.map((p) => <tr key={p.personId}><td>{p.name}</td><td>{LABEL[p.state]}</td><td className="num">{p.draftHours}h</td><td className="num">{p.submittedHours}h</td><td className="num">{p.approvedHours}h</td>
