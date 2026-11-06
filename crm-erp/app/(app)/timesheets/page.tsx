@@ -28,6 +28,9 @@ export default async function Timesheets({ searchParams }: { searchParams: Promi
     WHERE a.billing_type IN ('hourly','daily') AND (a.person_id=? OR a.id IN (SELECT assignment_id FROM substitutions WHERE person_id=? AND to_date>=? AND from_date<=?))
       AND a.start_date<=? AND (a.end_date IS NULL OR a.end_date>=?) ORDER BY pr.name`, pid, pid, start, end, end, start);
   const subs = await all<any>("SELECT assignment_id,from_date,to_date FROM substitutions WHERE person_id=?", pid);
+  const covering = await all<any>(
+    `SELECT sb.from_date, sb.to_date, pr.name AS project, o.name AS owner FROM substitutions sb JOIN assignments a ON a.id=sb.assignment_id
+     JOIN projects pr ON pr.id=a.project_id JOIN people o ON o.id=a.person_id WHERE sb.person_id=? AND sb.from_date<=? AND sb.to_date>=?`, pid, end, start);
   const entries = new Map((await all<any>(`SELECT assignment_id,work_date,hours,status,invoice_id,payout_id FROM timesheet_entries WHERE worker_id=? AND work_date BETWEEN ? AND ?`, pid, start, end)).map((e) => [`${e.assignment_id}_${e.work_date}`, e]));
   const leave = await all<any>("SELECT * FROM leave WHERE person_id=? AND status IN ('requested','approved') AND to_date>=? AND from_date<=? ORDER BY from_date", pid, start, end);
   const holidays = await personHolidays(pid, start, end);
@@ -50,6 +53,7 @@ export default async function Timesheets({ searchParams }: { searchParams: Promi
         <Link className="btn sec" href={q(shift(month, 1))}>{shift(month, 1)} &rarr;</Link>
         <span className="muted">{person.name}: enter hours per day. Yellow = submitted, green = approved, red = rejected, orange = leave, hatched = public holiday.</span>
       </div>
+      {covering.map((c, k) => <div className="flash err" key={k} style={{ background: "var(--warnbg)", color: "var(--warn)" }}><b>{person.name} is covering for {c.owner}</b> on {c.project} from {c.from_date} to {c.to_date}. Hours entered on those days are {person.name}'s own hours: the client invoice shows {c.owner} only, and {person.name} is paid at the substitute rate.</div>)}
       {billedCount > 0 && <div className="flash err">{billedCount} day(s) this month are already invoiced or paid out (dashed cells) and locked. {manager ? <Link href={`/unlock?person=${pid}&month=${month}`}>Unlock billed hours</Link> : "Ask a manager if something must be corrected."}</div>}
       {!rows.length ? <div className="card muted">No assignments or substitutions in this month.</div> : (
         <form action={saveTimesheet}>

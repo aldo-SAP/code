@@ -24,7 +24,7 @@ export default function TimesheetFields({ days, rows }: { days: string[]; rows: 
         <thead><tr><th style={{ textAlign: "left" }}>Assignment</th>{days.map((d) => <th key={d} className={[0, 6].includes(new Date(d).getUTCDay()) ? "we" : ""}>{Number(d.slice(8))}</th>)}<th>Total</th></tr></thead>
         <tbody>{rows.map((r) => (
           <tr key={r.id}>
-            <td style={{ textAlign: "left", whiteSpace: "nowrap" }}>{r.project}{r.substituting && <><br /><span className="muted">substituting {r.substituting}</span></>}</td>
+            <td style={{ textAlign: "left", whiteSpace: "nowrap" }}>{r.project}{r.substituting && <><br /><span className="muted">covering for {r.substituting}</span></>}</td>
             {days.map((d) => {
               const c = r.cells[d];
               return <td key={d} className={c.leave ? "lv" : c.holiday ? "ph" : c.weekend ? "we" : ""} title={c.holiday}>
@@ -48,13 +48,13 @@ export default function TimesheetFields({ days, rows }: { days: string[]; rows: 
         const tag = rows.some((r) => r.cells[d].leave) ? "leave" : any.holiday ? "holiday" : "";
         return (
           <div key={d} className={`tsm-day ${wd === 0 || wd === 6 ? "we" : ""} ${tag}`}>
-            <div className="tsm-date"><b>{Number(d.slice(8))}</b> <span>{WD[wd]}</span>{tag === "leave" && <em>Leave</em>}{tag === "holiday" && <em title={any.holiday}>Public holiday</em>}{rows.length === 1 && rows[0].substituting && <small>for {rows[0].substituting}</small>}</div>
+            <div className="tsm-date"><b>{Number(d.slice(8))}</b> <span>{WD[wd]}</span>{tag === "leave" && <em>Leave</em>}{tag === "holiday" && <em title={any.holiday}>Public holiday</em>}{rows.length === 1 && rows[0].substituting && <small>covering for {rows[0].substituting}</small>}</div>
             <div className="tsm-inputs">
               {rows.map((r) => {
                 const c = r.cells[d];
                 return (
                   <label key={r.id} className={c.disabled && c.v === "" ? "off" : ""}>
-                    {rows.length > 1 && <span>{r.project}{r.substituting ? ` (for ${r.substituting})` : ""}</span>}
+                    {rows.length > 1 && <span>{r.project}{r.substituting ? ` (covering for ${r.substituting})` : ""}</span>}
                     <input name={`h_${r.id}_${d}`} defaultValue={c.v} disabled={c.disabled} className={cls(c)} title={hint(c)} inputMode="decimal" placeholder="h" aria-label={`${r.project} ${d}`} />
                   </label>
                 );
