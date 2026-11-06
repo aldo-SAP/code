@@ -73,7 +73,7 @@ export default async function Timesheets({ searchParams }: { searchParams: Promi
           })} />
           <div className="bar ts-actions" style={{ marginTop: 12 }}>
             <button name="intent" value="save" className="sec">Save draft</button>
-            <button name="intent" value="submit">Submit month for approval{pending ? ` (${pending} day(s) pending)` : ""}</button>
+            <button name="intent" value="submit" data-confirm="Submit this month for approval? Submitted days are locked until a manager approves or rejects them.">Submit month for approval{pending ? ` (${pending} day(s) pending)` : ""}</button>
             <span className="muted">Submitted days are locked until a manager approves or rejects them.</span>
           </div>
         </form>

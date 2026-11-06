@@ -2,6 +2,7 @@ import Link from "next/link";
 import { logout } from "@/app/actions";
 import ThemeToggle from "@/components/ThemeToggle";
 import MobileNav from "@/components/MobileNav";
+import NavLinks from "@/components/NavLinks";
 import { can, type User } from "@/lib/auth";
 
 export const money = (n: number | null | undefined, c = "EUR") =>
@@ -11,8 +12,8 @@ export const today = () => new Date().toISOString().slice(0, 10);
 export const thisMonth = () => today().slice(0, 7);
 
 export function Flash({ sp }: { sp: { msg?: string; err?: string } }) {
-  if (sp.err) return <div className="flash err">{sp.err}</div>;
-  if (sp.msg) return <div className="flash ok">{sp.msg}</div>;
+  if (sp.err) return <div className="flash err" role="alert">{sp.err}</div>;
+  if (sp.msg) return <div className="flash ok" role="status">{sp.msg}</div>;
   return null;
 }
 
@@ -33,7 +34,7 @@ export function Nav({ user }: { user: User }) {
     <>
       <nav className="side" aria-label="Main">
         <div className="brand">Talent CRM/ERP</div>
-        {items.map(([href, label]) => <Link key={href} href={href}>{label}</Link>)}
+        <NavLinks items={items} />
         <div className="who">{user.name}<br />{user.role}</div>
         <ThemeToggle />
         <form action={logout}><button className="sec sm" style={{ margin: "0 8px" }}>Sign out</button></form>
@@ -47,7 +48,7 @@ export function Nav({ user }: { user: User }) {
 }
 
 export function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return <label className="f">{label}{children}</label>;
+  return <label className="f"><span className="lbl">{label}</span>{children}</label>;
 }
 export const CURRENCIES = ["EUR", "USD", "GBP", "CHF", "PLN", "RON", "ALL"];
 export function CurrencySelect({ name = "currency", value = "EUR", label }: { name?: string; value?: string; label?: string }) {

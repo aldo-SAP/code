@@ -1,6 +1,7 @@
 import { login } from "@/app/actions";
 import { Flash } from "@/components/ui";
 import ThemeToggle from "@/components/ThemeToggle";
+import PasswordField from "@/components/PasswordField";
 import { msConfig } from "@/lib/msauth";
 import { safeNext } from "@/lib/nexturl";
 export const dynamic = "force-dynamic";
@@ -15,8 +16,8 @@ export default async function Login({ searchParams }: { searchParams: Promise<{ 
       {msConfig() && <p className="muted" style={{ textAlign: "center", margin: "4px 0 10px" }}>or, if you do not have a Microsoft account</p>}
       <form action={login} style={{ display: "grid", gap: 10 }}>
         {next && <input type="hidden" name="next" value={next} />}
-        <input aria-label="Email" name="email" type="email" placeholder="Email" required autoFocus />
-        <input aria-label="Password" name="password" type="password" placeholder="Password" required />
+        <input aria-label="Email" name="email" type="email" placeholder="Email" autoComplete="username" required autoFocus />
+        <PasswordField />
         <button>Sign in</button>
       </form>
     </div>

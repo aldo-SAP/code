@@ -1,6 +1,8 @@
 import "./globals.css";
 import { cookies } from "next/headers";
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
+import UxEnhancer from "@/components/UxEnhancer";
 
 export const metadata: Metadata = {
   title: "Talent CRM/ERP",
@@ -15,5 +17,5 @@ export const viewport: Viewport = {
 
 export default async function Root({ children }: { children: React.ReactNode }) {
   const t = (await cookies()).get("theme")?.value;
-  return <html lang="en" data-theme={t === "light" || t === "dark" ? t : undefined} suppressHydrationWarning><body>{children}</body></html>;
+  return <html lang="en" data-theme={t === "light" || t === "dark" ? t : undefined} suppressHydrationWarning><body>{children}<Suspense fallback={null}><UxEnhancer /></Suspense></body></html>;
 }

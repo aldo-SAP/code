@@ -28,7 +28,7 @@ export default function TimesheetFields({ days, rows }: { days: string[]; rows: 
             {days.map((d) => {
               const c = r.cells[d];
               return <td key={d} className={c.leave ? "lv" : c.holiday ? "ph" : c.weekend ? "we" : ""} title={c.holiday}>
-                <input name={`h_${r.id}_${d}`} defaultValue={c.v} disabled={c.disabled} className={cls(c)} title={hint(c)} inputMode="decimal" aria-label={`${r.project} ${d}`} /></td>;
+                <input name={`h_${r.id}_${d}`} defaultValue={c.v} disabled={c.disabled} className={cls(c)} title={hint(c)} inputMode="decimal" aria-label={`${r.project} ${d}${c.status ? ", " + c.status : ""}`} /></td>;
             })}
             <td className="num"><b>{r.total}</b></td>
           </tr>))}</tbody>
@@ -55,7 +55,7 @@ export default function TimesheetFields({ days, rows }: { days: string[]; rows: 
                 return (
                   <label key={r.id} className={c.disabled && c.v === "" ? "off" : ""}>
                     {rows.length > 1 && <span>{r.project}{r.substituting ? ` (covering for ${r.substituting})` : ""}</span>}
-                    <input name={`h_${r.id}_${d}`} defaultValue={c.v} disabled={c.disabled} className={cls(c)} title={hint(c)} inputMode="decimal" placeholder="h" aria-label={`${r.project} ${d}`} />
+                    <input name={`h_${r.id}_${d}`} defaultValue={c.v} disabled={c.disabled} className={cls(c)} title={hint(c)} inputMode="decimal" placeholder="h" aria-label={`${r.project} ${d}${c.status ? ", " + c.status : ""}`} />
                   </label>
                 );
               })}

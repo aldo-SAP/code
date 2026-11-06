@@ -5,6 +5,7 @@ import { requireManager } from "@/lib/session";
 import { can } from "@/lib/auth";
 import { setProjectStatus } from "@/app/actions";
 import ContractForm from "@/components/ContractForm";
+import Breadcrumb from "@/components/Breadcrumb";
 import { Badge, CurrencySelect, Field, Flash, Hidden } from "@/components/ui";
 import { fmtSpan } from "@/lib/dates";
 
@@ -21,6 +22,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
   const per = (bt: string) => ({ hourly: "/h", daily: "/day", monthly: "/month", fixed: "" }[bt] ?? "");
   return (
     <>
+      <Breadcrumb items={[{ label: "Projects", href: "/projects" }, { label: p.client, href: `/clients/${p.client_id}` }, { label: p.name }]} />
       <h1>{p.name} <Badge v={p.status} /></h1><Flash sp={sp} />
       <div className="muted" style={{ margin: "8px 0" }}>Client: <Link href={`/clients/${p.client_id}`}>{p.client}</Link>
         <form action={setProjectStatus} style={{ display: "inline-flex", gap: 6, marginLeft: 12 }}>

@@ -5,6 +5,7 @@ import { requireManager } from "@/lib/session";
 import { can } from "@/lib/auth";
 import { addMilestone, addRate, addSubstitution, deleteRate, deleteSubstitution, setMilestone, updateSubstitutionCost } from "@/app/actions";
 import { billedThrough } from "@/lib/history";
+import Breadcrumb from "@/components/Breadcrumb";
 import { Badge, CurrencySelect, Field, Flash, Hidden, money, today } from "@/components/ui";
 import { fmtDate, fmtSpan } from "@/lib/dates";
 
@@ -25,6 +26,7 @@ export default async function AssignmentPage({ params, searchParams }: { params:
   const unit = { hourly: "per hour", daily: "per day", monthly: "per month", fixed: "" }[a.billing_type as string];
   return (
     <>
+      <Breadcrumb items={[{ label: "Projects", href: "/projects" }, { label: a.project, href: `/projects/${a.project_id}` }, { label: a.person }]} />
       <h1>{a.person} on {a.project}</h1><Flash sp={sp} />
       <p className="muted"><Link href={`/projects/${a.project_id}`}>Back to project</Link> · contract: {a.contract ?? "-"} ({a.payment_terms}, net {a.net_days}) · {a.billing_type} · {a.hours_per_day}h/day · {fmtSpan(a.start_date, a.end_date)} · {a.worker_type}
         {a.direct_to_client ? " · works directly with the client" : ""}</p>
