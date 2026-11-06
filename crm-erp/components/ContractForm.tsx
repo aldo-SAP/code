@@ -25,7 +25,7 @@ export default function ContractForm({ client, projects, fixedProjectId, people,
       <Field label="Bill rate"><input name="bill_amount" type="number" step="0.01" style={{ width: 100 }} /></Field>
       <Field label="Currency"><CurrencySelect name="bill_currency" value={client.currency} /></Field>
       {fin && <><Field label="Cost rate"><input name="cost_amount" type="number" step="0.01" style={{ width: 100 }} /></Field><Field label="Cost cur."><CurrencySelect name="cost_currency" /></Field></>}
-      <Field label="Start"><input type="date" name="start_date" required /></Field><Field label="End"><input type="date" name="end_date" /></Field>
+      <div className="pair"><Field label="Start"><input type="date" name="start_date" required /></Field><Field label="End"><input type="date" name="end_date" /></Field></div>
       <Field label="Contract currency"><CurrencySelect value={client.currency} /></Field>
       <Field label="Payment terms"><select name="payment_terms"><option value="monthly">Monthly invoice</option><option value="milestone">Per milestone</option></select></Field>
       <Field label="Net days"><input type="number" name="net_days" defaultValue={30} style={{ width: 70 }} /></Field>

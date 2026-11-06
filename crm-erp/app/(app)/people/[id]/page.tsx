@@ -71,7 +71,7 @@ export default async function Person({ params, searchParams }: { params: Promise
         {can.finance(user) && <form action={addContract} className="row" style={{ marginTop: 8 }}>
           <Hidden name="kind" value="freelancer" /><Hidden name="person_id" value={p.id} /><Hidden name="_back" value={back} />
           <Field label="Title"><input name="title" required placeholder="Freelance agreement" /></Field>
-          <Field label="Start"><input type="date" name="start_date" /></Field><Field label="End"><input type="date" name="end_date" /></Field>
+          <div className="pair"><Field label="Start"><input type="date" name="start_date" /></Field><Field label="End"><input type="date" name="end_date" /></Field></div>
           <Field label="Currency"><CurrencySelect /></Field>
           <Field label="Payment terms"><select name="payment_terms"><option value="monthly">Monthly</option><option value="milestone">Per milestone</option></select></Field>
           <Field label="Net days"><input type="number" name="net_days" defaultValue={30} style={{ width: 70 }} /></Field><button className="sec">Add</button></form>}

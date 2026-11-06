@@ -34,7 +34,7 @@ export default async function Courses({ searchParams }: { searchParams: Promise<
       <h3>New course</h3>
       <form action={addCourse} className="row card">
         <Field label="Name"><input name="name" required /></Field>
-        <Field label="Start"><input type="date" name="start_date" /></Field><Field label="End"><input type="date" name="end_date" /></Field>
+        <div className="pair"><Field label="Start"><input type="date" name="start_date" /></Field><Field label="End"><input type="date" name="end_date" /></Field></div>
         <Field label="Description"><input name="description" /></Field><button>Add course</button>
       </form>
     </>

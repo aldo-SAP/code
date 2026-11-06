@@ -54,12 +54,12 @@ export default async function Leave({ searchParams }: { searchParams: Promise<{ 
           <h3>{manager ? "My leave" : "Request leave"}</h3>
           <form action={addLeave} className="row card">
             <Hidden name="person_id" value={user.person_id} />
-            <Field label="Type"><select name="type">{types(manager).map((t) => <option key={t}>{t}</option>)}</select></Field>
-            <Field label="From"><input type="date" name="from_date" required min={today()} /></Field>
-            <Field label="To (same day if empty)"><input type="date" name="to_date" /></Field>
-            <Field label="Note"><input name="notes" style={{ width: 240 }} /></Field>
+            <div className="wide"><Field label="Type"><select name="type">{types(manager).map((t) => <option key={t}>{t}</option>)}</select></Field></div>
+            <div className="pair"><Field label="From"><input type="date" name="from_date" required min={today()} /></Field>
+            <Field label="To"><input type="date" name="to_date" /></Field></div>
+            <div className="wide"><Field label="Note"><input name="notes" /></Field></div>
             <button>{manager ? "Record my leave" : "Send request"}</button>
-            <span className="muted">Vacation needs approval. Sick leave is recorded at once and your managers are told. Weekends{myCountry ? ` and ${countryName(myCountry)} public holidays` : ""} are not counted.</span>
+            <span className="muted">Leave "To" empty for a single day. Vacation needs approval. Sick leave is recorded at once and your managers are told. Weekends{myCountry ? ` and ${countryName(myCountry)} public holidays` : ""} are not counted.</span>
           </form>
           {open.length > 0 && <>
             <h3 style={{ fontSize: 13 }}>Open and upcoming</h3>
@@ -105,8 +105,8 @@ export default async function Leave({ searchParams }: { searchParams: Promise<{ 
           <form action={addLeave} className="row card">
             <Field label="Person"><select name="person_id" required><option value="">-</option>{people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>
             <Field label="Type"><select name="type">{types(true).map((t) => <option key={t}>{t}</option>)}</select></Field>
-            <Field label="From"><input type="date" name="from_date" required /></Field><Field label="To"><input type="date" name="to_date" /></Field>
-            <Field label="Note"><input name="notes" /></Field><button className="sec">Record (approved at once)</button>
+            <div className="pair"><Field label="From"><input type="date" name="from_date" required /></Field><Field label="To"><input type="date" name="to_date" /></Field></div>
+            <div className="wide"><Field label="Note"><input name="notes" /></Field></div><button className="sec">Record (approved at once)</button>
           </form>
         </>
       )}

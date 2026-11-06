@@ -170,3 +170,11 @@ input[type=date]::-webkit-datetime-edit,input[type=month]::-webkit-datetime-edit
   .tsm-inputs input{height:46px;min-height:46px}
   form.row label.f{align-content:end}
 }
+
+/* two related fields (From/To, Start/End) always share one line */
+.pair{display:contents}
+@media (max-width:820px){
+  .pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;grid-column:1/-1;align-items:end}
+  .pair>label.f{min-width:0}
+  form.row>.wide{grid-column:1/-1}form.row>.wide>label.f{width:100%}
+}

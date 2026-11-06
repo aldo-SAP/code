@@ -64,7 +64,7 @@ export default async function AssignmentPage({ params, searchParams }: { params:
         <form action={addSubstitution} className="row" style={{ marginTop: 8 }}>
           <Hidden name="assignment_id" value={a.id} />
           <Field label="Substitute"><select name="person_id" required><option value="">-</option>{candidates.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.worker_type})</option>)}</select></Field>
-          <Field label="From"><input type="date" name="from_date" required /></Field><Field label="To"><input type="date" name="to_date" required /></Field>
+          <div className="pair"><Field label="From"><input type="date" name="from_date" required /></Field><Field label="To"><input type="date" name="to_date" required /></Field></div>
           <Field label="Reason"><input name="reason" placeholder="sick leave" /></Field>
           {fin && <><Field label={`Cost rate ${unit}`}><input name="cost_amount" type="number" step="0.01" style={{ width: 100 }} /></Field><Field label="Currency"><CurrencySelect name="cost_currency" /></Field></>}
           <button className="sec">Add substitution</button>
