@@ -2,6 +2,8 @@ import { all } from "@/lib/db";
 import { requireManager } from "@/lib/session";
 import { addDeal, deleteDeal, moveDeal } from "@/app/actions";
 import { CurrencySelect, Field, Flash, Hidden, money } from "@/components/ui";
+import Drawer from "@/components/Drawer";
+import PageHead from "@/components/PageHead";
 
 const STAGES = ["lead", "qualified", "proposal", "negotiation", "won", "lost"];
 export default async function Deals({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
@@ -11,7 +13,24 @@ export default async function Deals({ searchParams }: { searchParams: Promise<{ 
   const clients = await all<any>("SELECT id,name FROM clients ORDER BY name");
   return (
     <>
-      <h1>Pipeline</h1><Flash sp={sp} />
+      <PageHead title="Pipeline" sub="Leads and deals from first contact to won or lost.">
+        <Drawer button="New deal" title="New deal / lead">
+          <form action={addDeal}>
+            <div className="drawer-fields">
+              <Field label="Title *" full><input name="title" required /></Field>
+              <Field label="Existing client" full><select name="client_id"><option value="">- new company -</option>{clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>
+              <Field label="Company (if new)"><input name="company_name" /></Field>
+              <Field label="Contact"><input name="contact_name" /></Field>
+              <Field label="Value"><input name="value" type="number" step="0.01" /></Field>
+              <Field label="Currency"><CurrencySelect /></Field>
+              <Field label="Stage"><select name="stage">{STAGES.map((s) => <option key={s}>{s}</option>)}</select></Field>
+              <Field label="Expected close"><input name="expected_close" type="date" /></Field>
+            </div>
+            <div className="drawer-actions"><button type="button" className="sec" data-cancel>Cancel</button><button>Save deal</button></div>
+          </form>
+        </Drawer>
+      </PageHead>
+      <Flash sp={sp} />
       <div className="kanban">
         {STAGES.map((st) => {
           const col = deals.filter((d) => d.stage === st);
@@ -33,18 +52,6 @@ export default async function Deals({ searchParams }: { searchParams: Promise<{ 
           );
         })}
       </div>
-      <h2>New deal / lead</h2>
-      <form action={addDeal} className="row card">
-        <Field label="Title"><input name="title" required /></Field>
-        <Field label="Existing client"><select name="client_id"><option value="">- new company -</option>{clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>
-        <Field label="Company (if new)"><input name="company_name" /></Field>
-        <Field label="Contact"><input name="contact_name" /></Field>
-        <Field label="Value" full><input name="value" type="number" step="0.01" style={{ width: 110 }} /></Field>
-        <Field label="Currency"><CurrencySelect /></Field>
-        <Field label="Stage"><select name="stage">{STAGES.map((s) => <option key={s}>{s}</option>)}</select></Field>
-        <Field label="Expected close"><input name="expected_close" type="date" /></Field>
-        <button>Add</button>
-      </form>
     </>
   );
 }

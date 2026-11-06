@@ -6,6 +6,7 @@ import { billedEntries } from "@/lib/history";
 import { unlockBilled } from "@/app/actions";
 import { Badge, Field, Flash, Hidden, num, thisMonth } from "@/components/ui";
 import { fmtDate } from "@/lib/dates";
+import PageHead from "@/components/PageHead";
 
 export default async function Unlock({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string; person?: string; month?: string; invoice?: string }> }) {
   const user = await requireManager();
@@ -21,7 +22,7 @@ export default async function Unlock({ searchParams }: { searchParams: Promise<{
   const back = `/unlock?${sp.invoice ? `invoice=${sp.invoice}` : `person=${sp.person ?? ""}&month=${month}`}`;
   return (
     <>
-      <h1>Unlock billed hours</h1><Flash sp={sp} />
+      <PageHead title="Unlock billed hours" sub="Reopen hours that are already on an invoice or payout. Needs a reason; everything is logged." /><Flash sp={sp} />
       <div className="card"><b>History warning.</b> These hours are part of an invoice or payout. Reopening them changes history: every step is written to the audit log with your name and reason.</div>
       <form className="row card">
         <Field label="Person"><select name="person" defaultValue={sp.person ?? ""}><option value="">-</option>{people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>

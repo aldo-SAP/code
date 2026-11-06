@@ -6,6 +6,7 @@ import { otpauthUri } from "@/lib/totp";
 import { disableMfaAction } from "@/app/actions";
 import { MfaSetupForm, RegenForm } from "@/components/MfaForms";
 import { Badge, Flash } from "@/components/ui";
+import PageHead from "@/components/PageHead";
 
 export default async function Account({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
   const user = await requireUser();
@@ -22,7 +23,7 @@ export default async function Account({ searchParams }: { searchParams: Promise<
   }
   return (
     <>
-      <h1>My account</h1><Flash sp={sp} />
+      <PageHead title="My account" sub="Your sign-in and security." /><Flash sp={sp} />
       <div className="card"><b>{row.name}</b><div className="muted">{row.email} · {user.role} · signs in with {row.auth_method === "microsoft" ? "Microsoft" : row.auth_method === "both" ? "Microsoft or password" : "a password"}</div></div>
       <h2>Authenticator app</h2>
       {!passwordLogin ? (

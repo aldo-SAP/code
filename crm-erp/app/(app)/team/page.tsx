@@ -3,6 +3,7 @@ import { requireManager } from "@/lib/session";
 import { teamMonth, type Cell } from "@/lib/team";
 import { fmtDate, fmtMonth, fmtMonthShort, fmtRange } from "@/lib/dates";
 import { Field, Flash, thisMonth } from "@/components/ui";
+import PageHead from "@/components/PageHead";
 
 const WD = ["S", "M", "T", "W", "T", "F", "S"];
 const shift = (m: string, d: number) => { const [y, mo] = m.split("-").map(Number); return new Date(Date.UTC(y, mo - 1 + d, 1)).toISOString().slice(0, 7); };
@@ -19,8 +20,7 @@ export default async function Team({ searchParams }: { searchParams: Promise<{ m
   const needing = t.gaps.filter((g) => g.status === "approved").length, waiting = t.gaps.length - needing;
   return (
     <>
-      <h1>Team calendar</h1><Flash sp={sp} />
-      <p className="muted">Who is working, away or free each day, and who could cover an absence. Public holidays follow each person's own country.</p>
+      <PageHead title="Team calendar" sub="Who is working, away or free each day, and who could cover an absence. Public holidays follow each person's own country." /><Flash sp={sp} />
 
       <form className="row card">
         <Field label="Month"><input type="month" name="month" defaultValue={period} /></Field>

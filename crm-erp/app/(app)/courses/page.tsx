@@ -4,6 +4,8 @@ import { requireManager } from "@/lib/session";
 import { addCourse, enroll } from "@/app/actions";
 import { Badge, Field, Flash, Hidden } from "@/components/ui";
 import { fmtSpan } from "@/lib/dates";
+import Drawer from "@/components/Drawer";
+import PageHead from "@/components/PageHead";
 
 export default async function Courses({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
   await requireManager();
@@ -14,7 +16,20 @@ export default async function Courses({ searchParams }: { searchParams: Promise<
   const people = await all<any>("SELECT id,name FROM people WHERE stage IN ('applicant','training') ORDER BY name");
   return (
     <>
-      <h1>Training</h1><Flash sp={sp} />
+      <PageHead title="Training" sub="Courses and the students enrolled in them. Students only learn and cannot be assigned to projects.">
+        <Drawer button="New course" title="New course">
+          <form action={addCourse}>
+            <div className="drawer-fields">
+              <Field label="Name *" full><input name="name" required /></Field>
+              <Field label="Start"><input type="date" name="start_date" /></Field>
+              <Field label="End"><input type="date" name="end_date" /></Field>
+              <Field label="Description" full><input name="description" /></Field>
+            </div>
+            <div className="drawer-actions"><button type="button" className="sec" data-cancel>Cancel</button><button>Save course</button></div>
+          </form>
+        </Drawer>
+      </PageHead>
+      <Flash sp={sp} />
       {courses.map((c) => {
         const en = enrollments[c.id] ?? [];
         return (
@@ -30,13 +45,7 @@ export default async function Courses({ searchParams }: { searchParams: Promise<
           </div>
         );
       })}
-      {!courses.length && <p className="muted">No courses yet.</p>}
-      <h2>New course</h2>
-      <form action={addCourse} className="row card">
-        <Field label="Name"><input name="name" required /></Field>
-        <div className="pair"><Field label="Start"><input type="date" name="start_date" /></Field><Field label="End"><input type="date" name="end_date" /></Field></div>
-        <Field label="Description"><input name="description" /></Field><button>Add course</button>
-      </form>
+      {!courses.length && <div className="card muted">No courses yet. Add the first one with New course.</div>}
     </>
   );
 }

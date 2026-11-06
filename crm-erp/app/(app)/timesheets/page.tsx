@@ -8,6 +8,7 @@ import { periodRange } from "@/lib/billing";
 import { personHolidays } from "@/lib/holidays";
 import TimesheetFields, { type Cell } from "@/components/TimesheetFields";
 import { fmtDate, fmtMonth, fmtMonthShort, fmtRange } from "@/lib/dates";
+import PageHead from "@/components/PageHead";
 
 const shift = (m: string, d: number) => { const [y, mo] = m.split("-").map(Number); const t = new Date(Date.UTC(y, mo - 1 + d, 1)); return t.toISOString().slice(0, 7); };
 
@@ -46,7 +47,7 @@ export default async function Timesheets({ searchParams }: { searchParams: Promi
 
   return (
     <>
-      <h1>Timesheet {fmtMonth(month)}</h1><Flash sp={sp} />
+      <PageHead title={`Timesheet ${fmtMonth(month)}`} /><Flash sp={sp} />
       <div className="bar">
         {manager && <form className="row"><input type="hidden" name="month" value={month} />
           <Field label="Person"><select name="person" defaultValue={pid}>{people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></Field><button className="sec">Show</button></form>}

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { can } from "@/lib/auth";
 import { marginReport } from "@/lib/invoicing";
 import { money, thisMonth } from "@/components/ui";
+import PageHead from "@/components/PageHead";
 
 export default async function Dashboard() {
   const user = await requireUser();
@@ -23,7 +24,7 @@ export default async function Dashboard() {
   );
   return (
     <>
-      <h1>Dashboard</h1>
+      <PageHead title="Dashboard" sub="Where things stand today." />
       <div className="grid">
         {stat("Active clients", clients, "/clients")}
         {stat("Active projects", projects, "/projects")}

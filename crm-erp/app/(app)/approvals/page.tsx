@@ -3,6 +3,7 @@ import { all } from "@/lib/db";
 import { requireManager } from "@/lib/session";
 import { reopenEntries, reviewEntries } from "@/app/actions";
 import { Flash, Hidden, num } from "@/components/ui";
+import PageHead from "@/components/PageHead";
 
 async function groups(status: string, extra = "") {
   const rows = await all<any>(`SELECT t.id,t.work_date,t.hours,t.worker_id,t.assignment_id,w.name AS worker,pr.name AS project,o.name AS owner,a.person_id AS owner_id,a.hours_per_day
@@ -31,7 +32,7 @@ export default async function Approvals({ searchParams }: { searchParams: Promis
   );
   return (
     <>
-      <h1>Approvals</h1><Flash sp={sp} />
+      <PageHead title="Approvals" sub="Hours waiting for your decision, and approved hours not yet invoiced." /><Flash sp={sp} />
       <h2>Waiting for approval</h2>
       <div className="tw"><table><thead><tr><th>Person</th><th>Project</th><th>Month</th><th className="num">Total</th><th>Days: hours</th><th></th></tr></thead><tbody>
         {submitted.map((g) => row(g, <form action={reviewEntries} className="row"><Hidden name="ids" value={g.ids.join(",")} />

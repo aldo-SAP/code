@@ -1,6 +1,7 @@
 import { requireManager } from "@/lib/session";
 import { importCsv } from "@/app/actions";
 import { Flash, Hidden } from "@/components/ui";
+import PageHead from "@/components/PageHead";
 
 export default async function Import({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
   await requireManager();
@@ -16,7 +17,7 @@ export default async function Import({ searchParams }: { searchParams: Promise<{
   );
   return (
     <>
-      <h1>CSV import</h1><Flash sp={sp} />
+      <PageHead title="CSV import" sub="Bring people, clients and projects in from a spreadsheet." /><Flash sp={sp} />
       <p className="muted">Export from Excel as CSV. Only <b>name</b> is required; unknown columns are ignored. Duplicate client names are skipped.</p>
       {block("clients", "Clients", "name,country,address,email,currency,notes")}
       {block("people", "People", "name,email,phone,country,type(internal|external),stage(applicant|training|ready|placed|alumni),skills,notes")}

@@ -5,6 +5,7 @@ import { COUNTRY_CODES, countryName, holidaysIn } from "@/lib/holidays";
 import { addHolidayAction, addHolidaysBulkAction, copyHolidayYearAction, deleteHolidayAction } from "@/app/actions";
 import { Field, Flash, Hidden } from "@/components/ui";
 import { fmtDate } from "@/lib/dates";
+import PageHead from "@/components/PageHead";
 
 const WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -22,7 +23,7 @@ export default async function Holidays({ searchParams }: { searchParams: Promise
   const back = `/holidays?country=${country}&year=${year}`;
   return (
     <>
-      <h1>Public holidays</h1><Flash sp={sp} />
+      <PageHead title="Public holidays" sub="One calendar per country. Each person follows the calendar set on their page." /><Flash sp={sp} />
       <p className="muted">One calendar per country. Each person follows the calendar set in <b>Public holidays follow</b> on their person page (this can differ from where they live). Those days are not counted as vacation, are marked on timesheets and timelines, and counting updates automatically when you change a calendar.</p>
 
       <form className="row card">

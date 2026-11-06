@@ -7,6 +7,7 @@ import { mfaPolicy } from "@/lib/mfa";
 import { msConfig, redirectUri } from "@/lib/msauth";
 import { Badge, CURRENCIES, Field, Flash, Hidden, today } from "@/components/ui";
 import { fmtDate, fmtDateTime } from "@/lib/dates";
+import PageHead from "@/components/PageHead";
 
 export default async function Settings({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
   await requireAdmin();
@@ -19,7 +20,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
   const fx = await all<any>("SELECT * FROM fx_rates ORDER BY currency, as_of DESC");
   return (
     <>
-      <h1>Settings</h1><Flash sp={sp} />
+      <PageHead title="Settings" sub="Company details, email, sign-in and users." /><Flash sp={sp} />
       <h2>Company (shown on invoices)</h2>
       <form action={saveSettings} className="row card">
         <Field label="Company name"><input name="company_name" defaultValue={await setting("company_name")} /></Field>

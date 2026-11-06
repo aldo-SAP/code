@@ -3,6 +3,7 @@ import { requireManager } from "@/lib/session";
 import { forecast } from "@/lib/forecast";
 import { fmtDate, fmtMonthShort } from "@/lib/dates";
 import { thisMonth } from "@/components/ui";
+import PageHead from "@/components/PageHead";
 
 export default async function Forecast() {
   await requireManager();
@@ -10,7 +11,7 @@ export default async function Forecast() {
   const sorted = [...f.people].sort((a, b) => b.months.reduce((x, m) => x + m.free, 0) - a.months.reduce((x, m) => x + m.free, 0) || a.name.localeCompare(b.name));
   return (
     <>
-      <h1>Availability forecast</h1>
+      <PageHead title="Availability forecast" />
       <p className="muted"><Link href="/team">&larr; Team calendar</Link> · Free working days per person for the next 6 months, after projects, approved leave and their own public holidays. Most available first.</p>
       <div className="tablewrap"><table><thead><tr><th>Person</th>{f.months.map((m) => <th key={m} className="num">{fmtMonthShort(m)}</th>)}<th>Free from</th><th>Assignments ending</th></tr></thead><tbody>
         {sorted.map((p) => <tr key={p.id}><td><span><b>{p.name}</b><br /><span className="muted">{p.type}{p.skills ? ` · ${p.skills}` : ""}</span></span></td>

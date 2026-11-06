@@ -9,6 +9,7 @@ import { leaveBalance } from "@/lib/leave";
 import { countryName, holidayCountryOf, personHolidays } from "@/lib/holidays";
 import { Badge, Field, Flash, Hidden, num, thisMonth, today } from "@/components/ui";
 import { fmtMonth, fmtMonthShort, fmtRange } from "@/lib/dates";
+import PageHead from "@/components/PageHead";
 
 export default async function Leave({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string; month?: string; year?: string }> }) {
   const user = await requireUser();
@@ -31,7 +32,7 @@ export default async function Leave({ searchParams }: { searchParams: Promise<{ 
   const types = (m: boolean) => (m ? ["vacation", "sick", "holiday", "other"] : ["vacation", "sick", "other"]);
   return (
     <>
-      <h1>Leave</h1><Flash sp={sp} />
+      <PageHead title="Leave" sub="Requests, allowances and who is away." /><Flash sp={sp} />
 
       {manager && (
         <>

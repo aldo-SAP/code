@@ -5,19 +5,19 @@ import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel
 import { tone } from "@/lib/tone";
 
 /** A cell is plain text, a number, or text with a link, a status badge and a small second line. */
-export type Cell = string | number | null | { t: string; href?: string; badge?: boolean; sub?: string };
+export type Cell = string | number | null | { t: string; s?: string | number; href?: string; badge?: boolean; bad?: boolean; sub?: string; detail?: string };
 export type Row = { id: string | number } & Record<string, Cell>;
 export interface Col { key: string; label: string; filter?: "text" | "select" | "none"; num?: boolean; phoneHidden?: boolean }
 
 const text = (c: Cell) => (c == null ? "" : typeof c === "object" ? c.t : String(c));
-const sortKey = (c: Cell) => (typeof c === "number" ? c : c != null && typeof c === "object" ? c.t.toLowerCase() : String(c ?? "").toLowerCase());
+const sortKey = (c: Cell) => (typeof c === "number" ? c : c != null && typeof c === "object" ? (c.s ?? c.t.toLowerCase()) : String(c ?? "").toLowerCase());
 
 /**
  * Sortable, filterable table (TanStack Table). Click a heading to sort by it; hold Shift (or Ctrl/Cmd) and click more headings to sort by several columns.
  * Each column can have its own filter, there is a search box over all columns, optional tabs with counts, and paging.
  */
-export default function DataTable({ cols, rows, tabs, tabLabel = "All", empty = "Nothing here yet.", pageSize = 10, initialSort }: {
-  cols: Col[]; rows: Row[]; tabs?: { key: string; values: string[] }; tabLabel?: string; empty?: string; pageSize?: number; initialSort?: { id: string; desc: boolean }[];
+export default function DataTable({ cols, rows, tabs, tabLabel = "All", empty = "Nothing here yet.", pageSize = 10, initialSort, foot }: {
+  cols: Col[]; rows: Row[]; foot?: Cell[]; tabs?: { key: string; values: string[] }; tabLabel?: string; empty?: string; pageSize?: number; initialSort?: { id: string; desc: boolean }[];
 }) {
   const [sorting, setSorting] = useState<SortingState>(initialSort ?? [{ id: cols[0].key, desc: false }]);
   const [filters, setFilters] = useState<Record<string, string>>({});
@@ -45,8 +45,8 @@ export default function DataTable({ cols, rows, tabs, tabLabel = "All", empty = 
   const render = (c: Cell) => {
     if (c == null || c === "") return "-";
     if (typeof c !== "object") return c;
-    const inner = c.badge ? <span className={`badge ${tone[c.t] ?? ""}`}>{c.t}</span> : c.t;
-    return <>{c.href ? <Link href={c.href}>{inner}</Link> : inner}{c.sub && <><br /><span className="muted">{c.sub}</span></>}</>;
+    const inner = c.badge || c.bad ? <span className={`badge ${c.bad ? "err" : tone[c.t] ?? ""}`}>{c.t}</span> : c.t;
+    return <>{c.href ? <Link href={c.href}>{inner}</Link> : inner}{c.sub && <><br /><span className="muted">{c.sub}</span></>}{c.detail && <details><summary className="muted" style={{ cursor: "pointer" }}>details</summary><pre style={{ whiteSpace: "pre-wrap", fontSize: 12, margin: 4 }}>{c.detail}</pre></details>}</>;
   };
   return (
     <div className="card dt">
@@ -83,6 +83,7 @@ export default function DataTable({ cols, rows, tabs, tabLabel = "All", empty = 
           {table.getRowModel().rows.map((r) => <tr key={r.original.id}>{cols.map((c) => <td key={c.key} data-label={c.label} className={`${c.num ? "num" : ""}${c.phoneHidden ? " hide-s" : ""}`}>{render(r.original[c.key])}</td>)}</tr>)}
           {!table.getRowModel().rows.length && <tr><td colSpan={cols.length} data-label="" className="muted">{rows.length ? "Nothing matches. Clear the filters or pick another tab." : empty}</td></tr>}
         </tbody>
+        {foot && <tfoot><tr>{cols.map((c, i) => <td key={c.key} data-label={i === 0 ? "" : c.label} className={c.num ? "num" : ""}><b>{render(foot[i] ?? "")}</b></td>)}</tr></tfoot>}
       </table></div>
       <div className="dt-foot">
         <span>{shown} of {rows.length}{filtered && <> <button type="button" className="linkbtn" onClick={() => { setFilters({}); setQ(""); }}>Clear filters</button></>}{sorting.length > 1 && <> <button type="button" className="linkbtn" onClick={() => setSorting([{ id: cols[0].key, desc: false }])}>Reset sort</button></>}</span>

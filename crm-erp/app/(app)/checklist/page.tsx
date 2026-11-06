@@ -4,6 +4,7 @@ import { checklist, monthStatus } from "@/lib/reminders";
 import { remindAction } from "@/app/actions";
 import { Field, Flash, Hidden, thisMonth } from "@/components/ui";
 import { fmtDateTime, fmtMonth } from "@/lib/dates";
+import PageHead from "@/components/PageHead";
 
 const LABEL = { nothing: "Nothing yet", draft: "Not submitted", waiting: "Waiting for approval", done: "Approved" } as const;
 
@@ -21,8 +22,7 @@ export default async function MonthEnd({ searchParams }: { searchParams: Promise
   ];
   return (
     <>
-      <h1>Month end</h1><Flash sp={sp} />
-      <p className="muted">A checklist for closing {fmtMonth(period)}, and a way to nudge people who still owe hours.</p>
+      <PageHead title="Month end" sub={`A checklist for closing ${fmtMonth(period)}, and a way to nudge people who still owe hours.`} /><Flash sp={sp} />
       <form className="row card"><Field label="Month"><input type="month" name="month" defaultValue={period} /></Field><button className="sec">Show</button></form>
       <h2>Checklist</h2>
       <ul className="steps">{steps.map((st, k) => <li key={k} className="card row"><span aria-hidden>{st.done ? "✓" : "○"}</span><span className="wide">{st.text}</span>{!st.done && <Link className="btn sec" href={st.href}>{st.cta}</Link>}</li>)}</ul>
