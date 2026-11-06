@@ -14,6 +14,7 @@ const monday = (weeksAhead: number) => {
 };
 const addDays = (s: string, n: number) => { const d = new Date(s + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
 const year = Number(monday(3).slice(0, 4));
+const D = leave.DEFAULT_LEAVE_DAYS;
 
 const wp = await run("INSERT INTO people (name,email,worker_type,stage) VALUES ('Wanda','wanda@x.com','external','placed')");
 const mp = await run("INSERT INTO people (name,email,worker_type,stage) VALUES ('Mia','mia@co.com','internal','placed')");
@@ -56,12 +57,12 @@ test("approving replies in the same thread with the same subject", async () => {
 test("a manager can later withdraw approved leave: days go back, same thread, reason required", async () => {
   const before = await leave.leaveBalance(wp, year);
   assert.equal(before.planned, 5);
-  assert.equal(before.remaining, 15);
+  assert.equal(before.remaining, D - 5);
   assert.match((await leave.revokeLeave(worker, requestId, "x") as any).error, /Only a manager/);
   assert.match((await leave.revokeLeave(admin, requestId, "") as any).error, /reason/);
   assert.equal((await leave.revokeLeave(admin, requestId, "Client deadline moved up, we need you that week") as any).ok, true);
   const after = await leave.leaveBalance(wp, year);
-  assert.deepEqual({ planned: after.planned, remaining: after.remaining }, { planned: 0, remaining: 20 });
+  assert.deepEqual({ planned: after.planned, remaining: after.remaining }, { planned: 0, remaining: D });
   const msgs = await mails(`leave:${requestId}`);
   assert.equal(msgs.length, 3);
   assert.equal(msgs[2].subject, msgs[0].subject);
@@ -83,6 +84,8 @@ test("leave that already started cannot be withdrawn, and managers cannot withdr
   await run("DELETE FROM leave WHERE id IN (?,?)", past, own);
 });
 
+test("the default allowance is 22 days", () => assert.equal(D, 22));
+
 test("balance: taken, planned and pending split by today; allowance defaults, per-person override and warning beyond it", async () => {
   await run("DELETE FROM leave WHERE person_id=?", wp);
   const today = new Date().toISOString().slice(0, 10);
@@ -90,7 +93,7 @@ test("balance: taken, planned and pending split by today; allowance defaults, pe
   await run("INSERT INTO leave (person_id,type,from_date,to_date,status,days) VALUES (?,'vacation',?,?,'approved',5)", wp, `${y}-01-05`, `${y}-01-09`); // past in any test year >= Jan 10
   await run("INSERT INTO leave (person_id,type,from_date,to_date,status,days) VALUES (?,'sick',?,?,'approved',2)", wp, `${y}-01-12`, `${y}-01-13`); // does not consume vacation
   const b = await leave.leaveBalance(wp, y, `${y}-06-15`);
-  assert.deepEqual({ allowance: b.allowance, taken: b.taken, planned: b.planned, pending: b.pending, remaining: b.remaining }, { allowance: 20, taken: 5, planned: 0, pending: 0, remaining: 15 });
+  assert.deepEqual({ allowance: b.allowance, taken: b.taken, planned: b.planned, pending: b.pending, remaining: b.remaining }, { allowance: D, taken: 5, planned: 0, pending: 0, remaining: D - 5 });
   assert.equal((await leave.setAllowance(manager, wp, y, 25, "includes 3 carried over days") as any).ok, true);
   assert.equal((await leave.leaveBalance(wp, y, `${y}-06-15`)).remaining, 20);
   assert.match((await leave.setAllowance(worker, wp, y, 99) as any).error, /Only a manager/);

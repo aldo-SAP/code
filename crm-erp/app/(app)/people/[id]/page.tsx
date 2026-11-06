@@ -5,6 +5,7 @@ import { requireManager } from "@/lib/session";
 import { can } from "@/lib/auth";
 import { addContract, enroll, updatePerson, updateEnrollment } from "@/app/actions";
 import LeaveTimeline from "@/components/LeaveTimeline";
+import { COUNTRY_CODES, countryName } from "@/lib/holidays";
 import { allowanceFor } from "@/lib/leave";
 import { setAllowanceAction } from "@/app/actions";
 import { Badge, CurrencySelect, Field, Flash, Hidden } from "@/components/ui";
@@ -33,7 +34,8 @@ export default async function Person({ params, searchParams }: { params: Promise
         <Field label="Name"><input name="name" defaultValue={p.name} required /></Field>
         <Field label="Email"><input name="email" defaultValue={p.email ?? ""} /></Field>
         <Field label="Phone"><input name="phone" defaultValue={p.phone ?? ""} /></Field>
-        <Field label="Country"><input name="country" defaultValue={p.country ?? ""} /></Field>
+        <Field label="Lives in (country)"><input name="country" defaultValue={p.country ?? ""} /></Field>
+        <Field label="Public holidays follow"><select name="holiday_country" defaultValue={p.holiday_country ?? ""}><option value="">None: no public holidays</option>{COUNTRY_CODES.map((c) => <option key={c} value={c}>{countryName(c)}</option>)}</select></Field>
         <Field label="Type"><select name="worker_type" defaultValue={p.worker_type}><option value="external">external (contractor)</option><option value="internal">internal (payroll)</option></select></Field>
         <Field label="Stage"><select name="stage" defaultValue={p.stage}>{STAGES.map((s) => <option key={s}>{s}</option>)}</select></Field>
         <Field label="Skills"><input name="skills" defaultValue={p.skills ?? ""} /></Field>

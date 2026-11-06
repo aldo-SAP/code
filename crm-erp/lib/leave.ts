@@ -1,7 +1,7 @@
 import { all, get, run, setting } from "./db.ts";
 import { audit } from "./audit.ts";
 import { sendMail } from "./mail.ts";
-import { weekdaysBetween } from "./billing.ts";
+import { personHolidays, workingDaysWith } from "./holidays.ts";
 import type { User } from "./auth.ts";
 
 export type LeaveType = "vacation" | "sick" | "holiday" | "other";
@@ -32,9 +32,12 @@ export async function personEmail(personId: number): Promise<string | null> {
 
 // ------------------------------------------------------------------ allowance and balance
 
+/** Company default when nothing is set in Settings. */
+export const DEFAULT_LEAVE_DAYS = 22;
+
 export async function defaultAllowance(): Promise<number> {
   const v = Number(await setting("default_leave_days"));
-  return Number.isFinite(v) && v > 0 ? v : 20;
+  return Number.isFinite(v) && v > 0 ? v : DEFAULT_LEAVE_DAYS;
 }
 export async function allowanceFor(personId: number, year: number): Promise<number> {
   const r = await get<{ days: number }>("SELECT days FROM leave_allowance WHERE person_id=? AND year=?", personId, year);
@@ -49,11 +52,12 @@ export async function leaveBalance(personId: number, year: number, today = today
   const rows = await all<{ from_date: string; to_date: string; status: string }>(
     "SELECT from_date,to_date,status FROM leave WHERE person_id=? AND type='vacation' AND status IN ('approved','requested') AND to_date>=? AND from_date<=?", personId, ys, ye);
   let taken = 0, planned = 0, pending = 0;
+  const hol = await personHolidays(personId, ys, ye); // the person's own public holidays never use up vacation
   for (const r of rows) {
     const from = r.from_date > ys ? r.from_date : ys, to = r.to_date < ye ? r.to_date : ye;
-    const total = weekdaysBetween(from, to);
+    const total = workingDaysWith(from, to, hol);
     if (r.status === "requested") { pending += total; continue; }
-    const used = to < today ? total : from > today ? 0 : weekdaysBetween(from, today);
+    const used = to < today ? total : from > today ? 0 : workingDaysWith(from, today, hol);
     taken += used; planned += total - used;
   }
   const allowance = await allowanceFor(personId, year);
@@ -90,8 +94,9 @@ export async function createLeave(actor: User, i: LeaveInput): Promise<Result<{ 
   if (i.type === "holiday" && !manager) return { ok: false, error: "Public holidays are recorded by a manager." };
   const person = await get<{ name: string }>("SELECT name FROM people WHERE id=?", i.personId);
   if (!person) return { ok: false, error: "Unknown person." };
-  const days = weekdaysBetween(i.from, i.to);
-  if (days === 0) return { ok: false, error: "That range has no working days (weekends only)." };
+  const hol = await personHolidays(i.personId, i.from, i.to);
+  const days = workingDaysWith(i.from, i.to, hol);
+  if (days === 0) return { ok: false, error: hol.size ? "That range has no working days (weekends and public holidays only)." : "That range has no working days (weekends only)." };
   if (!manager && (i.type === "vacation" || i.type === "other") && i.from < todayStr()) return { ok: false, error: "Vacation cannot start in the past. Ask a manager to record it." };
   const clash = await get<{ from_date: string; to_date: string; status: string }>(
     "SELECT from_date,to_date,status FROM leave WHERE person_id=? AND status IN ('requested','approved') AND from_date<=? AND to_date>=?", i.personId, i.to, i.from);
@@ -102,7 +107,7 @@ export async function createLeave(actor: User, i: LeaveInput): Promise<Result<{ 
   if (i.type === "vacation") {
     const year = Number(i.from.slice(0, 4));
     const b = await leaveBalance(i.personId, year);
-    const inYear = weekdaysBetween(i.from > `${year}-01-01` ? i.from : `${year}-01-01`, i.to < `${year}-12-31` ? i.to : `${year}-12-31`);
+    const inYear = workingDaysWith(i.from > `${year}-01-01` ? i.from : `${year}-01-01`, i.to < `${year}-12-31` ? i.to : `${year}-12-31`, hol);
     if (inYear > b.remainingIfPending) warning = `This is more than the ${year} allowance leaves (${plural(Math.max(0, b.remainingIfPending), "day")} left before this request).`;
   }
 

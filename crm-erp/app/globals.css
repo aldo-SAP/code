@@ -93,3 +93,6 @@ body{padding-left:env(safe-area-inset-left,0);padding-right:env(safe-area-inset-
   form.row label.f input:not([type=checkbox]),form.row label.f select{width:100%!important}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+.ts .ph{background:repeating-linear-gradient(135deg,var(--bg) 0 4px,var(--line) 4px 5px)}
+.cal td.h{color:var(--muted);background:repeating-linear-gradient(135deg,var(--bg) 0 4px,var(--line) 4px 5px)}
+.tl u{position:absolute;bottom:0;height:7px;width:2px;background:var(--muted);text-decoration:none}

@@ -125,6 +125,11 @@ ALTER TABLE leave ADD COLUMN IF NOT EXISTS decided_by INTEGER;
 ALTER TABLE leave ADD COLUMN IF NOT EXISTS decided_by_name TEXT;
 ALTER TABLE leave ADD COLUMN IF NOT EXISTS decided_at TEXT;
 ALTER TABLE leave ADD COLUMN IF NOT EXISTS decision_note TEXT;
+-- Public holidays per country (entered by an admin). A person follows the calendar of people.holiday_country, which can differ from where they live.
+ALTER TABLE people ADD COLUMN IF NOT EXISTS holiday_country TEXT;
+CREATE TABLE IF NOT EXISTS holidays (
+  country TEXT NOT NULL, day TEXT NOT NULL, name TEXT NOT NULL, PRIMARY KEY (country, day)
+);
 -- Yearly vacation allowance per person (falls back to the company default in settings: default_leave_days, 20 if unset).
 CREATE TABLE IF NOT EXISTS leave_allowance (
   person_id INTEGER NOT NULL REFERENCES people(id) ON DELETE CASCADE, year INTEGER NOT NULL, days DOUBLE PRECISION NOT NULL, note TEXT,

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { leaveTimeline } from "@/lib/leave";
+import { countryName, holidayCountryOf, personHolidays } from "@/lib/holidays";
 import { Badge, num } from "@/components/ui";
 
 const doy = (d: string) => Math.floor((Date.parse(d + "T00:00:00Z") - Date.parse(d.slice(0, 4) + "-01-01T00:00:00Z")) / 86400000);
@@ -8,6 +9,8 @@ const MONTHS = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
 /** Year view for one person: remaining days, a timeline of when leave was taken or is planned, and the history list. */
 export default async function LeaveTimeline({ personId, year, basePath }: { personId: number; year: number; basePath: string }) {
   const { rows, balance: b } = await leaveTimeline(personId, year);
+  const hol = await personHolidays(personId, `${year}-01-01`, `${year}-12-31`);
+  const country = await holidayCountryOf(personId);
   const leap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
   const total = leap ? 366 : 365;
   const today = new Date().toISOString().slice(0, 10);
@@ -35,6 +38,7 @@ export default async function LeaveTimeline({ personId, year, basePath }: { pers
       {b.pending > 0 && <p className="muted" style={{ marginTop: 0 }}>If everything waiting is approved, {num(b.remainingIfPending)} day{b.remainingIfPending === 1 ? "" : "s"} will be left.</p>}
       <div className="tl" role="img" aria-label={`Leave timeline ${year}: ${shown.length} period${shown.length === 1 ? "" : "s"}`}>
         {monthStarts.map((d) => <i key={d} style={{ left: `${(d / total) * 100}%` }} />)}
+        {[...hol].map(([d, n]) => <u key={d} style={{ left: `${(doy(d) / total) * 100}%` }} title={`${d} ${n}`} />)}
         {shown.map((r) => <em key={r.id} className={r.status === "requested" ? "requested" : r.type} style={pos(r.from_date, r.to_date)} title={`${r.type} ${r.from_date} to ${r.to_date} (${r.status})`} />)}
         {today.startsWith(String(year)) && <span className="now" style={{ left: `${(doy(today) / total) * 100}%` }} title="today" />}
       </div>
@@ -43,6 +47,7 @@ export default async function LeaveTimeline({ personId, year, basePath }: { pers
         <span style={{ ["--c" as string]: "var(--ok)" }}>Vacation</span><span style={{ ["--c" as string]: "var(--warn)" }}>Waiting for approval</span>
         <span style={{ ["--c" as string]: "var(--err)" }}>Sick</span><span style={{ ["--c" as string]: "var(--muted)" }}>Public holiday</span><span style={{ ["--c" as string]: "var(--brand)" }}>Other</span>
       </div>
+      <p className="muted" style={{ marginTop: 0 }}>{country ? `Public holidays follow ${countryName(country)} (${hol.size} in ${year}, shown as small marks). They are not counted as vacation days.` : "No public-holiday calendar is set for this person, so every weekday counts. An admin can set it on the person page."}</p>
       <div className="tw"><table><thead><tr><th>When</th><th>Type</th><th className="num">Days</th><th>Status</th><th>Decision</th></tr></thead><tbody>
         {rows.map((r) => (
           <tr key={r.id} style={r.status === "rejected" || r.status === "revoked" || r.status === "cancelled" ? { opacity: 0.7 } : undefined}>

@@ -6,6 +6,7 @@ import { periodRange } from "@/lib/billing";
 import { addLeave, cancelLeaveAction, decideLeaveAction } from "@/app/actions";
 import LeaveTimeline from "@/components/LeaveTimeline";
 import { leaveBalance } from "@/lib/leave";
+import { countryName, holidayCountryOf, personHolidays } from "@/lib/holidays";
 import { Badge, Field, Flash, Hidden, num, thisMonth, today } from "@/components/ui";
 
 export default async function Leave({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string; month?: string; year?: string }> }) {
@@ -21,6 +22,9 @@ export default async function Leave({ searchParams }: { searchParams: Promise<{ 
   const days = Array.from({ length: Number(end.slice(8)) }, (_, k) => `${month}-${String(k + 1).padStart(2, "0")}`);
   const cal = manager ? await all<any>("SELECT l.*, p.name FROM leave l JOIN people p ON p.id=l.person_id WHERE l.status IN ('requested','approved') AND l.to_date>=? AND l.from_date<=? ORDER BY p.name, l.from_date", start, end) : [];
   const names = [...new Set(cal.map((c) => c.name))];
+  const holOf = new Map<number, Map<string, string>>();
+  for (const pid of new Set(cal.map((c) => c.person_id as number))) holOf.set(pid, await personHolidays(pid, start, end));
+  const myCountry = user.person_id ? await holidayCountryOf(user.person_id) : null;
   const balances = manager ? await Promise.all(people.map(async (p) => ({ p, b: await leaveBalance(p.id, year) }))) : [];
   const shift = (m: string, d: number) => { const [y, mo] = m.split("-").map(Number); return new Date(Date.UTC(y, mo - 1 + d, 1)).toISOString().slice(0, 7); };
   const types = (m: boolean) => (m ? ["vacation", "sick", "holiday", "other"] : ["vacation", "sick", "other"]);
@@ -54,7 +58,7 @@ export default async function Leave({ searchParams }: { searchParams: Promise<{ 
             <Field label="To (same day if empty)"><input type="date" name="to_date" /></Field>
             <Field label="Note"><input name="notes" style={{ width: 240 }} /></Field>
             <button>{manager ? "Record my leave" : "Send request"}</button>
-            <span className="muted">Vacation needs approval. Sick leave is recorded at once and your managers are told. Weekends are not counted.</span>
+            <span className="muted">Vacation needs approval. Sick leave is recorded at once and your managers are told. Weekends{myCountry ? ` and ${countryName(myCountry)} public holidays` : ""} are not counted.</span>
           </form>
           {open.length > 0 && <>
             <h3 style={{ fontSize: 13 }}>Open and upcoming</h3>
@@ -85,7 +89,8 @@ export default async function Leave({ searchParams }: { searchParams: Promise<{ 
                 <tr key={n}><td>{n}</td>{days.map((d) => {
                   const hit = cal.find((c) => c.name === n && c.from_date <= d && d <= c.to_date);
                   const wk = [0, 6].includes(new Date(d + "T00:00:00Z").getUTCDay());
-                  return <td key={d} className={wk ? "we" : hit ? (hit.status === "approved" ? "a" : "r") : ""}>{hit && !wk ? "•" : ""}</td>;
+                  const ph = cal.find((c) => c.name === n) && holOf.get(cal.find((c) => c.name === n)!.person_id)?.get(d);
+                  return <td key={d} className={wk ? "we" : hit ? (hit.status === "approved" ? "a" : "r") : ph ? "h" : ""} title={ph}>{hit && !wk ? "•" : ""}</td>;
                 })}</tr>))}
             </tbody></table></div>
           ) : <p className="muted">Nobody is off this month.</p>}

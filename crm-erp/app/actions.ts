@@ -11,6 +11,7 @@ import { audit, noteLogin } from "@/lib/audit";
 import { safeNext } from "@/lib/nexturl";
 import { createLeave, decideLeave, cancelLeave, revokeLeave, setAllowance, type LeaveType } from "@/lib/leave";
 import { sendMail, retryMail } from "@/lib/mail";
+import { addHoliday, addHolidaysBulk, copyHolidayYear, deleteHoliday, setHolidayCountry } from "@/lib/holidays";
 import { billedThrough, reopenBilled } from "@/lib/history";
 import { currentUser } from "@/lib/session";
 
@@ -160,8 +161,30 @@ export async function updatePerson(fd: FormData) {
   const before = await get("SELECT name,email,phone,country,worker_type,stage,skills,notes FROM people WHERE id=?", id);
   await run("UPDATE people SET name=?,email=?,phone=?,country=?,worker_type=?,stage=?,skills=?,notes=? WHERE id=?",
     s(fd, "name"), nz(s(fd, "email")), nz(s(fd, "phone")), nz(s(fd, "country")), s(fd, "worker_type") === "internal" ? "internal" : "external", s(fd, "stage"), nz(s(fd, "skills")), nz(s(fd, "notes")), id);
+  if (fd.has("holiday_country")) await setHolidayCountry(u, id, s(fd, "holiday_country") || null);
   await audit(u, "update", "person", id, `Updated person ${s(fd, "name")}`, { details: { before, after: await get("SELECT name,email,phone,country,worker_type,stage,skills,notes FROM people WHERE id=?", id) } });
   back(`/people/${id}`, "Saved");
+}
+export async function addHolidayAction(fd: FormData) {
+  const u = await requireAdmin();
+  const r = await addHoliday(u, s(fd, "country"), s(fd, "day"), s(fd, "name"));
+  back(referer(fd, "/holidays"), r.ok ? "Public holiday saved." : r.error, r.ok ? "ok" : "err");
+}
+export async function addHolidaysBulkAction(fd: FormData) {
+  const u = await requireAdmin();
+  const r = await addHolidaysBulk(u, s(fd, "country"), String(fd.get("lines") ?? ""));
+  back(referer(fd, "/holidays"), r.ok ? `Saved ${r.added} public holiday(s).` : r.error, r.ok ? "ok" : "err");
+}
+export async function deleteHolidayAction(fd: FormData) {
+  const u = await requireAdmin();
+  await deleteHoliday(u, s(fd, "country"), s(fd, "day"));
+  back(referer(fd, "/holidays"), "Removed.");
+}
+export async function copyHolidayYearAction(fd: FormData) {
+  const u = await requireAdmin();
+  const year = i(fd, "year") ?? new Date().getFullYear();
+  const r = await copyHolidayYear(u, s(fd, "country"), year - 1, year);
+  back(referer(fd, "/holidays"), r.ok ? `Copied ${r.copied} date(s) from ${year - 1}. Moving holidays (Easter, religious) must be corrected by hand.` : r.error, r.ok ? "ok" : "err");
 }
 export async function addCourse(fd: FormData) {
   const u = await requireManager();
