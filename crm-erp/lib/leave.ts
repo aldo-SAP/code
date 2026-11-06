@@ -67,7 +67,9 @@ export async function leaveBalance(personId: number, year: number, today = today
 
 /** All leave of a person touching `year` (any status), oldest first, plus the balance. Used for the timeline. */
 export async function leaveTimeline(personId: number, year: number) {
-  const rows = await all<any>("SELECT * FROM leave WHERE person_id=? AND to_date>=? AND from_date<=? ORDER BY from_date, id", personId, `${year}-01-01`, `${year}-12-31`);
+  const rows = await all<any>(
+    `SELECT l.*, ru.name AS requested_by_name, ru.role AS requested_by_role, ru.person_id AS requested_by_person
+     FROM leave l LEFT JOIN users ru ON ru.id=l.requested_by WHERE l.person_id=? AND l.to_date>=? AND l.from_date<=? ORDER BY l.from_date, l.id`, personId, `${year}-01-01`, `${year}-12-31`);
   return { rows, balance: await leaveBalance(personId, year) };
 }
 
@@ -85,7 +87,8 @@ async function threadMail(l: LeaveRow, text: string, opts: { exclude?: string } 
 
 // ------------------------------------------------------------------ workflow
 
-export interface LeaveInput { personId: number; type: LeaveType; from: string; to: string; notes?: string }
+/** `notify`: when a manager records leave for someone, email the employee only if asked. By default it is just added to their history. */
+export interface LeaveInput { personId: number; type: LeaveType; from: string; to: string; notes?: string; notify?: boolean }
 
 export async function createLeave(actor: User, i: LeaveInput): Promise<Result<{ id: number; status: "requested" | "approved"; warning?: string }>> {
   const manager = isManager(actor);
@@ -126,7 +129,7 @@ export async function createLeave(actor: User, i: LeaveInput): Promise<Result<{ 
   if (pending) {
     await threadMail(l, `${person.name} asks for ${i.type} leave.\n\nDates: ${range}\n${i.notes ? `Note: ${i.notes}\n` : ""}${warning ? `\nHeads up: ${warning}\n` : ""}\nOpen the request to approve or reject: ${link}\n\nThe decision will be sent as a reply in this thread.`, { exclude: actor.email });
   } else if (manager && i.personId !== actor.person_id) {
-    const workerAddr = await personEmail(i.personId);
+    const workerAddr = i.notify ? await personEmail(i.personId) : null;
     if (workerAddr) await sendMail({ to: [workerAddr], cc: [actor.email], subject: threadSubject(l), thread: threadKey(id), related: threadKey(id),
       text: `Hi ${person.name},\n\n${actor.name} recorded ${i.type} leave for you: ${range}.\n\nSee it here: ${appUrl()}/leave` });
   } else if (!manager) {

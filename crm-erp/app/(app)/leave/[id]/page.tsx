@@ -12,7 +12,7 @@ import { fmtDateTime, fmtRange } from "@/lib/dates";
 export default async function LeaveDetail({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string; err?: string }> }) {
   const user = await requireUser();
   const { id } = await params; const sp = await searchParams;
-  const l = await get<any>("SELECT l.*, p.name FROM leave l JOIN people p ON p.id=l.person_id WHERE l.id=?", Number(id));
+  const l = await get<any>("SELECT l.*, p.name, ru.name AS requested_by_name, ru.person_id AS requested_by_person FROM leave l JOIN people p ON p.id=l.person_id LEFT JOIN users ru ON ru.id=l.requested_by WHERE l.id=?", Number(id));
   const manager = can.manage(user);
   if (!l || (!manager && l.person_id !== user.person_id)) notFound();
   const ctx = manager ? await leaveContext(l) : null;
@@ -26,6 +26,7 @@ export default async function LeaveDetail({ params, searchParams }: { params: Pr
       <div className="card">
         <b>{fmtRange(l.from_date, l.to_date)}</b> ({l.days} working day{l.days === 1 ? "" : "s"})
         {l.notes && <p>Note: {l.notes}</p>}
+        {l.requested_by_name && l.requested_by_person !== l.person_id && <p className="muted" style={{ margin: "4px 0" }}>Recorded by <b>{l.requested_by_name}</b> on {fmtDateTime(l.requested_at)} UTC. No approval was needed.</p>}
         <p className="muted" style={{ marginBottom: 0 }}>Requested {fmtDateTime(l.requested_at)} UTC{l.decided_by_name ? ` · ${l.status} by ${l.decided_by_name}${l.decided_at ? " on " + fmtDateTime(l.decided_at) : ""}` : ""}{l.decision_note ? ` · "${l.decision_note}"` : ""}</p>
       </div>
 

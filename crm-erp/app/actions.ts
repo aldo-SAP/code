@@ -310,10 +310,10 @@ export async function addLeave(fd: FormData) {
   const from = s(fd, "from_date");
   const r = await createLeave(u, {
     personId: can.manage(u) ? (i(fd, "person_id") ?? u.person_id ?? 0) : (u.person_id ?? 0),
-    type: (s(fd, "type") || "vacation") as LeaveType, from, to: s(fd, "to_date") || from, notes: s(fd, "notes"),
+    type: (s(fd, "type") || "vacation") as LeaveType, from, to: s(fd, "to_date") || from, notes: s(fd, "notes"), notify: !!fd.get("notify"),
   });
   if (!r.ok) back(referer(fd, "/leave"), r.error, "err");
-  back(referer(fd, "/leave"), r.status === "requested" ? "Request sent. You and the approvers get an email, and you will be emailed when it is decided." : "Leave recorded.");
+  back(referer(fd, "/leave"), r.status === "requested" ? "Request sent. You and the approvers get an email, and you will be emailed when it is decided." : "Leave recorded in their history (no approval needed).");
 }
 export async function decideLeaveAction(fd: FormData) {
   const u = await requireManager();

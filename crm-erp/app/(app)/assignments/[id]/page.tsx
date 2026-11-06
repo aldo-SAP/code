@@ -9,7 +9,7 @@ import Breadcrumb from "@/components/Breadcrumb";
 import { Badge, CurrencySelect, Field, Flash, Hidden, money, today } from "@/components/ui";
 import { fmtDate, fmtSpan } from "@/lib/dates";
 
-export default async function AssignmentPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string; err?: string }> }) {
+export default async function AssignmentPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string; err?: string; sub_from?: string; sub_to?: string; sub_person?: string; sub_reason?: string }> }) {
   const user = await requireManager();
   const { id } = await params; const sp = await searchParams;
   const a = await get<any>(`SELECT a.*, pr.name AS project, pr.client_id, per.name AS person, per.worker_type, cl.currency AS client_currency, k.title AS contract, k.payment_terms, k.net_days
@@ -63,11 +63,11 @@ export default async function AssignmentPage({ params, searchParams }: { params:
               {s.worker_type === "external" ? <><input aria-label="missing" name="cost_amount" type="number" step="0.01" defaultValue={s.cost_amount ?? ""} style={{ width: 90 }} placeholder="missing" /><CurrencySelect name="cost_currency" value={s.cost_currency} label="Cost currency" /><button className="sec sm">Save</button></> : <span className="muted">payroll</span>}</form></td>}
             <td><form action={deleteSubstitution}><Hidden name="rid" value={s.id} /><Hidden name="_back" value={back} /><button className="danger sm">Remove</button></form></td></tr>)}
           {!subs.length && <tr><td colSpan={6} className="muted">No substitutions.</td></tr>}</tbody></table>
-        <form action={addSubstitution} className="row" style={{ marginTop: 8 }}>
+        <form action={addSubstitution} className="row" style={{ marginTop: 8 }} id="substitution">
           <Hidden name="assignment_id" value={a.id} />
-          <Field label="Substitute"><select name="person_id" required><option value="">-</option>{candidates.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.worker_type})</option>)}</select></Field>
-          <div className="pair"><Field label="From"><input type="date" name="from_date" required /></Field><Field label="To"><input type="date" name="to_date" required /></Field></div>
-          <Field label="Reason"><input name="reason" placeholder="sick leave" /></Field>
+          <Field label="Substitute"><select name="person_id" required defaultValue={sp.sub_person ?? ""}><option value="">-</option>{candidates.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.worker_type})</option>)}</select></Field>
+          <div className="pair"><Field label="From"><input type="date" name="from_date" required defaultValue={sp.sub_from ?? ""} /></Field><Field label="To"><input type="date" name="to_date" required defaultValue={sp.sub_to ?? ""} /></Field></div>
+          <Field label="Reason"><input name="reason" placeholder="sick leave" defaultValue={sp.sub_reason ?? ""} /></Field>
           {fin && <><Field label={`Cost rate ${unit}`}><input name="cost_amount" type="number" step="0.01" style={{ width: 100 }} /></Field><Field label="Currency"><CurrencySelect name="cost_currency" /></Field></>}
           <button className="sec">Add substitution</button>
         </form>

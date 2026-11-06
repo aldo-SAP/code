@@ -53,7 +53,7 @@ export default async function LeaveTimeline({ personId, year, basePath }: { pers
         {rows.map((r) => (
           <tr key={r.id} style={r.status === "rejected" || r.status === "revoked" || r.status === "cancelled" ? { opacity: 0.7 } : undefined}>
             <td style={{ whiteSpace: "nowrap" }}><Link href={`/leave/${r.id}`}>{fmtRange(r.from_date, r.to_date)}</Link></td><td>{r.type}</td><td className="num">{r.days}</td><td><Badge v={r.status} /></td>
-            <td className="muted">{r.decided_by_name ? `${r.decided_by_name}${r.decided_at ? ", " + fmtDate(r.decided_at) : ""}${r.decision_note ? `: ${r.decision_note}` : ""}` : ""}</td>
+            <td className="muted">{r.requested_by_name && r.requested_by_person !== r.person_id && r.status !== "rejected" ? <>Recorded by {r.requested_by_name}{r.requested_at ? `, ${fmtDate(r.requested_at)}` : ""}{r.notes ? ` (${r.notes})` : ""}<br /></> : null}{r.decided_by_name && !(r.requested_by_name && r.requested_by_person !== r.person_id && r.decided_by === r.requested_by) ? `${r.decided_by_name}${r.decided_at ? ", " + fmtDate(r.decided_at) : ""}${r.decision_note ? `: ${r.decision_note}` : ""}` : ""}</td>
           </tr>))}
         {!rows.length && <tr><td colSpan={5} className="muted">No leave in {year}.</td></tr>}</tbody></table></div>
     </section>

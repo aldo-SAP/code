@@ -27,7 +27,7 @@ export function Nav({ user }: { user: User }) {
   const items: [string, string][] = user.role === "worker"
     ? [["/timesheets", "My timesheet"], ["/leave", "My leave"], ["/account", "My account"]]
     : [["/", "Dashboard"], ["/clients", "Clients"], ["/deals", "Pipeline"], ["/people", "People"], ["/courses", "Training"],
-       ["/projects", "Projects"], ["/timesheets", "Timesheets"], ["/leave", "Leave"], ["/approvals", "Approvals"], ["/invoices", "Invoices"],
+       ["/projects", "Projects"], ["/timesheets", "Timesheets"], ["/leave", "Leave"], ["/team", "Team calendar"], ["/approvals", "Approvals"], ["/invoices", "Invoices"],
        ...(can.finance(user) ? [["/payouts", "Payouts"], ["/reports", "Margin"]] as [string, string][] : []),
        ["/unlock", "Unlock billed hours"], ["/import", "CSV import"], ["/account", "My account"], ...(can.admin(user) ? [["/holidays", "Public holidays"], ["/audit", "Audit log"], ["/settings", "Settings"]] as [string, string][] : [])];
   return (

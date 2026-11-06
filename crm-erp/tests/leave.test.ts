@@ -126,8 +126,26 @@ test("rules: no self-approval, rejection needs a reason, sick leave is recorded 
   assert.deepEqual(sorted((await mails(`leave:${(sick as any).id}`))[0].to_addr), ["boss@co.com", "mia@co.com"]);
   const rec = await leave.createLeave(admin, { personId: wp, type: "holiday", from: monday(16), to: monday(16), notes: "Bank holiday" });
   assert.equal((rec as any).status, "approved");
-  const m = (await mails(`leave:${(rec as any).id}`))[0];
+});
+
+test("a manager adding leave for someone approves it at once and only records it; email only if asked", async () => {
+  const quiet = await leave.createLeave(admin, { personId: wp, type: "sick", from: monday(19), to: monday(19), notes: "Called in sick" });
+  assert.equal((quiet as any).status, "approved");
+  assert.equal((await mails(`leave:${(quiet as any).id}`)).length, 0);                       // history only, nobody is emailed
+  const row = (await get<any>("SELECT requested_by, decided_by_name FROM leave WHERE id=?", (quiet as any).id))!;
+  assert.deepEqual([row.requested_by, row.decided_by_name], [admin.id, "Boss"]);              // who added it is kept
+  const log = (await get<any>("SELECT user_name FROM audit_log WHERE action='leave_record' ORDER BY id DESC LIMIT 1"))!;
+  assert.equal(log.user_name, "Boss");
+  const tl = await leave.leaveTimeline(wp, Number(monday(19).slice(0, 4)));
+  const entry = tl.rows.find((r: any) => r.id === (quiet as any).id);
+  assert.deepEqual([entry.requested_by_name, entry.requested_by_person === wp], ["Boss", false]);   // the timeline can say "Recorded by Boss"
+
+  const loud = await leave.createLeave(admin, { personId: wp, type: "holiday", from: monday(20), to: monday(20), notes: "Bank holiday", notify: true });
+  const m = (await mails(`leave:${(loud as any).id}`))[0];
   assert.deepEqual([m.to_addr, m.cc_addr], ["wanda@x.com", "boss@co.com"]);
+  // past dates are fine for a manager (late sick days), unlike a worker's own request
+  const past = await leave.createLeave(admin, { personId: wp, type: "sick", from: "2020-03-02", to: "2020-03-03" });
+  assert.equal((past as any).ok, true);
 });
 
 test("worker cancels own future leave in the same thread", async () => {

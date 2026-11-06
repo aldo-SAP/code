@@ -209,3 +209,23 @@ form[data-busy] button{opacity:.6;cursor:progress}
   .stack td form.row{display:flex;flex-wrap:wrap;gap:8px;width:100%;justify-content:flex-end}
   .stack td form.row>button{flex:1 1 120px}
 }
+
+/* ---------- team calendar ---------- */
+.team{border-collapse:separate;border-spacing:0;min-width:max-content}
+.team th,.team td{padding:0;text-align:center;font-size:12px;min-width:26px;height:30px;border-bottom:1px solid var(--line)}
+.team thead th{position:sticky;top:0;background:var(--card);z-index:2;font-weight:600;line-height:1.1;padding:4px 0}
+.team thead th span{color:var(--muted);font-weight:400;font-size:10px}
+.team th[scope=row]{text-align:left;position:sticky;left:0;background:var(--card);z-index:1;min-width:150px;max-width:190px;padding:4px 10px;font-weight:500;line-height:1.25;border-right:1px solid var(--line)}
+.team th[scope=row] .muted{font-size:11px;font-weight:400;white-space:normal}
+.team .sum th,.team .sum td{background:var(--bg);color:var(--muted);height:24px}
+.team .sum td.warm{background:var(--warnbg);color:var(--warn)}.team .sum td.hot{background:var(--errbg);color:var(--err);font-weight:600}
+.team td.c-weekend,.team th.we{background:var(--bg)}
+.team td.c-work{background:color-mix(in srgb,var(--brand) 16%,transparent)}
+.team td.c-off{background:var(--warnbg);color:var(--warn);font-weight:600}
+.team td.c-off.sick{background:var(--errbg);color:var(--err)}
+.team td.c-pending{background:repeating-linear-gradient(45deg,var(--warnbg) 0 4px,transparent 4px 8px);color:var(--warn);font-weight:600}
+.team td.c-holiday{background:repeating-linear-gradient(135deg,var(--bg) 0 4px,var(--line) 4px 5px);color:var(--muted)}
+.team td.c-cover{background:var(--okbg);color:var(--ok);font-weight:600}
+.cands{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:10px}
+.cands li{display:grid;gap:4px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+h3.small{font-size:13px;margin:14px 0 0;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}

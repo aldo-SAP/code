@@ -101,12 +101,12 @@ export default async function Leave({ searchParams }: { searchParams: Promise<{ 
             {balances.map(({ p, b }) => <tr key={p.id}><td><Link href={`/people/${p.id}?year=${year}`}>{p.name}</Link></td><td className="num">{num(b.allowance)}</td><td className="num">{num(b.taken)}</td><td className="num">{num(b.planned)}</td><td className="num">{num(b.pending)}</td><td className="num"><b>{num(b.remaining)}</b></td></tr>)}
             {!balances.length && <tr><td colSpan={6} className="muted">Nobody to show.</td></tr>}</tbody></table></div>
 
-          <h2>Record leave for someone</h2>
+          <h2>Add leave for someone (no approval needed)</h2>
           <form action={addLeave} className="row card">
             <Field label="Person"><select name="person_id" required><option value="">-</option>{people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>
             <Field label="Type"><select name="type">{types(true).map((t) => <option key={t}>{t}</option>)}</select></Field>
             <div className="pair"><Field label="From"><input type="date" name="from_date" required /></Field><Field label="To"><input type="date" name="to_date" /></Field></div>
-            <div className="wide"><Field label="Note"><input name="notes" /></Field></div><button className="sec">Record (approved at once)</button>
+            <div className="wide"><Field label="Note"><input name="notes" /></Field></div><label className="f wide" style={{ flexDirection: "row", alignItems: "center", gap: 8 }}><input type="checkbox" name="notify" /> <span>Also email the employee (leave unticked for sick days and past leave: it is only added to their history)</span></label><button className="sec">Add to their history</button>
           </form>
         </>
       )}
