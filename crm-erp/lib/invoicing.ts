@@ -15,7 +15,7 @@ const ASSIGNMENTS_SQL = `
          p.client_id, p.name AS project_name, per.name AS person_name, per.worker_type AS person_type,
          c.net_days, c.payment_terms
   FROM assignments a JOIN projects p ON p.id=a.project_id JOIN people per ON per.id=a.person_id
-  LEFT JOIN contracts c ON c.id=p.client_contract_id ORDER BY a.id`;
+  LEFT JOIN contracts c ON c.id=a.client_contract_id ORDER BY a.id`;
 
 const ratesOf = (assignmentId: number) =>
   all<Rate>("SELECT kind,amount,currency,effective_from FROM rates WHERE assignment_id=?", assignmentId);

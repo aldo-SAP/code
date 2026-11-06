@@ -15,9 +15,22 @@ export function db(): DB {
     const d = new DatabaseSync(path);
     d.exec("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;");
     d.exec(SCHEMA);
+    migrate(d);
     g.__db = d;
   }
   return g.__db;
+}
+
+/** Contract <-> assignment is one-to-one: the contract points at its person's assignment. */
+function migrate(d: DB) {
+  const cols = (t: string) => d.prepare(`PRAGMA table_info(${t})`).all().map((c: any) => c.name as string);
+  if (!cols("assignments").includes("client_contract_id")) {
+    d.exec("ALTER TABLE assignments ADD COLUMN client_contract_id INTEGER REFERENCES contracts(id)");
+    if (cols("projects").includes("client_contract_id"))
+      d.exec(`UPDATE assignments SET client_contract_id=(SELECT client_contract_id FROM projects WHERE projects.id=assignments.project_id)
+              WHERE id IN (SELECT MIN(a.id) FROM assignments a JOIN projects p ON p.id=a.project_id WHERE p.client_contract_id IS NOT NULL GROUP BY p.client_contract_id)`);
+  }
+  d.exec("CREATE UNIQUE INDEX IF NOT EXISTS ux_assignment_contract ON assignments(client_contract_id) WHERE client_contract_id IS NOT NULL");
 }
 
 type Param = string | number | null | bigint;

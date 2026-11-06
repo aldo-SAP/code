@@ -78,22 +78,24 @@ export async function addContract(fd: FormData) {
   const bill = n(fd, "bill_amount");
   if (bt !== "fixed" && (bill == null || bill < 0)) back(path, "Enter the bill rate for the assigned person", "err");
   const title = s(fd, "title") || "Contract";
-  const contractId = tx(() => {
+  const existingProject = i(fd, "project_id");
+  if (existingProject && get<{ client_id: number }>("SELECT client_id FROM projects WHERE id=?", existingProject)?.client_id !== clientId)
+    back(path, "That project belongs to another client", "err");
+  tx(() => {
     const cid = run("INSERT INTO contracts (kind,client_id,title,currency,start_date,end_date,payment_terms,net_days,notes) VALUES ('client',?,?,?,?,?,?,?,?)",
       clientId, title, cur(fd), start, nz(s(fd, "end_date")), terms, i(fd, "net_days") ?? 30, nz(s(fd, "notes")));
-    const pid = run("INSERT INTO projects (client_id,client_contract_id,name,start_date,end_date) VALUES (?,?,?,?,?)", clientId, cid, s(fd, "project_name") || title, start, nz(s(fd, "end_date")));
-    const aid = run("INSERT INTO assignments (project_id,person_id,billing_type,hours_per_day,start_date,end_date,freelancer_contract_id,direct_to_client,role_title) VALUES (?,?,?,?,?,?,?,?,?)",
-      pid, person!, bt, n(fd, "hours_per_day") ?? 8, start, nz(s(fd, "end_date")), i(fd, "freelancer_contract_id"), fd.get("direct_to_client") ? 1 : 0, nz(s(fd, "role_title")));
+    // One contract = one person. The project may be shared by several people (each on their own contract).
+    const pid = existingProject ?? run("INSERT INTO projects (client_id,name,start_date) VALUES (?,?,?)", clientId, s(fd, "project_name") || title, start);
+    const aid = run("INSERT INTO assignments (project_id,client_contract_id,person_id,billing_type,hours_per_day,start_date,end_date,freelancer_contract_id,direct_to_client,role_title) VALUES (?,?,?,?,?,?,?,?,?,?)",
+      pid, cid, person!, bt, n(fd, "hours_per_day") ?? 8, start, nz(s(fd, "end_date")), i(fd, "freelancer_contract_id"), fd.get("direct_to_client") ? 1 : 0, nz(s(fd, "role_title")));
     if (bt !== "fixed") {
       run("INSERT INTO rates (assignment_id,kind,amount,currency,effective_from) VALUES (?,?,?,?,?)", aid, "bill", bill!, cur(fd, "bill_currency"), start);
       const cost = n(fd, "cost_amount");
       if (cost != null && can.finance(u)) run("INSERT INTO rates (assignment_id,kind,amount,currency,effective_from) VALUES (?,?,?,?,?)", aid, "cost", cost, cur(fd, "cost_currency"), start);
     }
     run("UPDATE people SET stage='placed' WHERE id=?", person!);
-    return cid;
   });
-  void contractId;
-  back(path, "Contract created with its first assignment");
+  back(path, "Contract created for " + p!.name);
 }
 export async function addDeal(fd: FormData) {
   await requireManager();
@@ -165,36 +167,14 @@ export async function deleteLeave(fd: FormData) {
 // ------------------------------------------------------------------ projects
 export async function addProject(fd: FormData) {
   await requireManager();
-  if (!i(fd, "client_contract_id")) back(`/clients/${i(fd, "client_id")}`, "A project must belong to a client contract", "err");
-  const id = run("INSERT INTO projects (client_id,client_contract_id,name,status,start_date,end_date,notes) VALUES (?,?,?,?,?,?,?)",
-    i(fd, "client_id")!, i(fd, "client_contract_id"), s(fd, "name"), s(fd, "status") || "active", nz(s(fd, "start_date")), nz(s(fd, "end_date")), nz(s(fd, "notes")));
+  const id = run("INSERT INTO projects (client_id,name,status,start_date,end_date,notes) VALUES (?,?,?,?,?,?)",
+    i(fd, "client_id")!, s(fd, "name"), s(fd, "status") || "active", nz(s(fd, "start_date")), nz(s(fd, "end_date")), nz(s(fd, "notes")));
   back(`/projects/${id}`, "Project created");
 }
 export async function setProjectStatus(fd: FormData) {
   await requireManager();
   run("UPDATE projects SET status=? WHERE id=?", s(fd, "status"), i(fd, "id")!);
   back(referer(fd, "/projects"));
-}
-export async function addAssignment(fd: FormData) {
-  const u = await requireManager();
-  const pid = i(fd, "project_id")!, person = i(fd, "person_id")!;
-  const p = get<{ stage: string; name: string }>("SELECT stage,name FROM people WHERE id=?", person);
-  const path = `/projects/${pid}`;
-  if (!p) back(path, "Pick a person", "err");
-  if (p!.stage !== "ready" && p!.stage !== "placed") back(path, `${p!.name} is still a student/applicant (stage: ${p!.stage}). Set the stage to "ready" first.`, "err");
-  const bt = s(fd, "billing_type");
-  if (!["hourly", "daily", "fixed", "monthly"].includes(bt)) back(path, "Pick a billing type", "err");
-  if (!isDate(s(fd, "start_date"))) back(path, "Start date is required", "err");
-  const id = tx(() => {
-    const aid = run("INSERT INTO assignments (project_id,person_id,billing_type,hours_per_day,start_date,end_date,freelancer_contract_id,direct_to_client,role_title,notes) VALUES (?,?,?,?,?,?,?,?,?,?)",
-      pid, person, bt, n(fd, "hours_per_day") ?? 8, s(fd, "start_date"), nz(s(fd, "end_date")), i(fd, "freelancer_contract_id"), fd.get("direct_to_client") ? 1 : 0, nz(s(fd, "role_title")), nz(s(fd, "notes")));
-    const bill = n(fd, "bill_amount"), cost = n(fd, "cost_amount");
-    if (bill != null && bt !== "fixed") run("INSERT INTO rates (assignment_id,kind,amount,currency,effective_from) VALUES (?,?,?,?,?)", aid, "bill", bill, cur(fd, "bill_currency"), s(fd, "start_date"));
-    if (cost != null && can.finance(u) && bt !== "fixed") run("INSERT INTO rates (assignment_id,kind,amount,currency,effective_from) VALUES (?,?,?,?,?)", aid, "cost", cost, cur(fd, "cost_currency"), s(fd, "start_date"));
-    run("UPDATE people SET stage='placed' WHERE id=?", person);
-    return aid;
-  });
-  back(`/assignments/${id}`, "Assignment created");
 }
 export async function addRate(fd: FormData) {
   const u = await requireManager();

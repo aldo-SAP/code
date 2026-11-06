@@ -7,13 +7,13 @@ const inv = await import("../lib/invoicing.ts");
 
 const person = (name: string, type: string) => run("INSERT INTO people (name,worker_type,stage) VALUES (?,?,'ready')", name, type);
 const client = run("INSERT INTO clients (name) VALUES ('Acme GmbH')");
-const contract = run("INSERT INTO contracts (kind,client_id,title,net_days) VALUES ('client',?,'MSA',45)", client);
-const project = run("INSERT INTO projects (client_id,client_contract_id,name) VALUES (?,?,'Portal')", client, contract);
+const contract = run("INSERT INTO contracts (kind,client_id,title,net_days) VALUES ('client',?,'Xena contract',45)", client);
+const project = run("INSERT INTO projects (client_id,name) VALUES (?,'Portal')", client);
 const X = person("Xena (ext)", "external");
 const Y = person("Yuri (ext)", "external");
 const Z = person("Zed (int)", "internal");
 
-const assignment = run("INSERT INTO assignments (project_id,person_id,billing_type,start_date) VALUES (?,?,'daily','2026-01-01')", project, X);
+const assignment = run("INSERT INTO assignments (project_id,client_contract_id,person_id,billing_type,start_date) VALUES (?,?,?,'daily','2026-01-01')", project, contract, X);
 run("INSERT INTO rates (assignment_id,kind,amount,currency,effective_from) VALUES (?,?,?,?,?)", assignment, "bill", 400, "EUR", "2026-01-01");
 run("INSERT INTO rates (assignment_id,kind,amount,currency,effective_from) VALUES (?,?,?,?,?)", assignment, "cost", 250, "EUR", "2026-01-01");
 run("INSERT INTO substitutions (assignment_id,person_id,from_date,to_date,cost_amount) VALUES (?,?,?,?,?)", assignment, Y, "2026-10-12", "2026-10-16", 200);
@@ -105,8 +105,8 @@ test("monthly fee is prorated by weekdays and not billed twice", () => {
 
 test("fixed price: milestone terms give one invoice per milestone", () => {
   const c2 = run("INSERT INTO contracts (kind,client_id,title,payment_terms) VALUES ('client',?,'SOW',?)", client, "milestone");
-  const p2 = run("INSERT INTO projects (client_id,client_contract_id,name) VALUES (?,?,'Migration')", client, c2);
-  const a4 = run("INSERT INTO assignments (project_id,person_id,billing_type,start_date) VALUES (?,?,'fixed','2026-01-01')", p2, Y);
+  const p2 = run("INSERT INTO projects (client_id,name) VALUES (?,'Migration')", client);
+  const a4 = run("INSERT INTO assignments (project_id,client_contract_id,person_id,billing_type,start_date) VALUES (?,?,?,'fixed','2026-01-01')", p2, c2, Y);
   for (const t of ["M1", "M2"])
     run("INSERT INTO milestones (assignment_id,title,bill_amount,cost_amount,status,approved_on) VALUES (?,?,5000,3000,'approved','2026-09-30')", a4, t);
   const { invoiceIds } = inv.generateInvoices("2026-09");
@@ -114,4 +114,11 @@ test("fixed price: milestone terms give one invoice per milestone", () => {
   const { payoutIds } = inv.generatePayouts("2026-09");
   assert.equal(payoutIds.length, 1);
   assert.equal(get("SELECT total FROM payouts WHERE id=?", payoutIds[0])!.total, 6000);
+});
+
+test("one contract = one person: a second assignment cannot reuse a contract, but a project can have many contracts", () => {
+  assert.throws(() => run("INSERT INTO assignments (project_id,client_contract_id,person_id,billing_type,start_date) VALUES (?,?,?,'daily','2026-01-01')", project, contract, Z));
+  const c3 = run("INSERT INTO contracts (kind,client_id,title) VALUES ('client',?,'Zed contract')", client);
+  run("INSERT INTO assignments (project_id,client_contract_id,person_id,billing_type,start_date) VALUES (?,?,?,'daily','2026-01-01')", project, c3, Z);
+  assert.equal(get("SELECT COUNT(*) n FROM assignments WHERE project_id=?", project)!.n >= 2, true);
 });

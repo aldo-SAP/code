@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { all, get } from "@/lib/db";
 import { requireManager } from "@/lib/session";
 import { can } from "@/lib/auth";
-import { addContact, addContract, addProject, deleteContact, updateClient } from "@/app/actions";
+import { addContact, addProject, deleteContact, updateClient } from "@/app/actions";
+import ContractForm from "@/components/ContractForm";
 import { Badge, CurrencySelect, Field, Flash, Hidden, money } from "@/components/ui";
 
 export default async function ClientPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string; err?: string }> }) {
@@ -14,8 +15,8 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
   const c = get<any>("SELECT * FROM clients WHERE id=?", Number(id));
   if (!c) notFound();
   const contacts = all<any>("SELECT * FROM contacts WHERE client_id=?", c.id);
-  const contracts = all<any>("SELECT * FROM contracts WHERE kind='client' AND client_id=? ORDER BY id DESC", c.id);
-  const projects = all<any>("SELECT * FROM projects WHERE client_id=? ORDER BY id DESC", c.id);
+  const contracts = all<any>("SELECT k.*, per.name AS person, a.id AS aid, pr.name AS project FROM contracts k LEFT JOIN assignments a ON a.client_contract_id=k.id LEFT JOIN people per ON per.id=a.person_id LEFT JOIN projects pr ON pr.id=a.project_id WHERE k.kind='client' AND k.client_id=? ORDER BY k.id DESC", c.id);
+  const projects = all<any>("SELECT p.*, (SELECT COUNT(*) FROM assignments a WHERE a.project_id=p.id) AS people FROM projects p WHERE p.client_id=? ORDER BY p.id DESC", c.id);
   const deals = all<any>("SELECT * FROM deals WHERE client_id=?", c.id);
   const invoices = all<any>("SELECT * FROM invoices WHERE client_id=? ORDER BY id DESC LIMIT 12", c.id);
   const back = `/clients/${c.id}`;
@@ -46,38 +47,21 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
       </form>
 
       <h3>Contracts</h3>
-      <table><thead><tr><th>Title</th><th>Period</th><th>Currency</th><th>Payment terms</th><th>Net days</th></tr></thead><tbody>
-        {contracts.map((k) => <tr key={k.id}><td>{k.title}</td><td>{k.start_date ?? "?"} to {k.end_date ?? "open"}</td><td>{k.currency}</td><td>{k.payment_terms}</td><td>{k.net_days}</td></tr>)}
-        {!contracts.length && <tr><td colSpan={5} className="muted">No contracts.</td></tr>}</tbody></table>
-      <h3 style={{ fontSize: 13 }}>New contract (needs its first person)</h3>
-      <form action={addContract} className="row card">
-        <Hidden name="kind" value="client" /><Hidden name="client_id" value={c.id} /><Hidden name="_back" value={back} />
-        <Field label="Contract title"><input name="title" required placeholder="MSA 2026" /></Field>
-        <Field label="Project name (default: title)"><input name="project_name" /></Field>
-        <Field label="Assigned person *"><select name="person_id" required><option value="">-</option>{people.map((x) => <option key={x.id} value={x.id}>{x.name} ({x.worker_type})</option>)}</select></Field>
-        <Field label="Role"><input name="role_title" /></Field>
-        <Field label="Billing"><select name="billing_type" defaultValue="daily"><option value="daily">Daily rate (hours/8)</option><option value="hourly">Hourly</option><option value="monthly">Monthly fee</option><option value="fixed">Fixed price (milestones)</option></select></Field>
-        <Field label="Bill rate"><input name="bill_amount" type="number" step="0.01" style={{ width: 100 }} /></Field>
-        <Field label="Currency"><CurrencySelect name="bill_currency" value={c.currency} /></Field>
-        {fin && <><Field label="Cost rate"><input name="cost_amount" type="number" step="0.01" style={{ width: 100 }} /></Field><Field label="Cost cur."><CurrencySelect name="cost_currency" /></Field></>}
-        <Field label="Start"><input type="date" name="start_date" required /></Field><Field label="End"><input type="date" name="end_date" /></Field>
-        <Field label="Contract currency"><CurrencySelect value={c.currency} /></Field>
-        <Field label="Payment terms"><select name="payment_terms"><option value="monthly">Monthly invoice</option><option value="milestone">Per milestone</option></select></Field>
-        <Field label="Net days"><input type="number" name="net_days" defaultValue={30} style={{ width: 70 }} /></Field>
-        <label className="f"><span>Freelancer works directly with client</span><input type="checkbox" name="direct_to_client" /></label>
-        <button>Create contract</button>
-      </form>
+      <table><thead><tr><th>Contract</th><th>Person</th><th>Project</th><th>Period</th><th>Terms</th></tr></thead><tbody>
+        {contracts.map((k) => <tr key={k.id}><td>{k.aid ? <Link href={`/assignments/${k.aid}`}>{k.title}</Link> : k.title}</td><td>{k.person}</td><td>{k.project}</td><td>{k.start_date ?? "?"} to {k.end_date ?? "open"}</td><td>{k.payment_terms}, net {k.net_days}, {k.currency}</td></tr>)}
+        {!contracts.length && <tr><td colSpan={5} className="muted">No contracts yet.</td></tr>}</tbody></table>
+      <h3 style={{ fontSize: 13 }}>New contract (one person per contract; a project can have several contracts)</h3>
+      <ContractForm client={c} projects={projects} people={people} fin={fin} back={back} />
 
       <h3>Projects</h3>
-      <table><thead><tr><th>Project</th><th>Contract</th><th>Status</th></tr></thead><tbody>
-        {projects.map((p) => <tr key={p.id}><td><Link href={`/projects/${p.id}`}>{p.name}</Link></td><td>{contracts.find((k) => k.id === p.client_contract_id)?.title ?? "-"}</td><td><Badge v={p.status} /></td></tr>)}
+      <table><thead><tr><th>Project</th><th>People</th><th>Status</th></tr></thead><tbody>
+        {projects.map((p) => <tr key={p.id}><td><Link href={`/projects/${p.id}`}>{p.name}</Link></td><td>{p.people}</td><td><Badge v={p.status} /></td></tr>)}
         {!projects.length && <tr><td colSpan={3} className="muted">No projects.</td></tr>}</tbody></table>
       <form action={addProject} className="row" style={{ marginTop: 8 }}>
         <Hidden name="client_id" value={c.id} />
         <Field label="Project name"><input name="name" required /></Field>
-        <Field label="Contract"><select name="client_contract_id" required><option value="">- pick a contract -</option>{contracts.map((k) => <option key={k.id} value={k.id}>{k.title}</option>)}</select></Field>
         <Field label="Start"><input type="date" name="start_date" /></Field>
-        <button className="sec">Add project</button>
+        <button className="sec">Add empty project</button>
       </form>
 
       {!!deals.length && <><h3>Deals</h3><table><tbody>{deals.map((d) => <tr key={d.id}><td>{d.title}</td><td><Badge v={d.stage} /></td><td className="num">{money(d.value, d.currency)}</td></tr>)}</tbody></table></>}

@@ -23,10 +23,10 @@ Set `ADMIN_EMAIL` / `ADMIN_PASSWORD` before seeding to choose your own login. Fo
 
 | Concept | Where |
 |---|---|
-| Clients, contacts, client contracts (monthly vs per-milestone, net days). A client contract is always created with its first assigned person (internal or external), so it is never empty | Clients |
+| Clients, contacts, client contracts (monthly vs per-milestone, net days). **One client contract = one person** (internal or external), created together with that person's assignment, so a contract is never empty | Clients |
 | Leads / deals pipeline | Pipeline |
 | Students: applicant, training, ready, placed, alumni; courses (free) | People, Training |
-| Project = client + client contract; Assignment = person on a project | Projects |
+| Project = shared work for a client; it can have many people, each on their own contract (contract and assignment are 1:1) | Projects |
 | Billing type per assignment: **daily** (hours / 8 x rate), **hourly**, **monthly** fee, **fixed** (milestones) | Assignment |
 | **Bill rate** (client pays) and **cost rate** (we pay), effective-dated | Assignment |
 | **Substitution**: Y works instead of X for a date range | Assignment |

@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS contracts (
 );
 CREATE TABLE IF NOT EXISTS projects (
   id INTEGER PRIMARY KEY, client_id INTEGER NOT NULL REFERENCES clients(id),
-  client_contract_id INTEGER REFERENCES contracts(id), name TEXT NOT NULL,
+  name TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('planned','active','paused','done')),
   start_date TEXT, end_date TEXT, notes TEXT
 );
@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS assignments (
   person_id INTEGER NOT NULL REFERENCES people(id),
   billing_type TEXT NOT NULL CHECK (billing_type IN ('hourly','daily','fixed','monthly')),
   hours_per_day REAL NOT NULL DEFAULT 8, start_date TEXT NOT NULL, end_date TEXT,
+  client_contract_id INTEGER REFERENCES contracts(id),
   freelancer_contract_id INTEGER REFERENCES contracts(id),
   direct_to_client INTEGER NOT NULL DEFAULT 0, role_title TEXT, notes TEXT
 );

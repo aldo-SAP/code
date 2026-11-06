@@ -9,8 +9,8 @@ import { Badge, CurrencySelect, Field, Flash, Hidden, money, today } from "@/com
 export default async function AssignmentPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string; err?: string }> }) {
   const user = await requireManager();
   const { id } = await params; const sp = await searchParams;
-  const a = get<any>(`SELECT a.*, pr.name AS project, pr.client_id, per.name AS person, per.worker_type, cl.currency AS client_currency
-    FROM assignments a JOIN projects pr ON pr.id=a.project_id JOIN people per ON per.id=a.person_id JOIN clients cl ON cl.id=pr.client_id WHERE a.id=?`, Number(id));
+  const a = get<any>(`SELECT a.*, pr.name AS project, pr.client_id, per.name AS person, per.worker_type, cl.currency AS client_currency, k.title AS contract, k.payment_terms, k.net_days
+    FROM assignments a JOIN projects pr ON pr.id=a.project_id JOIN people per ON per.id=a.person_id JOIN clients cl ON cl.id=pr.client_id LEFT JOIN contracts k ON k.id=a.client_contract_id WHERE a.id=?`, Number(id));
   if (!a) notFound();
   const fin = can.finance(user);
   const rates = all<any>(`SELECT * FROM rates WHERE assignment_id=? ${fin ? "" : "AND kind='bill'"} ORDER BY kind, effective_from DESC`, a.id);
@@ -23,7 +23,7 @@ export default async function AssignmentPage({ params, searchParams }: { params:
   return (
     <>
       <h2>{a.person} on {a.project}</h2><Flash sp={sp} />
-      <p className="muted"><Link href={`/projects/${a.project_id}`}>Back to project</Link> · {a.billing_type} · {a.hours_per_day}h/day · {a.start_date} to {a.end_date ?? "open"} · {a.worker_type}
+      <p className="muted"><Link href={`/projects/${a.project_id}`}>Back to project</Link> · contract: {a.contract ?? "-"} ({a.payment_terms}, net {a.net_days}) · {a.billing_type} · {a.hours_per_day}h/day · {a.start_date} to {a.end_date ?? "open"} · {a.worker_type}
         {a.direct_to_client ? " · works directly with the client" : ""}</p>
       <p>{hours.map((h) => <span key={h.status} style={{ marginRight: 10 }}><Badge v={h.status} /> {h.h}h</span>)}{!hours.length && <span className="muted">No hours logged yet.</span>}</p>
 
