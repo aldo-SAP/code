@@ -50,8 +50,10 @@ export default async function Timesheets({ searchParams }: { searchParams: Promi
       <div className="bar">
         {manager && <form className="row"><input type="hidden" name="month" value={month} />
           <Field label="Person"><select name="person" defaultValue={pid}>{people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></Field><button className="sec">Show</button></form>}
-        <Link className="btn sec" href={q(shift(month, -1))}>&larr; {fmtMonthShort(shift(month, -1))}</Link>
-        <Link className="btn sec" href={q(shift(month, 1))}>{fmtMonthShort(shift(month, 1))} &rarr;</Link>
+        <div className="monthnav">
+          <Link className="btn sec" href={q(shift(month, -1))}>&larr; {fmtMonthShort(shift(month, -1))}</Link>
+          <Link className="btn sec" href={q(shift(month, 1))}>{fmtMonthShort(shift(month, 1))} &rarr;</Link>
+        </div>
         <span className="muted">{person.name}: enter hours per day. Yellow = submitted, green = approved, red = rejected, orange = leave, hatched = public holiday.</span>
       </div>
       {covering.map((c, k) => <div className="flash err" key={k} style={{ background: "var(--warnbg)", color: "var(--warn)" }}><b>{person.name} is covering for {c.owner}</b> on {c.project} on {fmtRange(c.from_date, c.to_date)}. Hours entered on those days are {person.name}'s own hours: the client invoice shows {c.owner} only, and {person.name} is paid at the substitute rate.</div>)}

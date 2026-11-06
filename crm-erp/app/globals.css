@@ -114,6 +114,17 @@ body{padding-left:env(safe-area-inset-left,0);padding-right:env(safe-area-inset-
   .stack td::before{content:attr(data-label);color:var(--muted);font-size:12px;text-align:left;flex:none;max-width:40%;padding-top:2px}
   .stack td[data-label=""]::before{content:none}
   .stack td.num[data-label=""]{justify-content:flex-end}
+  .bar>form.row{flex:1 1 100%}
+  .bar>.monthnav{display:grid;grid-template-columns:1fr 1fr;gap:8px;flex:1 1 100%}.monthnav .btn{text-align:center}
+  /* cards for tables WITH headings: the first cell is the card title, the rest sit two to a row with their label above, so a card is half as tall and uses the full width */
+  .stack:has(thead) tr{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px 16px;padding:12px}
+  .stack:has(thead) td{display:block;padding:0;text-align:left;min-width:0;overflow-wrap:anywhere}
+  .stack:has(thead) td::before{display:block;max-width:none;margin:0 0 2px;padding:0}
+  .stack:has(thead) td.num{text-align:left}   /* value sits directly under its label */
+  .stack:has(thead) tr:has(> td:nth-child(6)):not(:has(> td:nth-child(7))){grid-template-columns:repeat(3,minmax(0,1fr))}   /* five small values: three to a row */
+  .stack:has(thead) td:first-child{grid-column:1/-1;font-weight:600;font-size:15px}
+  .stack:has(thead) td:first-child::before{content:none}
+  .stack:has(thead) td:has(form),.stack:has(thead) td:has(button),.stack:has(thead) td:has(input),.stack:has(thead) td:has(select),.stack:has(thead) td:has(a.btn),.stack:has(thead) td[colspan],.stack:has(thead) td[data-label="Days: hours"]{grid-column:1/-1}
   /* lists without column headings: one compact row per item, name at the left, status and amount at the right */
   .stack:not(:has(thead)) tr{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 12px;padding:10px 12px}
   .stack:not(:has(thead)) td{padding:0;display:block;text-align:right}
@@ -246,3 +257,5 @@ h3.small{font-size:13px;margin:14px 0 0;color:var(--muted);text-transform:upperc
 .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .steps{list-style:none;padding:0;margin:0 0 16px;display:grid;gap:8px}.steps li{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;margin:0}.steps li .btn{white-space:nowrap;justify-self:end;min-width:104px;text-align:center}
 .steps li>span:first-child{font-weight:700;color:var(--accent);width:1.2em;text-align:center}
+
+.monthnav{display:inline-flex;gap:8px}
