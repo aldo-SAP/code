@@ -23,7 +23,7 @@ Set `ADMIN_EMAIL` / `ADMIN_PASSWORD` before seeding to choose your own login. Fo
 
 | Concept | Where |
 |---|---|
-| Clients, contacts, client contracts (monthly vs per-milestone, net days) | Clients |
+| Clients, contacts, client contracts (monthly vs per-milestone, net days). A client contract is always created with its first assigned person (internal or external), so it is never empty | Clients |
 | Leads / deals pipeline | Pipeline |
 | Students: applicant, training, ready, placed, alumni; courses (free) | People, Training |
 | Project = client + client contract; Assignment = person on a project | Projects |
