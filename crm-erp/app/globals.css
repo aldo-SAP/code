@@ -156,3 +156,17 @@ code{overflow-wrap:anywhere;word-break:break-word}
   form.card[style*="display: grid"]{grid-template-columns:minmax(0,1fr)}
   input[type=file]{max-width:100%;min-width:0;width:100%}
 }
+
+/* every single-line control has the same height, date pickers included */
+input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]),select{height:40px;min-height:40px;padding-top:0;padding-bottom:0;line-height:1.2}
+input[type=date]::-webkit-date-and-time-value,input[type=month]::-webkit-date-and-time-value{height:38px;min-height:0;line-height:38px;margin:0;text-align:left}
+input[type=date]::-webkit-datetime-edit,input[type=month]::-webkit-datetime-edit{line-height:38px;padding:0}
+.ts input{height:30px;min-height:30px;padding:3px 0}
+@media (max-width:820px){
+  input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]),select{height:46px;min-height:46px}
+  input[type=date]::-webkit-date-and-time-value,input[type=month]::-webkit-date-and-time-value{height:44px;line-height:44px}
+  input[type=date]::-webkit-datetime-edit,input[type=month]::-webkit-datetime-edit{line-height:44px}
+  .ts input{height:44px;min-height:44px;width:44px}
+  .tsm-inputs input{height:46px;min-height:46px}
+  form.row label.f{align-content:end}
+}
