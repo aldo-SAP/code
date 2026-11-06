@@ -229,3 +229,8 @@ form[data-busy] button{opacity:.6;cursor:progress}
 .cands{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:10px}
 .cands li{display:grid;gap:4px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
 h3.small{font-size:13px;margin:14px 0 0;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+
+/* month-end checklist, forecast */
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.steps{list-style:none;padding:0;margin:0 0 16px;display:grid;gap:8px}.steps li{align-items:center;gap:12px;margin:0}
+.steps li>span:first-child{font-weight:700;color:var(--accent);width:1.2em;text-align:center}

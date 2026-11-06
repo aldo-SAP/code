@@ -39,6 +39,7 @@ export default async function InvoicePage({ params, searchParams }: { params: Pr
         </form>
       )}
       <div className="invoice">
+        {/^https:\/\//.test(await setting("company_logo_url", "")) && <img src={await setting("company_logo_url")} alt="" style={{ maxHeight: 56, maxWidth: 220, marginBottom: 10 }} />}
         <h1 style={{ marginBottom: 2 }}>{inv.status === "draft" ? "DRAFT invoice" : `Invoice ${inv.number}`}</h1>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 20, margin: "14px 0" }}>
           <div><b>{await setting("company_name", "Your company")}</b><br /><span style={{ whiteSpace: "pre-line" }}>{await setting("company_address")}</span><br />{await setting("company_vat_or_reg")}</div>
@@ -49,6 +50,7 @@ export default async function InvoicePage({ params, searchParams }: { params: Pr
           {lines.map((l) => <tr key={l.id}><td>{l.description}</td><td className="num">{num(l.quantity)} {unit(l)}</td><td className="num">{money(l.unit_price, inv.currency)}</td><td className="num">{money(l.amount, inv.currency)}</td><td className="no-print muted">{l.detail}</td></tr>)}
         </tbody><tfoot><tr><td colSpan={3} className="num"><b>Total</b></td><td className="num"><b>{money(inv.total, inv.currency)}</b></td><td className="no-print" /></tr></tfoot></table>
         <p style={{ marginTop: 18 }}>Payment to: {await setting("company_iban", "-")}</p>
+        {(await setting("company_footer", "")) && <p className="muted" style={{ whiteSpace: "pre-line" }}>{await setting("company_footer")}</p>}
       </div>
       <div className="no-print">
         <h2>History</h2>

@@ -9,6 +9,7 @@
     "seed": "node --experimental-strip-types --no-warnings scripts/seed.ts",
     "seed:demo": "node --experimental-strip-types --no-warnings scripts/seed.ts --demo",
     "test": "node --experimental-strip-types --no-warnings --test tests/*.test.ts",
+    "remind": "node --experimental-strip-types --no-warnings scripts/remind.ts",
     "mfa:reset": "node --experimental-strip-types --no-warnings scripts/mfa-reset.ts"
   },
   "dependencies": {

@@ -5,7 +5,7 @@ const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${prod ? "" : " 'unsafe-eval'"}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data:",
+  "img-src 'self' data: https:",
   "connect-src 'self'",
   "frame-ancestors 'none'",
   "form-action 'self' https://login.microsoftonline.com",

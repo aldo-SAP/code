@@ -110,3 +110,8 @@ Staff sign in with their Microsoft work account; freelancers without one keep a 
 - No VAT (amounts only, as requested). Invoices print to PDF from the browser or export as CSV.
 - Substitution on a **monthly** or **fixed** assignment is not priced; substitutions apply to hourly/daily work.
 - Cost rates do not apply to leave; leave is informational and non-billable.
+
+## Month end, availability and accountant export
+- **Month end** (managers): checklist for closing a month (hours not submitted, waiting for approval, not invoiced, draft payouts, unpaid invoices) and a "Remind" button per person. Nobody gets more than one reminder per month in 3 days. To send reminders on a schedule, run `npm run remind` (optionally `-- 2026-11`) from a cron job on the host.
+- **Availability forecast** (`/team/forecast`): free working days per person for the next 6 months, and when assignments end.
+- **Invoices**: "Download for accountant (CSV)" exports issued and paid invoices of a month. Settings has an optional logo address and invoice footer; use the browser's Print, then "Save as PDF", for the invoice PDF.

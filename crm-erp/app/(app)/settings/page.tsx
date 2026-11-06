@@ -25,7 +25,8 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         <Field label="Company name"><input name="company_name" defaultValue={await setting("company_name")} /></Field>
         <Field label="Address"><input name="company_address" defaultValue={await setting("company_address")} /></Field>
         <Field label="Registration / tax no."><input name="company_vat_or_reg" defaultValue={await setting("company_vat_or_reg")} /></Field>
-        <Field label="IBAN / payment details"><input name="company_iban" defaultValue={await setting("company_iban")} /></Field><button>Save</button>
+        <Field label="IBAN / payment details"><input name="company_iban" defaultValue={await setting("company_iban")} /></Field><Field label="Logo address (https, shown on invoices)"><input name="company_logo_url" defaultValue={await setting("company_logo_url")} placeholder="https://..." /></Field>
+        <Field label="Invoice footer (thank-you or payment terms)"><input name="company_footer" defaultValue={await setting("company_footer")} /></Field><button>Save</button>
       </form>
       <h2>Email and leave approvals</h2>
       <div className="card" style={{ display: "grid", gap: 10 }}>

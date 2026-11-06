@@ -21,6 +21,7 @@ export default async function Invoices({ searchParams }: { searchParams: Promise
           <span className="muted">Uses approved hours and approved milestones that are not invoiced yet. Existing drafts for the month are rebuilt; issued invoices are never touched.</span>
         </form>
         <form className="row" style={{ marginTop: 8 }}><Field label="View month"><input type="month" name="period" defaultValue={period} /></Field><button className="sec">Show</button></form>
+        <p><a className="btn sec" href={`/invoices/export?period=${period}`}>Download for accountant (CSV)</a></p>
       </div>
       <table><thead><tr><th>Number</th><th>Client</th><th>Status</th><th>Due</th><th className="num">Total</th></tr></thead><tbody>
         {rows.map((i) => <tr key={i.id}><td><Link href={`/invoices/${i.id}`}>{i.number ?? `Draft #${i.id}`}</Link></td><td>{i.client}</td><td><Badge v={i.status} /></td><td>{fmtDate(i.due_date)}</td><td className="num">{money(i.total, i.currency)}</td></tr>)}

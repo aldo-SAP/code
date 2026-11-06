@@ -26,7 +26,7 @@ export default async function Team({ searchParams }: { searchParams: Promise<{ m
         <Field label="Month"><input type="month" name="month" defaultValue={period} /></Field>
         <Field label="Project"><select name="project" defaultValue={projectId ?? ""}><option value="">Everyone</option>{t.projects.map((p) => <option key={p.id} value={p.id}>{p.client}: {p.name}</option>)}</select></Field>
         <button className="sec">Show</button>
-        <div className="wide"><Link className="btn sec" href={q(shift(period, -1))}>&larr; {fmtMonthShort(shift(period, -1))}</Link> <Link className="btn sec" href={q(shift(period, 1))}>{fmtMonthShort(shift(period, 1))} &rarr;</Link></div>
+        <div className="wide"><Link className="btn sec" href="/team/forecast">Availability forecast</Link> <Link className="btn sec" href={q(shift(period, -1))}>&larr; {fmtMonthShort(shift(period, -1))}</Link> <Link className="btn sec" href={q(shift(period, 1))}>{fmtMonthShort(shift(period, 1))} &rarr;</Link></div>
       </form>
 
       <h2>Needs cover {t.gaps.length ? `(${t.gaps.length})` : ""}</h2>

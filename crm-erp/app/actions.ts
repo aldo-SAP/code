@@ -12,6 +12,7 @@ import { audit, noteLogin } from "@/lib/audit";
 import { safeNext } from "@/lib/nexturl";
 import { createLeave, decideLeave, cancelLeave, revokeLeave, setAllowance, type LeaveType } from "@/lib/leave";
 import { sendMail, retryMail } from "@/lib/mail";
+import { sendReminders } from "@/lib/reminders";
 import { addHoliday, addHolidaysBulk, copyHolidayYear, deleteHoliday, setHolidayCountry } from "@/lib/holidays";
 import { billedThrough, reopenBilled } from "@/lib/history";
 import { currentUser } from "@/lib/session";
@@ -642,7 +643,7 @@ export async function addFx(fd: FormData) {
 }
 export async function saveSettings(fd: FormData) {
   const u = await requireAdmin();
-  for (const k of ["company_name", "company_address", "company_vat_or_reg", "company_iban"]) await run("INSERT INTO settings (key,value) VALUES (?,?) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value", k, s(fd, k));
+  for (const k of ["company_name", "company_address", "company_vat_or_reg", "company_iban", "company_logo_url", "company_footer"]) await run("INSERT INTO settings (key,value) VALUES (?,?) ON CONFLICT (key) DO UPDATE SET value=EXCLUDED.value", k, s(fd, k));
   await audit(u, "update", "settings", null, "Company settings changed");
   back("/settings", "Saved");
 }
@@ -672,4 +673,14 @@ export async function importCsv(fd: FormData) {
     await audit(u, "import", kind, null, `Imported ${ok} ${kind} from CSV (${bad.length} skipped)`);
   });
   back("/import", `Imported ${ok} row(s).${bad.length ? " Skipped: " + bad.slice(0, 10).join("; ") + (bad.length > 10 ? "..." : "") : ""}`, bad.length ? "err" : "ok");
+}
+
+// ------------------------------------------------------------------ month-end
+export async function remindAction(fd: FormData) {
+  const u = await requireManager();
+  const period = s(fd, "period"); const one = i(fd, "rid");
+  if (!/^\d{4}-\d{2}$/.test(period)) back("/checklist", "Pick a month first.", "err");
+  const r = await sendReminders(period, { personIds: one ? [one] : undefined });
+  await audit(u, "remind", "timesheet", one ?? null, `Hours reminder for ${period}: ${r.sent.length} sent`);
+  back(`/checklist?month=${period}`, r.sent.length ? `Reminder sent to ${r.sent.join(", ")}.${r.skipped.length ? " Skipped: " + r.skipped.join(", ") + "." : ""}` : `Nobody was emailed.${r.skipped.length ? " Skipped: " + r.skipped.join(", ") + "." : ""}`, r.sent.length ? "ok" : "err");
 }
