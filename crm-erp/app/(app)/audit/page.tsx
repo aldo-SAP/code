@@ -18,7 +18,7 @@ export default async function Audit({ searchParams }: { searchParams: Promise<{ 
   const risky = new Set(["reopen_billed_hours", "void", "discard_draft", "login_failed", "delete"]);
   return (
     <>
-      <h2>Audit log</h2>
+      <h1>Audit log</h1>
       <p className="muted">Append-only: entries cannot be edited or deleted, not even by admins. Times are UTC. Showing the latest 300 matches.</p>
       <form className="row card">
         <Field label="Search"><input name="q" defaultValue={sp.q ?? ""} /></Field>

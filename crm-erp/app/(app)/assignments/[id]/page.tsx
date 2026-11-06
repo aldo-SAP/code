@@ -25,19 +25,19 @@ export default async function AssignmentPage({ params, searchParams }: { params:
   const unit = { hourly: "per hour", daily: "per day", monthly: "per month", fixed: "" }[a.billing_type as string];
   return (
     <>
-      <h2>{a.person} on {a.project}</h2><Flash sp={sp} />
+      <h1>{a.person} on {a.project}</h1><Flash sp={sp} />
       <p className="muted"><Link href={`/projects/${a.project_id}`}>Back to project</Link> · contract: {a.contract ?? "-"} ({a.payment_terms}, net {a.net_days}) · {a.billing_type} · {a.hours_per_day}h/day · {fmtSpan(a.start_date, a.end_date)} · {a.worker_type}
         {a.direct_to_client ? " · works directly with the client" : ""}</p>
       {through && <div className="flash err">Hours up to {through} are already invoiced or paid out. Changes that reach back before that date need a reason and are logged. <Link href={`/unlock?person=${a.person_id}&month=${through.slice(0, 7)}`}>Unlock billed hours</Link></div>}
       <p>{hours.map((h) => <span key={h.status} style={{ marginRight: 10 }}><Badge v={h.status} /> {h.h}h</span>)}{!hours.length && <span className="muted">No hours logged yet.</span>}</p>
 
       {a.billing_type !== "fixed" && <>
-        <h3>Rates {unit}</h3>
+        <h2>Rates {unit}</h2>
         <p className="muted">Rates are effective-dated: a new rate applies from its date onward and old invoices keep the old rate.</p>
         <table><thead><tr><th>Kind</th><th>Amount</th><th>Effective from</th><th></th></tr></thead><tbody>
           {rates.map((r) => <tr key={r.id}><td>{r.kind === "bill" ? "Bill (client pays)" : "Cost (we pay)"}</td><td>{money(r.amount, r.currency)}</td><td>{fmtDate(r.effective_from)}</td>
             <td><form action={deleteRate} className="row"><Hidden name="rid" value={r.id} />
-              {through && r.effective_from <= through && <><input name="reason" placeholder="Reason" minLength={5} style={{ width: 130 }} /><label className="f"><span><input type="checkbox" name="confirm_history" /> I know hours up to {through} are billed</span></label></>}
+              {through && r.effective_from <= through && <><input aria-label="Reason" name="reason" placeholder="Reason" minLength={5} style={{ width: 130 }} /><label className="f"><span><input type="checkbox" name="confirm_history" /> I know hours up to {through} are billed</span></label></>}
               <button className="danger sm">Remove</button></form></td></tr>)}
           {!rates.length && <tr><td colSpan={4} className="muted">No rates.</td></tr>}</tbody></table>
         <form action={addRate} className="row" style={{ marginTop: 8 }}>
@@ -53,12 +53,12 @@ export default async function AssignmentPage({ params, searchParams }: { params:
       </>}
 
       {(a.billing_type === "hourly" || a.billing_type === "daily") && <>
-        <h3>Substitutions</h3>
+        <h2>Substitutions</h2>
         <p className="muted">When {a.person} is away and someone else works instead, the client invoice still shows {a.person} only, with the substitute's hours included. The substitute is paid separately (external substitutes only; internal ones are on payroll).</p>
         <table><thead><tr><th>Substitute</th><th>From</th><th>To</th><th>Reason</th>{fin && <th>Cost rate {unit}</th>}<th></th></tr></thead><tbody>
           {subs.map((s) => <tr key={s.id}><td>{s.name} <span className="muted">({s.worker_type})</span></td><td>{fmtDate(s.from_date)}</td><td>{fmtDate(s.to_date)}</td><td>{s.reason}</td>
             {fin && <td><form action={updateSubstitutionCost} className="row"><Hidden name="rid" value={s.id} /><Hidden name="_back" value={back} />
-              {s.worker_type === "external" ? <><input name="cost_amount" type="number" step="0.01" defaultValue={s.cost_amount ?? ""} style={{ width: 90 }} placeholder="missing" /><CurrencySelect name="cost_currency" value={s.cost_currency} /><button className="sec sm">Save</button></> : <span className="muted">payroll</span>}</form></td>}
+              {s.worker_type === "external" ? <><input aria-label="missing" name="cost_amount" type="number" step="0.01" defaultValue={s.cost_amount ?? ""} style={{ width: 90 }} placeholder="missing" /><CurrencySelect name="cost_currency" value={s.cost_currency} label="Cost currency" /><button className="sec sm">Save</button></> : <span className="muted">payroll</span>}</form></td>}
             <td><form action={deleteSubstitution}><Hidden name="rid" value={s.id} /><Hidden name="_back" value={back} /><button className="danger sm">Remove</button></form></td></tr>)}
           {!subs.length && <tr><td colSpan={6} className="muted">No substitutions.</td></tr>}</tbody></table>
         <form action={addSubstitution} className="row" style={{ marginTop: 8 }}>
@@ -72,7 +72,7 @@ export default async function AssignmentPage({ params, searchParams }: { params:
       </>}
 
       {a.billing_type === "fixed" && <>
-        <h3>Milestones</h3>
+        <h2>Milestones</h2>
         <p className="muted">Approve a milestone when the work is accepted. It is then invoiced in the next invoice run (its own invoice if the client contract is "per milestone").</p>
         <table><thead><tr><th>Milestone</th><th>Due</th><th className="num">Bill</th>{fin && <th className="num">Cost</th>}<th>Status</th><th></th></tr></thead><tbody>
           {milestones.map((m) => <tr key={m.id}><td>{m.title}</td><td>{fmtDate(m.due_date)}</td><td className="num">{money(m.bill_amount, m.bill_currency)}</td>{fin && <td className="num">{money(m.cost_amount, m.cost_currency)}</td>}

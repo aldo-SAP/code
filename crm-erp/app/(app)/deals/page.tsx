@@ -11,19 +11,19 @@ export default async function Deals({ searchParams }: { searchParams: Promise<{ 
   const clients = await all<any>("SELECT id,name FROM clients ORDER BY name");
   return (
     <>
-      <h2>Pipeline</h2><Flash sp={sp} />
+      <h1>Pipeline</h1><Flash sp={sp} />
       <div className="kanban">
         {STAGES.map((st) => {
           const col = deals.filter((d) => d.stage === st);
           return (
             <div className="col" key={st}>
-              <h4>{st} ({col.length})</h4>
+              <h2>{st} ({col.length})</h2>
               {col.map((d) => (
                 <div className="deal" key={d.id}>
                   <b>{d.title}</b><br /><span className="muted">{d.client ?? d.company_name ?? "-"}</span><br />{money(d.value, d.currency)}
                   <form action={moveDeal} style={{ display: "flex", gap: 4, marginTop: 6 }}>
                     <Hidden name="rid" value={d.id} />
-                    <select name="stage" defaultValue={d.stage}>{STAGES.map((s) => <option key={s}>{s}</option>)}</select>
+                    <select name="stage" aria-label={`Move ${d.title} to stage`} defaultValue={d.stage}>{STAGES.map((s) => <option key={s}>{s}</option>)}</select>
                     <button className="sec sm">Move</button>
                   </form>
                   <form action={deleteDeal}><Hidden name="rid" value={d.id} /><button className="danger sm" style={{ marginTop: 4 }}>Delete</button></form>
@@ -33,7 +33,7 @@ export default async function Deals({ searchParams }: { searchParams: Promise<{ 
           );
         })}
       </div>
-      <h3>New deal / lead</h3>
+      <h2>New deal / lead</h2>
       <form action={addDeal} className="row card">
         <Field label="Title"><input name="title" required /></Field>
         <Field label="Existing client"><select name="client_id"><option value="">- new company -</option>{clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>

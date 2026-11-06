@@ -18,15 +18,15 @@ export default async function Settings({ searchParams }: { searchParams: Promise
   const fx = await all<any>("SELECT * FROM fx_rates ORDER BY currency, as_of DESC");
   return (
     <>
-      <h2>Settings</h2><Flash sp={sp} />
-      <h3>Company (shown on invoices)</h3>
+      <h1>Settings</h1><Flash sp={sp} />
+      <h2>Company (shown on invoices)</h2>
       <form action={saveSettings} className="row card">
         <Field label="Company name"><input name="company_name" defaultValue={await setting("company_name")} /></Field>
         <Field label="Address"><input name="company_address" defaultValue={await setting("company_address")} /></Field>
         <Field label="Registration / tax no."><input name="company_vat_or_reg" defaultValue={await setting("company_vat_or_reg")} /></Field>
         <Field label="IBAN / payment details"><input name="company_iban" defaultValue={await setting("company_iban")} /></Field><button>Save</button>
       </form>
-      <h3>Email and leave approvals</h3>
+      <h2>Email and leave approvals</h2>
       <div className="card" style={{ display: "grid", gap: 10 }}>
         <div>Email sending: <b>{provider === "none" ? "not configured (messages are only logged)" : provider === "graph" ? "Microsoft 365" : "Resend"}</b>. See DEPLOY.md to set it up.</div>
         <form action={saveLeaveSettings} className="row">
@@ -43,21 +43,21 @@ export default async function Settings({ searchParams }: { searchParams: Promise
             <td>{e.status !== "sent" && provider !== "none" && <form action={retryEmailAction}><Hidden name="rid" value={e.id} /><button className="sec sm">Retry</button></form>}</td></tr>)}
           {!emails.length && <tr><td colSpan={5} className="muted">No emails yet.</td></tr>}</tbody></table></div>
       </details>
-      <h3>Backup</h3>
+      <h2>Backup</h2>
       <div className="card">
         <a className="btn" href="/backup">Download full data export (JSON)</a>
         <p className="muted" style={{ marginBottom: 0 }}>Supabase also keeps its own daily backups. Download an export about once a week and keep it somewhere safe outside the hosting accounts. Every download is logged.</p>
       </div>
-      <h3>Microsoft sign-in</h3>
+      <h2>Microsoft sign-in</h2>
       <div className="card">
         {ms ? <>Active for tenant <code>{ms.tenant}</code>. Redirect URI registered in Entra must be exactly: <code>{redirectUri(ms)}</code></>
           : <>Not configured. Set <code>MS_TENANT_ID</code>, <code>MS_CLIENT_ID</code>, <code>MS_CLIENT_SECRET</code> and <code>APP_URL</code> on the server (see the README), then restart.</>}
         <p className="muted" style={{ marginBottom: 0 }}>Only users you create below can sign in. Nobody is created automatically. Keep your own admin on "both" as a safety net.</p>
       </div>
-      <h3>Users</h3>
+      <h2>Users</h2>
       <table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Sign-in</th><th>Linked person</th><th></th></tr></thead><tbody>
         {users.map((u) => <tr key={u.id}><td>{u.name}</td><td>{u.email}</td><td><Badge v={u.role} /></td>
-          <td><form action={setUserAuth} className="row"><Hidden name="rid" value={u.id} /><select name="auth_method" defaultValue={u.auth_method}><option value="password">password</option><option value="microsoft">Microsoft</option><option value="both">both</option></select><button className="sec sm">Save</button></form>{u.ms_oid ? <span className="muted">Microsoft linked</span> : null}</td><td>{u.person}</td>
+          <td><form action={setUserAuth} className="row"><Hidden name="rid" value={u.id} /><select name="auth_method" aria-label={`Sign-in method for ${u.name}`} defaultValue={u.auth_method}><option value="password">password</option><option value="microsoft">Microsoft</option><option value="both">both</option></select><button className="sec sm">Save</button></form>{u.ms_oid ? <span className="muted">Microsoft linked</span> : null}</td><td>{u.person}</td>
           <td><form action={setUserActive}><Hidden name="rid" value={u.id} /><button name="active" value={u.active ? 0 : 1} className="sec sm">{u.active ? "Deactivate" : "Activate"}</button></form></td></tr>)}</tbody></table>
       <form action={addUser} className="row card" style={{ marginTop: 8 }}>
         <Field label="Name"><input name="name" /></Field><Field label="Email"><input name="email" type="email" required /></Field>
@@ -67,7 +67,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         <Field label="Linked person (needed for workers)"><select name="person_id"><option value="">-</option>{people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>
         <button>Create user</button>
       </form>
-      <h3>Exchange rates (1 unit = x EUR)</h3>
+      <h2>Exchange rates (1 unit = x EUR)</h2>
       <table><tbody>{fx.map((f) => <tr key={f.id}><td>{f.currency}</td><td>{f.rate_to_eur}</td><td>{fmtDate(f.as_of)}</td></tr>)}{!fx.length && <tr><td className="muted">Only needed for non-EUR amounts in margin reports.</td></tr>}</tbody></table>
       <form action={addFx} className="row" style={{ marginTop: 8 }}>
         <Field label="Currency"><select name="currency">{CURRENCIES.filter((c) => c !== "EUR").map((c) => <option key={c}>{c}</option>)}</select></Field>

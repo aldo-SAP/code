@@ -22,7 +22,7 @@ export default async function LeaveDetail({ params, searchParams }: { params: Pr
   return (
     <>
       <p><Link href="/leave">&larr; Leave</Link></p>
-      <h2>{l.name}: {l.type} <Badge v={l.status} /></h2><Flash sp={sp} />
+      <h1>{l.name}: {l.type} <Badge v={l.status} /></h1><Flash sp={sp} />
       <div className="card">
         <b>{fmtRange(l.from_date, l.to_date)}</b> ({l.days} working day{l.days === 1 ? "" : "s"})
         {l.notes && <p>Note: {l.notes}</p>}
@@ -46,7 +46,7 @@ export default async function LeaveDetail({ params, searchParams }: { params: Pr
       {manager && l.status === "requested" && !own && (
         <form action={decideLeaveAction} className="row card">
           <Hidden name="rid" value={l.id} /><Hidden name="_back" value={`/leave/${l.id}`} />
-          <input name="note" placeholder="Note to the worker (required to reject)" style={{ width: 320 }} />
+          <input aria-label="Note to the worker (required to reject)" name="note" placeholder="Note to the worker (required to reject)" style={{ width: 320 }} />
           <button name="decision" value="approve">Approve</button><button name="decision" value="reject" className="danger">Reject</button>
         </form>
       )}
@@ -56,7 +56,7 @@ export default async function LeaveDetail({ params, searchParams }: { params: Pr
           <Hidden name="rid" value={l.id} /><Hidden name="_back" value={`/leave/${l.id}`} />
           <b>Withdraw this approval</b>
           <span className="muted">Use this if project needs change. The {l.days} day{l.days === 1 ? "" : "s"} go back to the employee's allowance, and the employee and approvers are emailed in the same thread.</span>
-          <input name="note" required minLength={3} placeholder="Reason for the employee" />
+          <input aria-label="Reason for the employee" name="note" required minLength={3} placeholder="Reason for the employee" />
           <div><button className="danger">Withdraw approval</button></div>
         </form>
       )}
@@ -65,7 +65,7 @@ export default async function LeaveDetail({ params, searchParams }: { params: Pr
       )}
 
       {history.length > 0 && <>
-        <h3>History</h3>
+        <h2>History</h2>
         <table><tbody>{history.map((h) => <tr key={h.id}><td style={{ whiteSpace: "nowrap" }}>{fmtDateTime(h.created_at)}</td><td>{h.user_name}</td><td>{h.summary}{h.reason ? <span className="muted"> - {h.reason}</span> : null}</td></tr>)}</tbody></table>
       </>}
     </>

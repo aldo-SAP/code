@@ -18,7 +18,7 @@ export default async function Timesheets({ searchParams }: { searchParams: Promi
   const month = /^\d{4}-\d{2}$/.test(sp.month ?? "") ? sp.month! : thisMonth();
   const people = manager ? await all<any>("SELECT id,name FROM people WHERE stage IN ('ready','placed') ORDER BY name") : [];
   const pid = manager ? Number(sp.person ?? people[0]?.id ?? 0) : user.person_id;
-  if (!pid) return <div className="card"><h2>Timesheet</h2><p className="muted">{manager ? "No people are ready to be placed yet." : "Your login is not linked to a person record. Ask an admin."}</p></div>;
+  if (!pid) return <div className="card"><h1>Timesheet</h1><p className="muted">{manager ? "No people are ready to be placed yet." : "Your login is not linked to a person record. Ask an admin."}</p></div>;
   const person = await get<any>("SELECT * FROM people WHERE id=?", pid);
   const { start, end } = periodRange(month);
   const days = Array.from({ length: Number(end.slice(8)) }, (_, k) => `${month}-${String(k + 1).padStart(2, "0")}`);
@@ -46,7 +46,7 @@ export default async function Timesheets({ searchParams }: { searchParams: Promi
 
   return (
     <>
-      <h2>Timesheet {fmtMonth(month)}</h2><Flash sp={sp} />
+      <h1>Timesheet {fmtMonth(month)}</h1><Flash sp={sp} />
       <div className="bar">
         {manager && <form className="row"><input type="hidden" name="month" value={month} />
           <Field label="Person"><select name="person" defaultValue={pid}>{people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></Field><button className="sec">Show</button></form>}
@@ -78,7 +78,7 @@ export default async function Timesheets({ searchParams }: { searchParams: Promi
           </div>
         </form>
       )}
-      <h3>Leave</h3>
+      <h2>Leave</h2>
       <table><tbody>{leave.map((l) => <tr key={l.id}><td>{l.type}</td><td>{fmtRange(l.from_date, l.to_date)}</td><td><Badge v={l.status} /></td></tr>)}
         {!leave.length && <tr><td className="muted">No leave this month. Leave is not billable.</td></tr>}</tbody></table>
       <p><Link href="/leave">Request or manage leave</Link></p>

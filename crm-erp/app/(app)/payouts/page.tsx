@@ -11,7 +11,7 @@ export default async function Payouts({ searchParams }: { searchParams: Promise<
   const rows = await all<any>("SELECT p.*, per.name FROM payouts p JOIN people per ON per.id=p.person_id WHERE p.period=? ORDER BY p.kind, per.name", period);
   return (
     <>
-      <h2>Payouts</h2><Flash sp={sp} />
+      <h1>Payouts</h1><Flash sp={sp} />
       <div className="card">
         <form action={runPayouts} className="row"><Field label="Month"><input type="month" name="period" defaultValue={period} required /></Field><button>Generate draft payouts</button>
           <span className="muted">External people: statement they invoice us from. Internal people: payroll cost. Substitutes are paid at the cost rate on the substitution.</span></form>

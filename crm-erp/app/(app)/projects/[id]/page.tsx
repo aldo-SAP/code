@@ -21,13 +21,13 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
   const per = (bt: string) => ({ hourly: "/h", daily: "/day", monthly: "/month", fixed: "" }[bt] ?? "");
   return (
     <>
-      <h2>{p.name} <Badge v={p.status} /></h2><Flash sp={sp} />
+      <h1>{p.name} <Badge v={p.status} /></h1><Flash sp={sp} />
       <div className="muted" style={{ margin: "8px 0" }}>Client: <Link href={`/clients/${p.client_id}`}>{p.client}</Link>
         <form action={setProjectStatus} style={{ display: "inline-flex", gap: 6, marginLeft: 12 }}>
           <Hidden name="rid" value={p.id} /><Hidden name="_back" value={`/projects/${p.id}`} />
-          <select name="status" defaultValue={p.status}>{["planned", "active", "paused", "done"].map((s) => <option key={s}>{s}</option>)}</select><button className="sec sm">Set status</button></form></div>
+          <select name="status" aria-label="Project status" defaultValue={p.status}>{["planned", "active", "paused", "done"].map((s) => <option key={s}>{s}</option>)}</select><button className="sec sm">Set status</button></form></div>
 
-      <h3>Team</h3>
+      <h2>Team</h2>
       <div className="tw"><table><thead><tr><th>Person</th><th>Contract</th><th>Role</th><th>Billing</th><th>Bill rate</th>{can.finance(user) && <th>Cost rate</th>}<th>Dates</th><th></th></tr></thead><tbody>
         {rows.map((a) => <tr key={a.id}><td>{a.person} <span className="muted">({a.worker_type})</span>{a.direct_to_client ? <> <span className="badge">direct to client</span></> : null}</td><td>{a.contract}</td><td>{a.role_title}</td><td>{a.billing_type}</td>
           <td>{a.bill ? `${a.bill}${per(a.billing_type)}` : a.billing_type === "fixed" ? "milestones" : <span className="badge err">missing</span>}</td>
@@ -35,7 +35,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
           <td>{fmtSpan(a.start_date, a.end_date)}</td><td><Link href={`/assignments/${a.id}`}>Rates, substitutes, milestones</Link></td></tr>)}
         {!rows.length && <tr><td colSpan={8} className="muted">Nobody assigned yet.</td></tr>}</tbody></table></div>
 
-      <h3>Add a person (new contract)</h3>
+      <h2>Add a person (new contract)</h2>
       <p className="muted">Each person on this project has their own client contract, with their own rate and terms.</p>
       <ContractForm client={{ id: p.client_id, currency: p.currency }} projects={[]} fixedProjectId={p.id} people={people} fin={can.finance(user)} back={`/projects/${p.id}`} />
       <p className="muted">Rate units follow the billing type: per hour, per day or per month. Fixed price work is billed through milestones.</p>

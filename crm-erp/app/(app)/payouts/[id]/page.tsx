@@ -14,14 +14,14 @@ export default async function PayoutPage({ params }: { params: Promise<{ id: str
   const lines = await all<any>("SELECT * FROM payout_lines WHERE payout_id=? ORDER BY id", p.id);
   const set = (status: string, label: string) => (
     <form action={setPayout} className="row"><Hidden name="rid" value={p.id} /><Hidden name="_back" value={`/payouts/${p.id}`} />
-      {p.status === "paid" && <><input name="reason" placeholder="Reason (required)" required minLength={5} /><input name="confirm" placeholder="Type REOPEN" required autoComplete="off" style={{ width: 120 }} /></>}
+      {p.status === "paid" && <><input aria-label="Reason (required)" name="reason" placeholder="Reason (required)" required minLength={5} /><input aria-label="Type REOPEN" name="confirm" placeholder="Type REOPEN" required autoComplete="off" style={{ width: 120 }} /></>}
       <button name="status" value={status} className="sec">{label}</button></form>);
   return (
     <>
       <div className="bar no-print"><Link href={`/payouts?period=${p.period}`}>&larr; Payouts</Link><Badge v={p.status} />
         {p.status === "draft" && set("approved", "Approve")}{p.status === "approved" && set("paid", "Mark paid")}{p.status !== "draft" && set("draft", "Back to draft")}<PrintButton /></div>
       <div className="invoice">
-        <h2>{p.kind === "payroll" ? "Payroll cost statement" : "Contractor statement"}: {p.name}</h2>
+        <h1>{p.kind === "payroll" ? "Payroll cost statement" : "Contractor statement"}: {p.name}</h1>
         <p>Period {p.period} · {p.currency}{p.kind === "contractor" ? " · the contractor invoices us for this total" : " · internal, paid through payroll"}</p>
         <table><thead><tr><th>Description</th><th className="num">Quantity</th><th className="num">Unit price</th><th className="num">Amount</th></tr></thead><tbody>
           {lines.map((l) => <tr key={l.id}><td>{l.description}</td><td className="num">{num(l.quantity)} {l.unit}</td><td className="num">{money(l.unit_price, p.currency)}</td><td className="num">{money(l.amount, p.currency)}</td></tr>)}

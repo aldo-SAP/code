@@ -31,18 +31,18 @@ export default async function Leave({ searchParams }: { searchParams: Promise<{ 
   const types = (m: boolean) => (m ? ["vacation", "sick", "holiday", "other"] : ["vacation", "sick", "other"]);
   return (
     <>
-      <h2>Leave</h2><Flash sp={sp} />
+      <h1>Leave</h1><Flash sp={sp} />
 
       {manager && (
         <>
-          <h3>Waiting for your decision ({pending.length})</h3>
+          <h2>Waiting for your decision ({pending.length})</h2>
           <div className="tw"><table><thead><tr><th>Person</th><th>Type</th><th>Dates</th><th className="num">Working days</th><th>Note</th><th>Decision</th></tr></thead><tbody>
             {pending.map((l) => (
               <tr key={l.id}>
                 <td><Link href={`/leave/${l.id}`}>{l.name}</Link></td><td>{l.type}</td><td>{fmtRange(l.from_date, l.to_date)}</td><td className="num">{l.days}</td><td>{l.notes}</td>
                 <td>{l.person_id === user.person_id ? <span className="muted">your own request: another manager decides</span> : (
                   <form action={decideLeaveAction} className="row"><Hidden name="rid" value={l.id} />
-                    <input name="note" placeholder="Note (required to reject)" style={{ width: 190 }} />
+                    <input aria-label="Note (required to reject)" name="note" placeholder="Note (required to reject)" style={{ width: 190 }} />
                     <button name="decision" value="approve" className="sm">Approve</button><button name="decision" value="reject" className="danger sm">Reject</button></form>)}</td>
               </tr>))}
             {!pending.length && <tr><td colSpan={6} className="muted">No requests waiting.</td></tr>}</tbody></table></div>
@@ -51,7 +51,7 @@ export default async function Leave({ searchParams }: { searchParams: Promise<{ 
 
       {user.person_id && (
         <>
-          <h3>{manager ? "My leave" : "Request leave"}</h3>
+          <h2>{manager ? "My leave" : "Request leave"}</h2>
           <form action={addLeave} className="row card">
             <Hidden name="person_id" value={user.person_id} />
             <div className="wide"><Field label="Type"><select name="type">{types(manager).map((t) => <option key={t}>{t}</option>)}</select></Field></div>
@@ -62,14 +62,14 @@ export default async function Leave({ searchParams }: { searchParams: Promise<{ 
             <span className="muted">Leave "To" empty for a single day. Vacation needs approval. Sick leave is recorded at once and your managers are told. Weekends{myCountry ? ` and ${countryName(myCountry)} public holidays` : ""} are not counted.</span>
           </form>
           {open.length > 0 && <>
-            <h3 style={{ fontSize: 13 }}>Open and upcoming</h3>
+            <h2 style={{ fontSize: 13 }}>Open and upcoming</h2>
             <div className="tw"><table><thead><tr><th>Type</th><th>Dates</th><th className="num">Days</th><th>Status</th><th></th></tr></thead><tbody>
               {open.map((l) => (
                 <tr key={l.id}><td>{l.type}</td><td><Link href={`/leave/${l.id}`}>{fmtRange(l.from_date, l.to_date)}</Link></td><td className="num">{l.days}</td><td><Badge v={l.status} /></td>
                   <td><form action={cancelLeaveAction}><Hidden name="rid" value={l.id} /><button className="danger sm">{l.status === "requested" ? "Withdraw" : "Cancel"}</button></form></td></tr>))}
             </tbody></table></div>
           </>}
-          <h3>My year</h3>
+          <h2>My year</h2>
           <LeaveTimeline personId={user.person_id} year={year} basePath="/leave" />
         </>
       )}
@@ -77,7 +77,7 @@ export default async function Leave({ searchParams }: { searchParams: Promise<{ 
 
       {manager && (
         <>
-          <h3>Team calendar</h3>
+          <h2>Team calendar</h2>
           <div className="bar">
             <Link className="btn sec" href={`/leave?month=${shift(month, -1)}`}>&larr; {fmtMonthShort(shift(month, -1))}</Link>
             <b>{fmtMonth(month)}</b>
@@ -96,12 +96,12 @@ export default async function Leave({ searchParams }: { searchParams: Promise<{ 
             </tbody></table></div>
           ) : <p className="muted">Nobody is off this month.</p>}
 
-          <h3>Allowances {year}</h3>
+          <h2>Allowances {year}</h2>
           <div className="tw"><table><thead><tr><th>Person</th><th className="num">Allowance</th><th className="num">Taken</th><th className="num">Planned</th><th className="num">Waiting</th><th className="num">Left</th></tr></thead><tbody>
             {balances.map(({ p, b }) => <tr key={p.id}><td><Link href={`/people/${p.id}?year=${year}`}>{p.name}</Link></td><td className="num">{num(b.allowance)}</td><td className="num">{num(b.taken)}</td><td className="num">{num(b.planned)}</td><td className="num">{num(b.pending)}</td><td className="num"><b>{num(b.remaining)}</b></td></tr>)}
             {!balances.length && <tr><td colSpan={6} className="muted">Nobody to show.</td></tr>}</tbody></table></div>
 
-          <h3>Record leave for someone</h3>
+          <h2>Record leave for someone</h2>
           <form action={addLeave} className="row card">
             <Field label="Person"><select name="person_id" required><option value="">-</option>{people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>
             <Field label="Type"><select name="type">{types(true).map((t) => <option key={t}>{t}</option>)}</select></Field>

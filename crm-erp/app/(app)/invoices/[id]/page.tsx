@@ -33,13 +33,13 @@ export default async function InvoicePage({ params, searchParams }: { params: Pr
         <form action={voidInv} className="row card no-print">
           <Hidden name="rid" value={inv.id} />
           <b>Void this issued invoice</b>
-          <input name="reason" placeholder="Reason (required)" minLength={5} required style={{ minWidth: 240 }} />
-          <input name="confirm" placeholder="Type VOID" required autoComplete="off" style={{ width: 110 }} />
+          <input aria-label="Reason (required)" name="reason" placeholder="Reason (required)" minLength={5} required style={{ minWidth: 240 }} />
+          <input aria-label="Type VOID" name="confirm" placeholder="Type VOID" required autoComplete="off" style={{ width: 110 }} />
           <button className="danger">Void invoice</button>
         </form>
       )}
       <div className="invoice">
-        <h2 style={{ marginBottom: 2 }}>{inv.status === "draft" ? "DRAFT invoice" : `Invoice ${inv.number}`}</h2>
+        <h1 style={{ marginBottom: 2 }}>{inv.status === "draft" ? "DRAFT invoice" : `Invoice ${inv.number}`}</h1>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 20, margin: "14px 0" }}>
           <div><b>{await setting("company_name", "Your company")}</b><br /><span style={{ whiteSpace: "pre-line" }}>{await setting("company_address")}</span><br />{await setting("company_vat_or_reg")}</div>
           <div><b>Bill to</b><br />{inv.client}<br /><span style={{ whiteSpace: "pre-line" }}>{inv.address}</span><br />{inv.country}</div>
@@ -51,7 +51,7 @@ export default async function InvoicePage({ params, searchParams }: { params: Pr
         <p style={{ marginTop: 18 }}>Payment to: {await setting("company_iban", "-")}</p>
       </div>
       <div className="no-print">
-        <h3>History</h3>
+        <h2>History</h2>
         <table><tbody>
           {(await auditFor("invoice", inv.id)).map((h) => <tr key={h.id}><td style={{ whiteSpace: "nowrap" }}>{fmtDateTime(h.created_at)}</td><td>{h.user_name}</td><td>{h.summary}{h.reason ? <span className="muted"> - {h.reason}</span> : null}</td></tr>)}
           {!(await auditFor("invoice", inv.id)).length && <tr><td className="muted">No logged actions.</td></tr>}

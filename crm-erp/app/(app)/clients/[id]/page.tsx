@@ -23,7 +23,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
   const back = `/clients/${c.id}`;
   return (
     <>
-      <h2>{c.name}</h2><Flash sp={sp} />
+      <h1>{c.name}</h1><Flash sp={sp} />
       <form action={updateClient} className="row card">
         <Hidden name="rid" value={c.id} />
         <Field label="Name"><input name="name" defaultValue={c.name} required /></Field>
@@ -36,7 +36,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
         <button>Save</button>
       </form>
 
-      <h3>Contacts</h3>
+      <h2>Contacts</h2>
       <table><thead><tr><th>Name</th><th>Role</th><th>Email</th><th>Phone</th><th></th></tr></thead><tbody>
         {contacts.map((x) => <tr key={x.id}><td>{x.name}</td><td>{x.role}</td><td>{x.email}</td><td>{x.phone}</td>
           <td><form action={deleteContact}><Hidden name="rid" value={x.id} /><Hidden name="_back" value={back} /><button className="danger sm">Remove</button></form></td></tr>)}
@@ -47,14 +47,14 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
         <Field label="Email"><input name="email" /></Field><Field label="Phone"><input name="phone" /></Field><button className="sec">Add contact</button>
       </form>
 
-      <h3>Contracts</h3>
+      <h2>Contracts</h2>
       <table><thead><tr><th>Contract</th><th>Person</th><th>Project</th><th>Period</th><th>Terms</th></tr></thead><tbody>
         {contracts.map((k) => <tr key={k.id}><td>{k.aid ? <Link href={`/assignments/${k.aid}`}>{k.title}</Link> : k.title}</td><td>{k.person}</td><td>{k.project}</td><td>{fmtSpan(k.start_date, k.end_date)}</td><td>{k.payment_terms}, net {k.net_days}, {k.currency}</td></tr>)}
         {!contracts.length && <tr><td colSpan={5} className="muted">No contracts yet.</td></tr>}</tbody></table>
-      <h3 style={{ fontSize: 13 }}>New contract (one person per contract; a project can have several contracts)</h3>
+      <h2 style={{ fontSize: 13 }}>New contract (one person per contract; a project can have several contracts)</h2>
       <ContractForm client={c} projects={projects} people={people} fin={fin} back={back} />
 
-      <h3>Projects</h3>
+      <h2>Projects</h2>
       <table><thead><tr><th>Project</th><th>People</th><th>Status</th></tr></thead><tbody>
         {projects.map((p) => <tr key={p.id}><td><Link href={`/projects/${p.id}`}>{p.name}</Link></td><td>{p.people}</td><td><Badge v={p.status} /></td></tr>)}
         {!projects.length && <tr><td colSpan={3} className="muted">No projects.</td></tr>}</tbody></table>
@@ -65,8 +65,8 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
         <button className="sec">Add empty project</button>
       </form>
 
-      {!!deals.length && <><h3>Deals</h3><table><tbody>{deals.map((d) => <tr key={d.id}><td>{d.title}</td><td><Badge v={d.stage} /></td><td className="num">{money(d.value, d.currency)}</td></tr>)}</tbody></table></>}
-      {!!invoices.length && <><h3>Recent invoices</h3><table><tbody>{invoices.map((i) => <tr key={i.id}><td><Link href={`/invoices/${i.id}`}>{i.number ?? `Draft #${i.id}`}</Link></td><td>{i.period}</td><td><Badge v={i.status} /></td><td className="num">{money(i.total, i.currency)}</td></tr>)}</tbody></table></>}
+      {!!deals.length && <><h2>Deals</h2><table><tbody>{deals.map((d) => <tr key={d.id}><td>{d.title}</td><td><Badge v={d.stage} /></td><td className="num">{money(d.value, d.currency)}</td></tr>)}</tbody></table></>}
+      {!!invoices.length && <><h2>Recent invoices</h2><table><tbody>{invoices.map((i) => <tr key={i.id}><td><Link href={`/invoices/${i.id}`}>{i.number ?? `Draft #${i.id}`}</Link></td><td>{i.period}</td><td><Badge v={i.status} /></td><td className="num">{money(i.total, i.currency)}</td></tr>)}</tbody></table></>}
     </>
   );
 }

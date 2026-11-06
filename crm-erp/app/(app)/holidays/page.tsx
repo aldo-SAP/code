@@ -22,7 +22,7 @@ export default async function Holidays({ searchParams }: { searchParams: Promise
   const back = `/holidays?country=${country}&year=${year}`;
   return (
     <>
-      <h2>Public holidays</h2><Flash sp={sp} />
+      <h1>Public holidays</h1><Flash sp={sp} />
       <p className="muted">One calendar per country. Each person follows the calendar set in <b>Public holidays follow</b> on their person page (this can differ from where they live). Those days are not counted as vacation, are marked on timesheets and timelines, and counting updates automatically when you change a calendar.</p>
 
       <form className="row card">
@@ -32,7 +32,7 @@ export default async function Holidays({ searchParams }: { searchParams: Promise
         <span className="muted">Calendars in use: {summary.length ? summary.map((c, k) => <span key={c.country}>{k > 0 && ", "}<Link href={`/holidays?country=${c.country}&year=${year}`}>{countryName(c.country)}</Link> ({c.entries} in {year}, {c.people} people)</span>) : "none yet"}</span>
       </form>
 
-      <h3>{countryName(country)} {year}: {rows.length} day{rows.length === 1 ? "" : "s"}</h3>
+      <h2>{countryName(country)} {year}: {rows.length} day{rows.length === 1 ? "" : "s"}</h2>
       <div className="tw"><table><thead><tr><th>Date</th><th></th><th>Holiday</th><th></th></tr></thead><tbody>
         {rows.map((h) => (
           <tr key={h.day}><td style={{ whiteSpace: "nowrap" }}>{fmtDate(h.day)}</td><td className="muted">{WD[new Date(h.day + "T00:00:00Z").getUTCDay()]}</td><td>{h.name}</td>
@@ -40,7 +40,7 @@ export default async function Holidays({ searchParams }: { searchParams: Promise
         {!rows.length && <tr><td colSpan={4} className="muted">No public holidays entered for {countryName(country)} in {year} yet.</td></tr>}</tbody></table></div>
       <p className="muted">{followers.length ? <>Following this calendar: {followers.map((p, k) => <span key={p.id}>{k > 0 && ", "}<Link href={`/people/${p.id}`}>{p.name}</Link>{p.country && p.country !== countryName(country) ? ` (lives in ${p.country})` : ""}</span>)}.</> : "Nobody follows this calendar yet. Set it on a person's page."}</p>
 
-      <h3>Add one day</h3>
+      <h2>Add one day</h2>
       <form action={addHolidayAction} className="row card">
         <Hidden name="country" value={country} /><Hidden name="_back" value={back} />
         <Field label="Date"><input type="date" name="day" required defaultValue={`${year}-01-01`} /></Field>
@@ -48,11 +48,11 @@ export default async function Holidays({ searchParams }: { searchParams: Promise
         <button>Add to {countryName(country)}</button>
       </form>
 
-      <h3>Paste a whole year</h3>
+      <h2>Paste a whole year</h2>
       <form action={addHolidaysBulkAction} className="card" style={{ display: "grid", gap: 8 }}>
         <Hidden name="country" value={country} /><Hidden name="_back" value={back} />
         <span className="muted">One per line: date, then name. Dates as 2026-12-25 or 25.12.2026. Existing dates are updated. If any line is wrong nothing is saved.</span>
-        <textarea name="lines" rows={8} placeholder={`${year}-01-01 New Year's Day\n${year}-04-06 Easter Monday\n25.12.${year} Christmas Day`} />
+        <textarea name="lines" aria-label="Public holidays, one per line: date then name" rows={8} placeholder={`${year}-01-01 New Year's Day\n${year}-04-06 Easter Monday\n25.12.${year} Christmas Day`} />
         <div><button>Save these days for {countryName(country)}</button></div>
       </form>
 

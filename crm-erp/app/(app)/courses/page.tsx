@@ -14,7 +14,7 @@ export default async function Courses({ searchParams }: { searchParams: Promise<
   const people = await all<any>("SELECT id,name FROM people WHERE stage IN ('applicant','training') ORDER BY name");
   return (
     <>
-      <h2>Training</h2><Flash sp={sp} />
+      <h1>Training</h1><Flash sp={sp} />
       {courses.map((c) => {
         const en = enrollments[c.id] ?? [];
         return (
@@ -31,7 +31,7 @@ export default async function Courses({ searchParams }: { searchParams: Promise<
         );
       })}
       {!courses.length && <p className="muted">No courses yet.</p>}
-      <h3>New course</h3>
+      <h2>New course</h2>
       <form action={addCourse} className="row card">
         <Field label="Name"><input name="name" required /></Field>
         <div className="pair"><Field label="Start"><input type="date" name="start_date" /></Field><Field label="End"><input type="date" name="end_date" /></Field></div>

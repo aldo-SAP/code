@@ -1,18 +1,18 @@
-:root{color-scheme:light;--bg:#f6f7f9;--card:#fff;--text:#1c2430;--muted:#667085;--line:#e3e7ee;--brand:#2f5bea;--brand-d:#2347b8;--ok:#117a4d;--okbg:#e5f6ee;--err:#b42318;--errbg:#fdecea;--warn:#a15c00;--warnbg:#fff4e0}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#10141b;--card:#181e28;--text:#e8ecf3;--muted:#98a2b3;--line:#2a3342;--brand:#6c8cff;--brand-d:#8aa3ff;--ok:#5fd6a0;--okbg:#12301f;--err:#ff8a80;--errbg:#3a1714;--warn:#ffb85c;--warnbg:#3a2a10}}
-:root[data-theme="dark"]{color-scheme:dark;--bg:#10141b;--card:#181e28;--text:#e8ecf3;--muted:#98a2b3;--line:#2a3342;--brand:#6c8cff;--brand-d:#8aa3ff;--ok:#5fd6a0;--okbg:#12301f;--err:#ff8a80;--errbg:#3a1714;--warn:#ffb85c;--warnbg:#3a2a10}
+:root{color-scheme:light;--bg:#f6f7f9;--card:#fff;--text:#1c2430;--muted:#667085;--line:#e3e7ee;--brand:#2f5bea;--brand-fg:#ffffff;--brand-d:#2347b8;--ok:#117a4d;--okbg:#e5f6ee;--err:#b42318;--errbg:#fdecea;--warn:#a15c00;--warnbg:#fff4e0}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#10141b;--card:#181e28;--text:#e8ecf3;--muted:#98a2b3;--line:#2a3342;--brand:#6c8cff;--brand-fg:#0b1220;--brand-d:#8aa3ff;--ok:#5fd6a0;--okbg:#12301f;--err:#ff8a80;--errbg:#3a1714;--warn:#ffb85c;--warnbg:#3a2a10}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#10141b;--card:#181e28;--text:#e8ecf3;--muted:#98a2b3;--line:#2a3342;--brand:#6c8cff;--brand-fg:#0b1220;--brand-d:#8aa3ff;--ok:#5fd6a0;--okbg:#12301f;--err:#ff8a80;--errbg:#3a1714;--warn:#ffb85c;--warnbg:#3a2a10}
 :root[data-theme="light"]{color-scheme:light}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 a{color:var(--brand);text-decoration:none}a:hover{text-decoration:underline}
 .shell{display:flex;min-height:100vh}
 .side{width:210px;flex:none;background:var(--card);border-right:1px solid var(--line);padding:16px 10px;position:sticky;top:0;height:100vh;overflow:auto}
-.side h1{font-size:16px;margin:0 8px 14px}
+.side .brand{font-size:16px;font-weight:600;margin:0 8px 14px}
 .side a{display:block;padding:7px 10px;border-radius:6px;color:var(--text)}
 .side a:hover{background:var(--bg);text-decoration:none}
 .side .who{margin:18px 8px 6px;color:var(--muted);font-size:12px}
 .main{flex:1;padding:22px 28px;min-width:0;max-width:1300px}
-h2{font-size:20px;margin:0 0 14px}h3{font-size:15px;margin:22px 0 8px}
+h1{font-size:20px;margin:0 0 14px}h2{font-size:15px;margin:22px 0 8px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:16px}
 .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
 .stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
@@ -24,7 +24,7 @@ tr:last-child td{border-bottom:0}.num{text-align:right;font-variant-numeric:tabu
 .tw{overflow-x:auto}
 input,select,textarea{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--text);max-width:100%}
 textarea{width:100%;min-height:70px}
-button,.btn{font:inherit;padding:6px 12px;border-radius:6px;border:1px solid var(--brand);background:var(--brand);color:#fff;cursor:pointer;display:inline-block}
+button,.btn{font:inherit;padding:6px 12px;border-radius:6px;border:1px solid var(--brand);background:var(--brand);color:var(--brand-fg);cursor:pointer;display:inline-block}
 button:hover,.btn:hover{background:var(--brand-d);text-decoration:none}
 button.sec,.btn.sec{background:transparent;color:var(--brand)}
 button.danger{background:transparent;color:var(--err);border-color:var(--err)}
@@ -56,7 +56,7 @@ body{padding-left:env(safe-area-inset-left,0);padding-right:env(safe-area-inset-
 .topbar{display:none}
 .theme{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--card)}
 .theme button{border:0;border-radius:0;background:transparent;color:var(--muted);padding:3px 9px;font-size:12px}
-.theme button[aria-pressed=true]{background:var(--brand);color:#fff}
+.theme button[aria-pressed=true]{background:var(--brand);color:var(--brand-fg)}
 .side .theme{margin:6px 8px}
 .tiles{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));margin-bottom:12px}
 .tile{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
@@ -80,7 +80,7 @@ body{padding-left:env(safe-area-inset-left,0);padding-right:env(safe-area-inset-
   .topbar .menu a{padding:11px 10px;border-radius:8px;color:var(--text);font-size:15px}
   .topbar .menu a:hover,.topbar .menu a[aria-current=page]{background:var(--bg);text-decoration:none}
   .main{padding:14px 12px 32px;max-width:100%}
-  h2{font-size:18px}
+  h1{font-size:18px}
   input,select,textarea,button{font-size:16px;min-height:42px}
   input[type=checkbox]{min-height:0}
   button.sm{min-height:34px;padding:4px 10px}
@@ -178,3 +178,10 @@ input[type=date]::-webkit-datetime-edit,input[type=month]::-webkit-datetime-edit
   .pair>label.f{min-width:0}
   form.row>.wide{grid-column:1/-1}form.row>.wide>label.f{width:100%}
 }
+
+.skip{position:absolute;left:-9999px;top:8px;z-index:100;background:var(--card);color:var(--text);border:2px solid var(--brand);border-radius:8px;padding:8px 14px}
+.skip:focus{left:8px}
+main:focus{outline:none}
+:focus-visible{outline:2px solid var(--brand);outline-offset:2px}
+.kanban .col h3{margin:0 0 8px;font-size:12px;text-transform:uppercase;color:var(--muted)}
+.kanban .col h2{margin:0 0 8px;font-size:12px;text-transform:uppercase;color:var(--muted)}

@@ -23,7 +23,7 @@ export default async function Dashboard() {
   );
   return (
     <>
-      <h2>Dashboard</h2>
+      <h1>Dashboard</h1>
       <div className="grid">
         {stat("Active clients", clients, "/clients")}
         {stat("Active projects", projects, "/projects")}
@@ -34,9 +34,9 @@ export default async function Dashboard() {
         {stat("Unpaid invoices", unpaid, "/invoices")}
         {m && stat(`Margin ${period}`, money(m.revenue - m.cost), "/reports")}
       </div>
-      <h3>Talent by stage</h3>
+      <h2>Talent by stage</h2>
       <div className="grid">{["applicant", "training", "ready", "placed", "alumni"].map((s) => stat(s, stages.find((x) => x.stage === s)?.n ?? 0, `/people?stage=${s}`))}</div>
-      <h3>Pipeline value (open)</h3>
+      <h2>Pipeline value (open)</h2>
       <div className="grid">{pipeline.map((p) => stat(`${p.stage} (${p.n})`, money(p.v)))}{!pipeline.length && <span className="muted">No open deals yet.</span>}</div>
     </>
   );

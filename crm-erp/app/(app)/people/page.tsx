@@ -15,7 +15,7 @@ export default async function People({ searchParams }: { searchParams: Promise<{
   const rows = await all<any>(`SELECT * FROM people ${where.length ? "WHERE " + where.join(" AND ") : ""} ORDER BY name`, ...args);
   return (
     <>
-      <h2>People</h2><Flash sp={sp} />
+      <h1>People</h1><Flash sp={sp} />
       <form className="row bar">
         <Field label="Stage"><select name="stage" defaultValue={sp.stage ?? ""}><option value="">All</option>{STAGES.map((s) => <option key={s}>{s}</option>)}</select></Field>
         <Field label="Type"><select name="type" defaultValue={sp.type ?? ""}><option value="">All</option><option>internal</option><option>external</option></select></Field>
@@ -27,7 +27,7 @@ export default async function People({ searchParams }: { searchParams: Promise<{
         <tbody>{rows.map((p) => <tr key={p.id}><td><Link href={`/people/${p.id}`}>{p.name}</Link></td><td>{p.worker_type}</td><td><Badge v={p.stage} /></td><td>{p.country}</td><td>{p.skills}</td></tr>)}
         {!rows.length && <tr><td colSpan={5} className="muted">Nobody matches.</td></tr>}</tbody>
       </table></div>
-      <h3>Add person</h3>
+      <h2>Add person</h2>
       <form action={addPerson} className="row card">
         <Field label="Name"><input name="name" required /></Field>
         <Field label="Email"><input name="email" type="email" /></Field>

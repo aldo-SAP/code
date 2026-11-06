@@ -28,7 +28,7 @@ export default async function Person({ params, searchParams }: { params: Promise
   const login = await get<any>("SELECT email,role FROM users WHERE person_id=?", p.id);
   return (
     <>
-      <h2>{p.name} <Badge v={p.stage} /></h2><Flash sp={sp} />
+      <h1>{p.name} <Badge v={p.stage} /></h1><Flash sp={sp} />
       {(p.stage === "applicant" || p.stage === "training") && <div className="flash err">Students in training cannot be assigned to projects. Set the stage to "ready" when they finish.</div>}
       <form action={updatePerson} className="row card">
         <Hidden name="rid" value={p.id} />
@@ -45,7 +45,7 @@ export default async function Person({ params, searchParams }: { params: Promise
       </form>
       <p className="muted">{login ? `Login: ${login.email} (${login.role})` : "No login yet. Admins can create one under Settings."}</p>
 
-      <h3>Training</h3>
+      <h2>Training</h2>
       <table><thead><tr><th>Course</th><th>Status</th><th>Progress</th><th></th></tr></thead><tbody>
         {enrollments.map((e) => <tr key={e.id}><td>{e.course}</td><td><Badge v={e.status} /></td><td>{e.progress}%</td><td>
           <form action={updateEnrollment} className="row"><Hidden name="rid" value={e.id} /><Hidden name="_back" value={back} />
@@ -57,14 +57,14 @@ export default async function Person({ params, searchParams }: { params: Promise
         <Field label="Enroll in course"><select name="course_id">{courses.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field><button className="sec">Enroll</button>
       </form>
 
-      <h3>Assignments</h3>
+      <h2>Assignments</h2>
       <table><thead><tr><th>Project</th><th>Client</th><th>Billing</th><th>Dates</th></tr></thead><tbody>
         {assignments.map((a) => <tr key={a.id}><td><Link href={`/assignments/${a.id}`}>{a.project}</Link></td><td>{a.client}</td><td>{a.billing_type}{a.direct_to_client ? " (direct)" : ""}</td><td>{fmtSpan(a.start_date, a.end_date)}</td></tr>)}
         {subs.map((s) => <tr key={`s${s.id}`}><td><Link href={`/assignments/${s.aid}`}>{s.project}</Link></td><td colSpan={2}>substitute</td><td>{fmtRange(s.from_date, s.to_date)}</td></tr>)}
         {!assignments.length && !subs.length && <tr><td colSpan={4} className="muted">None.</td></tr>}</tbody></table>
 
       {p.worker_type === "external" && <>
-        <h3>Freelancer contracts</h3>
+        <h2>Freelancer contracts</h2>
         <table><thead><tr><th>Title</th><th>Period</th><th>Currency</th><th>Terms</th></tr></thead><tbody>
           {contracts.map((k) => <tr key={k.id}><td>{k.title}</td><td>{fmtSpan(k.start_date, k.end_date)}</td><td>{k.currency}</td><td>{k.payment_terms}, net {k.net_days}</td></tr>)}
           {!contracts.length && <tr><td colSpan={4} className="muted">No contract.</td></tr>}</tbody></table>
@@ -77,7 +77,7 @@ export default async function Person({ params, searchParams }: { params: Promise
           <Field label="Net days"><input type="number" name="net_days" defaultValue={30} style={{ width: 70 }} /></Field><button className="sec">Add</button></form>}
       </>}
 
-      <h3>Leave</h3>
+      <h2>Leave</h2>
       <LeaveTimeline personId={p.id} year={leaveYear} basePath={`/people/${p.id}`} />
       <form action={setAllowanceAction} className="row card" style={{ marginTop: 12 }}>
         <Hidden name="person_id" value={p.id} /><Hidden name="year" value={leaveYear} /><Hidden name="_back" value={`/people/${p.id}?year=${leaveYear}`} />

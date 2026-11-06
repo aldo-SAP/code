@@ -13,7 +13,7 @@ export default async function Invoices({ searchParams }: { searchParams: Promise
   const open = await all<any>("SELECT i.*, c.name AS client FROM invoices i JOIN clients c ON c.id=i.client_id WHERE i.status='issued' AND i.period<>? ORDER BY i.due_date", period);
   return (
     <>
-      <h2>Invoices</h2><Flash sp={sp} />
+      <h1>Invoices</h1><Flash sp={sp} />
       <div className="card">
         <form action={runInvoices} className="row">
           <Field label="Billing month"><input type="month" name="period" defaultValue={period} required /></Field>
@@ -25,7 +25,7 @@ export default async function Invoices({ searchParams }: { searchParams: Promise
       <table><thead><tr><th>Number</th><th>Client</th><th>Status</th><th>Due</th><th className="num">Total</th></tr></thead><tbody>
         {rows.map((i) => <tr key={i.id}><td><Link href={`/invoices/${i.id}`}>{i.number ?? `Draft #${i.id}`}</Link></td><td>{i.client}</td><td><Badge v={i.status} /></td><td>{fmtDate(i.due_date)}</td><td className="num">{money(i.total, i.currency)}</td></tr>)}
         {!rows.length && <tr><td colSpan={5} className="muted">No invoices for {period}.</td></tr>}</tbody></table>
-      {!!open.length && <><h3>Issued, unpaid (other months)</h3><table><tbody>{open.map((i) => <tr key={i.id}><td><Link href={`/invoices/${i.id}`}>{i.number}</Link></td><td>{i.client}</td><td>{i.period}</td><td>due {fmtDate(i.due_date)}</td><td className="num">{money(i.total, i.currency)}</td></tr>)}</tbody></table></>}
+      {!!open.length && <><h2>Issued, unpaid (other months)</h2><table><tbody>{open.map((i) => <tr key={i.id}><td><Link href={`/invoices/${i.id}`}>{i.number}</Link></td><td>{i.client}</td><td>{i.period}</td><td>due {fmtDate(i.due_date)}</td><td className="num">{money(i.total, i.currency)}</td></tr>)}</tbody></table></>}
     </>
   );
 }

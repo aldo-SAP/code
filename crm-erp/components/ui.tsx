@@ -32,7 +32,7 @@ export function Nav({ user }: { user: User }) {
   return (
     <>
       <nav className="side" aria-label="Main">
-        <h1>Talent CRM/ERP</h1>
+        <div className="brand">Talent CRM/ERP</div>
         {items.map(([href, label]) => <Link key={href} href={href}>{label}</Link>)}
         <div className="who">{user.name}<br />{user.role}</div>
         <ThemeToggle />
@@ -50,9 +50,9 @@ export function Field({ label, children }: { label: string; children: React.Reac
   return <label className="f">{label}{children}</label>;
 }
 export const CURRENCIES = ["EUR", "USD", "GBP", "CHF", "PLN", "RON", "ALL"];
-export function CurrencySelect({ name = "currency", value = "EUR" }: { name?: string; value?: string }) {
+export function CurrencySelect({ name = "currency", value = "EUR", label }: { name?: string; value?: string; label?: string }) {
   const list = CURRENCIES.includes(value) ? CURRENCIES : [value, ...CURRENCIES];
-  return <select name={name} defaultValue={value}>{list.map((c) => <option key={c}>{c}</option>)}</select>;
+  return <select name={name} defaultValue={value} aria-label={label}>{list.map((c) => <option key={c}>{c}</option>)}</select>;
 }
 export function Hidden({ name, value }: { name: string; value: string | number }) {
   return <input type="hidden" name={name} value={value} />;

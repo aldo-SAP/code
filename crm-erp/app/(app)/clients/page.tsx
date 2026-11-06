@@ -10,13 +10,13 @@ export default async function Clients({ searchParams }: { searchParams: Promise<
   const rows = await all<any>(`SELECT c.*, (SELECT COUNT(*) FROM projects p WHERE p.client_id=c.id AND p.status='active') AS projects FROM clients c ORDER BY c.name`);
   return (
     <>
-      <h2>Clients</h2><Flash sp={sp} />
+      <h1>Clients</h1><Flash sp={sp} />
       <div className="tw"><table>
         <thead><tr><th>Name</th><th>Country</th><th>Currency</th><th>Active projects</th><th>Status</th></tr></thead>
         <tbody>{rows.map((c) => <tr key={c.id}><td><Link href={`/clients/${c.id}`}>{c.name}</Link></td><td>{c.country}</td><td>{c.currency}</td><td>{c.projects}</td><td><Badge v={c.status} /></td></tr>)}
         {!rows.length && <tr><td colSpan={5} className="muted">No clients yet.</td></tr>}</tbody>
       </table></div>
-      <h3>New client</h3>
+      <h2>New client</h2>
       <form action={addClient} className="row card">
         <Field label="Name"><input name="name" required /></Field>
         <Field label="Country"><input name="country" /></Field>

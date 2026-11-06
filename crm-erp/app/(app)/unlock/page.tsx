@@ -21,7 +21,7 @@ export default async function Unlock({ searchParams }: { searchParams: Promise<{
   const back = `/unlock?${sp.invoice ? `invoice=${sp.invoice}` : `person=${sp.person ?? ""}&month=${month}`}`;
   return (
     <>
-      <h2>Unlock billed hours</h2><Flash sp={sp} />
+      <h1>Unlock billed hours</h1><Flash sp={sp} />
       <div className="card"><b>History warning.</b> These hours are part of an invoice or payout. Reopening them changes history: every step is written to the audit log with your name and reason.</div>
       <form className="row card">
         <Field label="Person"><select name="person" defaultValue={sp.person ?? ""}><option value="">-</option>{people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></Field>
