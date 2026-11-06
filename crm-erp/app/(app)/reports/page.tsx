@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/session";
 import { marginReport } from "@/lib/invoicing";
 import { Field, money, thisMonth } from "@/components/ui";
+import { fmtMonth } from "@/lib/dates";
 
 export default async function Reports({ searchParams }: { searchParams: Promise<{ period?: string }> }) {
   await requireAdmin();
@@ -9,7 +10,7 @@ export default async function Reports({ searchParams }: { searchParams: Promise<
   const pct = (r: number, c: number) => (r ? `${Math.round(((r - c) / r) * 100)}%` : "-");
   return (
     <>
-      <h2>Margin {period}</h2>
+      <h2>Margin {fmtMonth(period)}</h2>
       <form className="row bar"><Field label="Month"><input type="month" name="period" defaultValue={period} /></Field><button className="sec">Show</button>
         <span className="muted">Invoiced revenue minus payout cost, in EUR (other currencies converted with the latest rate in Settings). Includes drafts.</span></form>
       {m.warnings.map((w) => <div className="flash err" key={w}>{w}</div>)}

@@ -3,6 +3,7 @@ import { all } from "@/lib/db";
 import { requireManager } from "@/lib/session";
 import { addCourse, enroll } from "@/app/actions";
 import { Badge, Field, Flash, Hidden } from "@/components/ui";
+import { fmtSpan } from "@/lib/dates";
 
 export default async function Courses({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
   await requireManager();
@@ -18,7 +19,7 @@ export default async function Courses({ searchParams }: { searchParams: Promise<
         const en = enrollments[c.id] ?? [];
         return (
           <div className="card" key={c.id}>
-            <b>{c.name}</b> <span className="muted">{c.start_date ?? "?"} to {c.end_date ?? "?"}</span>
+            <b>{c.name}</b> <span className="muted">{fmtSpan(c.start_date, c.end_date)}</span>
             <table style={{ marginTop: 8 }}><tbody>{en.map((e) => <tr key={e.id}><td><Link href={`/people/${e.person_id}`}>{e.name}</Link></td><td><Badge v={e.status} /></td><td className="num">{e.progress}%</td></tr>)}
               {!en.length && <tr><td className="muted">No students enrolled.</td></tr>}</tbody></table>
             <form action={enroll} className="row" style={{ marginTop: 8 }}>

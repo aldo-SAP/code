@@ -8,6 +8,7 @@ import LeaveTimeline from "@/components/LeaveTimeline";
 import { leaveBalance } from "@/lib/leave";
 import { countryName, holidayCountryOf, personHolidays } from "@/lib/holidays";
 import { Badge, Field, Flash, Hidden, num, thisMonth, today } from "@/components/ui";
+import { fmtMonth, fmtMonthShort, fmtRange } from "@/lib/dates";
 
 export default async function Leave({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string; month?: string; year?: string }> }) {
   const user = await requireUser();
@@ -38,7 +39,7 @@ export default async function Leave({ searchParams }: { searchParams: Promise<{ 
           <div className="tw"><table><thead><tr><th>Person</th><th>Type</th><th>Dates</th><th className="num">Working days</th><th>Note</th><th>Decision</th></tr></thead><tbody>
             {pending.map((l) => (
               <tr key={l.id}>
-                <td><Link href={`/leave/${l.id}`}>{l.name}</Link></td><td>{l.type}</td><td>{l.from_date} to {l.to_date}</td><td className="num">{l.days}</td><td>{l.notes}</td>
+                <td><Link href={`/leave/${l.id}`}>{l.name}</Link></td><td>{l.type}</td><td>{fmtRange(l.from_date, l.to_date)}</td><td className="num">{l.days}</td><td>{l.notes}</td>
                 <td>{l.person_id === user.person_id ? <span className="muted">your own request: another manager decides</span> : (
                   <form action={decideLeaveAction} className="row"><Hidden name="rid" value={l.id} />
                     <input name="note" placeholder="Note (required to reject)" style={{ width: 190 }} />
@@ -64,7 +65,7 @@ export default async function Leave({ searchParams }: { searchParams: Promise<{ 
             <h3 style={{ fontSize: 13 }}>Open and upcoming</h3>
             <div className="tw"><table><thead><tr><th>Type</th><th>Dates</th><th className="num">Days</th><th>Status</th><th></th></tr></thead><tbody>
               {open.map((l) => (
-                <tr key={l.id}><td>{l.type}</td><td><Link href={`/leave/${l.id}`}>{l.from_date} to {l.to_date}</Link></td><td className="num">{l.days}</td><td><Badge v={l.status} /></td>
+                <tr key={l.id}><td>{l.type}</td><td><Link href={`/leave/${l.id}`}>{fmtRange(l.from_date, l.to_date)}</Link></td><td className="num">{l.days}</td><td><Badge v={l.status} /></td>
                   <td><form action={cancelLeaveAction}><Hidden name="rid" value={l.id} /><button className="danger sm">{l.status === "requested" ? "Withdraw" : "Cancel"}</button></form></td></tr>))}
             </tbody></table></div>
           </>}
@@ -78,9 +79,9 @@ export default async function Leave({ searchParams }: { searchParams: Promise<{ 
         <>
           <h3>Team calendar</h3>
           <div className="bar">
-            <Link className="btn sec" href={`/leave?month=${shift(month, -1)}`}>&larr; {shift(month, -1)}</Link>
-            <b>{month}</b>
-            <Link className="btn sec" href={`/leave?month=${shift(month, 1)}`}>{shift(month, 1)} &rarr;</Link>
+            <Link className="btn sec" href={`/leave?month=${shift(month, -1)}`}>&larr; {fmtMonthShort(shift(month, -1))}</Link>
+            <b>{fmtMonth(month)}</b>
+            <Link className="btn sec" href={`/leave?month=${shift(month, 1)}`}>{fmtMonthShort(shift(month, 1))} &rarr;</Link>
             <span className="muted">Green = approved, yellow = waiting for a decision.</span>
           </div>
           {names.length ? (

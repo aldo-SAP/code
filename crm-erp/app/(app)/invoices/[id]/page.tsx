@@ -7,6 +7,7 @@ import PrintButton from "@/components/PrintButton";
 import { auditFor } from "@/lib/audit";
 import { can } from "@/lib/auth";
 import { Badge, Flash, Hidden, money, num } from "@/components/ui";
+import { fmtDate, fmtDateTime, fmtMonth } from "@/lib/dates";
 
 export default async function InvoicePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string; err?: string }> }) {
   const user = await requireManager();
@@ -42,7 +43,7 @@ export default async function InvoicePage({ params, searchParams }: { params: Pr
         <div style={{ display: "flex", justifyContent: "space-between", gap: 20, margin: "14px 0" }}>
           <div><b>{await setting("company_name", "Your company")}</b><br /><span style={{ whiteSpace: "pre-line" }}>{await setting("company_address")}</span><br />{await setting("company_vat_or_reg")}</div>
           <div><b>Bill to</b><br />{inv.client}<br /><span style={{ whiteSpace: "pre-line" }}>{inv.address}</span><br />{inv.country}</div>
-          <div>Period: {inv.period}<br />Issued: {inv.issue_date ?? "-"}<br />Due: {inv.due_date ?? `${inv.net_days} days after issue`}<br />Currency: {inv.currency}</div>
+          <div>Period: {fmtMonth(inv.period)}<br />Issued: {inv.issue_date ? fmtDate(inv.issue_date) : "-"}<br />Due: {inv.due_date ? fmtDate(inv.due_date) : `${inv.net_days} days after issue`}<br />Currency: {inv.currency}</div>
         </div>
         <table><thead><tr><th>Description</th><th className="num">Quantity</th><th className="num">Unit price</th><th className="num">Amount</th><th className="no-print">Internal detail</th></tr></thead><tbody>
           {lines.map((l) => <tr key={l.id}><td>{l.description}</td><td className="num">{num(l.quantity)} {unit(l)}</td><td className="num">{money(l.unit_price, inv.currency)}</td><td className="num">{money(l.amount, inv.currency)}</td><td className="no-print muted">{l.detail}</td></tr>)}
@@ -52,7 +53,7 @@ export default async function InvoicePage({ params, searchParams }: { params: Pr
       <div className="no-print">
         <h3>History</h3>
         <table><tbody>
-          {(await auditFor("invoice", inv.id)).map((h) => <tr key={h.id}><td style={{ whiteSpace: "nowrap" }}>{h.created_at}</td><td>{h.user_name}</td><td>{h.summary}{h.reason ? <span className="muted"> - {h.reason}</span> : null}</td></tr>)}
+          {(await auditFor("invoice", inv.id)).map((h) => <tr key={h.id}><td style={{ whiteSpace: "nowrap" }}>{fmtDateTime(h.created_at)}</td><td>{h.user_name}</td><td>{h.summary}{h.reason ? <span className="muted"> - {h.reason}</span> : null}</td></tr>)}
           {!(await auditFor("invoice", inv.id)).length && <tr><td className="muted">No logged actions.</td></tr>}
         </tbody></table>
       </div>

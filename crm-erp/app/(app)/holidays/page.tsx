@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/session";
 import { COUNTRY_CODES, countryName, holidaysIn } from "@/lib/holidays";
 import { addHolidayAction, addHolidaysBulkAction, copyHolidayYearAction, deleteHolidayAction } from "@/app/actions";
 import { Field, Flash, Hidden } from "@/components/ui";
+import { fmtDate } from "@/lib/dates";
 
 const WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -34,7 +35,7 @@ export default async function Holidays({ searchParams }: { searchParams: Promise
       <h3>{countryName(country)} {year}: {rows.length} day{rows.length === 1 ? "" : "s"}</h3>
       <div className="tw"><table><thead><tr><th>Date</th><th></th><th>Holiday</th><th></th></tr></thead><tbody>
         {rows.map((h) => (
-          <tr key={h.day}><td style={{ whiteSpace: "nowrap" }}>{h.day}</td><td className="muted">{WD[new Date(h.day + "T00:00:00Z").getUTCDay()]}</td><td>{h.name}</td>
+          <tr key={h.day}><td style={{ whiteSpace: "nowrap" }}>{fmtDate(h.day)}</td><td className="muted">{WD[new Date(h.day + "T00:00:00Z").getUTCDay()]}</td><td>{h.name}</td>
             <td><form action={deleteHolidayAction}><Hidden name="country" value={country} /><Hidden name="day" value={h.day} /><Hidden name="_back" value={back} /><button className="danger sm">Remove</button></form></td></tr>))}
         {!rows.length && <tr><td colSpan={4} className="muted">No public holidays entered for {countryName(country)} in {year} yet.</td></tr>}</tbody></table></div>
       <p className="muted">{followers.length ? <>Following this calendar: {followers.map((p, k) => <span key={p.id}>{k > 0 && ", "}<Link href={`/people/${p.id}`}>{p.name}</Link>{p.country && p.country !== countryName(country) ? ` (lives in ${p.country})` : ""}</span>)}.</> : "Nobody follows this calendar yet. Set it on a person's page."}</p>

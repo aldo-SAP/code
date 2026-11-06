@@ -2,6 +2,7 @@ import Link from "next/link";
 import { leaveTimeline } from "@/lib/leave";
 import { countryName, holidayCountryOf, personHolidays } from "@/lib/holidays";
 import { Badge, num } from "@/components/ui";
+import { fmtDate, fmtRange } from "@/lib/dates";
 
 const doy = (d: string) => Math.floor((Date.parse(d + "T00:00:00Z") - Date.parse(d.slice(0, 4) + "-01-01T00:00:00Z")) / 86400000);
 const MONTHS = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
@@ -39,7 +40,7 @@ export default async function LeaveTimeline({ personId, year, basePath }: { pers
       <div className="tl" role="img" aria-label={`Leave timeline ${year}: ${shown.length} period${shown.length === 1 ? "" : "s"}`}>
         {monthStarts.map((d) => <i key={d} style={{ left: `${(d / total) * 100}%` }} />)}
         {[...hol].map(([d, n]) => <u key={d} style={{ left: `${(doy(d) / total) * 100}%` }} title={`${d} ${n}`} />)}
-        {shown.map((r) => <em key={r.id} className={r.status === "requested" ? "requested" : r.type} style={pos(r.from_date, r.to_date)} title={`${r.type} ${r.from_date} to ${r.to_date} (${r.status})`} />)}
+        {shown.map((r) => <em key={r.id} className={r.status === "requested" ? "requested" : r.type} style={pos(r.from_date, r.to_date)} title={`${r.type} ${fmtDate(r.from_date)} to ${fmtDate(r.to_date)} (${r.status})`} />)}
         {today.startsWith(String(year)) && <span className="now" style={{ left: `${(doy(today) / total) * 100}%` }} title="today" />}
       </div>
       <div className="tl-months" aria-hidden="true">{MONTHS.map((m, k) => <span key={k}>{m}</span>)}</div>
@@ -51,8 +52,8 @@ export default async function LeaveTimeline({ personId, year, basePath }: { pers
       <div className="tw"><table><thead><tr><th>When</th><th>Type</th><th className="num">Days</th><th>Status</th><th>Decision</th></tr></thead><tbody>
         {rows.map((r) => (
           <tr key={r.id} style={r.status === "rejected" || r.status === "revoked" || r.status === "cancelled" ? { opacity: 0.7 } : undefined}>
-            <td style={{ whiteSpace: "nowrap" }}><Link href={`/leave/${r.id}`}>{r.from_date} to {r.to_date}</Link></td><td>{r.type}</td><td className="num">{r.days}</td><td><Badge v={r.status} /></td>
-            <td className="muted">{r.decided_by_name ? `${r.decided_by_name}${r.decided_at ? ", " + r.decided_at.slice(0, 10) : ""}${r.decision_note ? `: ${r.decision_note}` : ""}` : ""}</td>
+            <td style={{ whiteSpace: "nowrap" }}><Link href={`/leave/${r.id}`}>{fmtRange(r.from_date, r.to_date)}</Link></td><td>{r.type}</td><td className="num">{r.days}</td><td><Badge v={r.status} /></td>
+            <td className="muted">{r.decided_by_name ? `${r.decided_by_name}${r.decided_at ? ", " + fmtDate(r.decided_at) : ""}${r.decision_note ? `: ${r.decision_note}` : ""}` : ""}</td>
           </tr>))}
         {!rows.length && <tr><td colSpan={5} className="muted">No leave in {year}.</td></tr>}</tbody></table></div>
     </section>

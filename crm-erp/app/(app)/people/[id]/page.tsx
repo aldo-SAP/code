@@ -9,6 +9,7 @@ import { COUNTRY_CODES, countryName } from "@/lib/holidays";
 import { allowanceFor } from "@/lib/leave";
 import { setAllowanceAction } from "@/app/actions";
 import { Badge, CurrencySelect, Field, Flash, Hidden } from "@/components/ui";
+import { fmtRange, fmtSpan } from "@/lib/dates";
 
 const STAGES = ["applicant", "training", "ready", "placed", "alumni"];
 export default async function Person({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string; err?: string; year?: string }> }) {
@@ -58,14 +59,14 @@ export default async function Person({ params, searchParams }: { params: Promise
 
       <h3>Assignments</h3>
       <table><thead><tr><th>Project</th><th>Client</th><th>Billing</th><th>Dates</th></tr></thead><tbody>
-        {assignments.map((a) => <tr key={a.id}><td><Link href={`/assignments/${a.id}`}>{a.project}</Link></td><td>{a.client}</td><td>{a.billing_type}{a.direct_to_client ? " (direct)" : ""}</td><td>{a.start_date} to {a.end_date ?? "open"}</td></tr>)}
-        {subs.map((s) => <tr key={`s${s.id}`}><td><Link href={`/assignments/${s.aid}`}>{s.project}</Link></td><td colSpan={2}>substitute</td><td>{s.from_date} to {s.to_date}</td></tr>)}
+        {assignments.map((a) => <tr key={a.id}><td><Link href={`/assignments/${a.id}`}>{a.project}</Link></td><td>{a.client}</td><td>{a.billing_type}{a.direct_to_client ? " (direct)" : ""}</td><td>{fmtSpan(a.start_date, a.end_date)}</td></tr>)}
+        {subs.map((s) => <tr key={`s${s.id}`}><td><Link href={`/assignments/${s.aid}`}>{s.project}</Link></td><td colSpan={2}>substitute</td><td>{fmtRange(s.from_date, s.to_date)}</td></tr>)}
         {!assignments.length && !subs.length && <tr><td colSpan={4} className="muted">None.</td></tr>}</tbody></table>
 
       {p.worker_type === "external" && <>
         <h3>Freelancer contracts</h3>
         <table><thead><tr><th>Title</th><th>Period</th><th>Currency</th><th>Terms</th></tr></thead><tbody>
-          {contracts.map((k) => <tr key={k.id}><td>{k.title}</td><td>{k.start_date ?? "?"} to {k.end_date ?? "open"}</td><td>{k.currency}</td><td>{k.payment_terms}, net {k.net_days}</td></tr>)}
+          {contracts.map((k) => <tr key={k.id}><td>{k.title}</td><td>{fmtSpan(k.start_date, k.end_date)}</td><td>{k.currency}</td><td>{k.payment_terms}, net {k.net_days}</td></tr>)}
           {!contracts.length && <tr><td colSpan={4} className="muted">No contract.</td></tr>}</tbody></table>
         {can.finance(user) && <form action={addContract} className="row" style={{ marginTop: 8 }}>
           <Hidden name="kind" value="freelancer" /><Hidden name="person_id" value={p.id} /><Hidden name="_back" value={back} />

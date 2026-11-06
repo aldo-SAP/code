@@ -1,5 +1,6 @@
 import { all, get, run, tx } from "./db.ts";
 import { audit, type Actor } from "./audit.ts";
+import { fmtDate } from "./dates.ts";
 
 /** Countries offered for public-holiday calendars (ISO 3166 alpha-2). Names come from the runtime's own country data. */
 export const COUNTRY_CODES = ["AL", "XK", "MK", "ME", "RS", "BA", "HR", "SI", "IT", "DE", "FR", "ES", "PT", "GB", "IE", "NL", "BE", "LU", "AT", "CH", "GR", "BG", "RO", "HU", "CZ", "SK", "PL", "SE", "NO", "DK", "FI", "EE", "LV", "LT", "CY", "MT", "TR", "UA", "MD", "US", "CA", "MX", "BR", "AE", "IN", "EG", "MA", "TN"];
@@ -62,7 +63,7 @@ export async function addHoliday(actor: Actor, country: string, day: string, nam
   await tx(async () => {
     await run("INSERT INTO holidays (country,day,name) VALUES (?,?,?) ON CONFLICT (country,day) DO UPDATE SET name=EXCLUDED.name", country, day, name.trim());
     await recomputeLeaveDays(await peopleOf(country));
-    await audit(actor, "create", "holiday", null, `${countryName(country)}: ${day} ${name.trim()}`);
+    await audit(actor, "create", "holiday", null, `${countryName(country)}: ${fmtDate(day)} ${name.trim()}`);
   });
   return { ok: true };
 }
@@ -73,7 +74,7 @@ export async function deleteHoliday(actor: Actor, country: string, day: string):
     if (!h) return;
     await run("DELETE FROM holidays WHERE country=? AND day=?", country, day);
     await recomputeLeaveDays(await peopleOf(country));
-    await audit(actor, "delete", "holiday", null, `${countryName(country)}: removed ${day} ${h.name}`);
+    await audit(actor, "delete", "holiday", null, `${countryName(country)}: removed ${fmtDate(day)} ${h.name}`);
   });
   return { ok: true };
 }

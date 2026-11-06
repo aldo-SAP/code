@@ -5,6 +5,7 @@ import { mailProvider, recentMail } from "@/lib/mail";
 import { defaultAllowance } from "@/lib/leave";
 import { msConfig, redirectUri } from "@/lib/msauth";
 import { Badge, CURRENCIES, Field, Flash, Hidden, today } from "@/components/ui";
+import { fmtDate, fmtDateTime } from "@/lib/dates";
 
 export default async function Settings({ searchParams }: { searchParams: Promise<{ msg?: string; err?: string }> }) {
   await requireAdmin();
@@ -37,7 +38,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
       </div>
       <details><summary className="muted" style={{ cursor: "pointer", margin: "8px 0" }}>Email log ({emails.length} latest)</summary>
         <div className="tw"><table><thead><tr><th>When (UTC)</th><th>To</th><th>Subject</th><th>Status</th><th></th></tr></thead><tbody>
-          {emails.map((e) => <tr key={e.id}><td style={{ whiteSpace: "nowrap" }}>{e.created_at}</td><td>{e.to_addr}</td><td>{e.subject}</td>
+          {emails.map((e) => <tr key={e.id}><td style={{ whiteSpace: "nowrap" }}>{fmtDateTime(e.created_at)}</td><td>{e.to_addr}</td><td>{e.subject}</td>
             <td><Badge v={e.status === "sent" ? "approved" : e.status === "failed" ? "rejected" : "draft"} /> {e.status}{e.error ? <span className="muted"> {e.error}</span> : null}</td>
             <td>{e.status !== "sent" && provider !== "none" && <form action={retryEmailAction}><Hidden name="rid" value={e.id} /><button className="sec sm">Retry</button></form>}</td></tr>)}
           {!emails.length && <tr><td colSpan={5} className="muted">No emails yet.</td></tr>}</tbody></table></div>
@@ -67,7 +68,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         <button>Create user</button>
       </form>
       <h3>Exchange rates (1 unit = x EUR)</h3>
-      <table><tbody>{fx.map((f) => <tr key={f.id}><td>{f.currency}</td><td>{f.rate_to_eur}</td><td>{f.as_of}</td></tr>)}{!fx.length && <tr><td className="muted">Only needed for non-EUR amounts in margin reports.</td></tr>}</tbody></table>
+      <table><tbody>{fx.map((f) => <tr key={f.id}><td>{f.currency}</td><td>{f.rate_to_eur}</td><td>{fmtDate(f.as_of)}</td></tr>)}{!fx.length && <tr><td className="muted">Only needed for non-EUR amounts in margin reports.</td></tr>}</tbody></table>
       <form action={addFx} className="row" style={{ marginTop: 8 }}>
         <Field label="Currency"><select name="currency">{CURRENCIES.filter((c) => c !== "EUR").map((c) => <option key={c}>{c}</option>)}</select></Field>
         <Field label="EUR per 1 unit"><input name="rate_to_eur" type="number" step="0.000001" required /></Field>

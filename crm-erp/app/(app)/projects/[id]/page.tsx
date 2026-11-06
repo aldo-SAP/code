@@ -6,6 +6,7 @@ import { can } from "@/lib/auth";
 import { setProjectStatus } from "@/app/actions";
 import ContractForm from "@/components/ContractForm";
 import { Badge, CurrencySelect, Field, Flash, Hidden } from "@/components/ui";
+import { fmtSpan } from "@/lib/dates";
 
 export default async function ProjectPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string; err?: string }> }) {
   const user = await requireManager();
@@ -31,7 +32,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
         {rows.map((a) => <tr key={a.id}><td>{a.person} <span className="muted">({a.worker_type})</span>{a.direct_to_client ? <> <span className="badge">direct to client</span></> : null}</td><td>{a.contract}</td><td>{a.role_title}</td><td>{a.billing_type}</td>
           <td>{a.bill ? `${a.bill}${per(a.billing_type)}` : a.billing_type === "fixed" ? "milestones" : <span className="badge err">missing</span>}</td>
           {can.finance(user) && <td>{a.cost ? `${a.cost}${per(a.billing_type)}` : a.billing_type === "fixed" ? "milestones" : "-"}</td>}
-          <td>{a.start_date} to {a.end_date ?? "open"}</td><td><Link href={`/assignments/${a.id}`}>Rates, substitutes, milestones</Link></td></tr>)}
+          <td>{fmtSpan(a.start_date, a.end_date)}</td><td><Link href={`/assignments/${a.id}`}>Rates, substitutes, milestones</Link></td></tr>)}
         {!rows.length && <tr><td colSpan={8} className="muted">Nobody assigned yet.</td></tr>}</tbody></table></div>
 
       <h3>Add a person (new contract)</h3>

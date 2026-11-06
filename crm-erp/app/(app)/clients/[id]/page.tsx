@@ -6,6 +6,7 @@ import { can } from "@/lib/auth";
 import { addContact, addProject, deleteContact, updateClient } from "@/app/actions";
 import ContractForm from "@/components/ContractForm";
 import { Badge, CurrencySelect, Field, Flash, Hidden, money } from "@/components/ui";
+import { fmtSpan } from "@/lib/dates";
 
 export default async function ClientPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string; err?: string }> }) {
   const user = await requireManager();
@@ -48,7 +49,7 @@ export default async function ClientPage({ params, searchParams }: { params: Pro
 
       <h3>Contracts</h3>
       <table><thead><tr><th>Contract</th><th>Person</th><th>Project</th><th>Period</th><th>Terms</th></tr></thead><tbody>
-        {contracts.map((k) => <tr key={k.id}><td>{k.aid ? <Link href={`/assignments/${k.aid}`}>{k.title}</Link> : k.title}</td><td>{k.person}</td><td>{k.project}</td><td>{k.start_date ?? "?"} to {k.end_date ?? "open"}</td><td>{k.payment_terms}, net {k.net_days}, {k.currency}</td></tr>)}
+        {contracts.map((k) => <tr key={k.id}><td>{k.aid ? <Link href={`/assignments/${k.aid}`}>{k.title}</Link> : k.title}</td><td>{k.person}</td><td>{k.project}</td><td>{fmtSpan(k.start_date, k.end_date)}</td><td>{k.payment_terms}, net {k.net_days}, {k.currency}</td></tr>)}
         {!contracts.length && <tr><td colSpan={5} className="muted">No contracts yet.</td></tr>}</tbody></table>
       <h3 style={{ fontSize: 13 }}>New contract (one person per contract; a project can have several contracts)</h3>
       <ContractForm client={c} projects={projects} people={people} fin={fin} back={back} />

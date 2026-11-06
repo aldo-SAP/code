@@ -7,6 +7,7 @@ import { Badge, Field, Flash, Hidden, thisMonth } from "@/components/ui";
 import { periodRange } from "@/lib/billing";
 import { personHolidays } from "@/lib/holidays";
 import TimesheetFields, { type Cell } from "@/components/TimesheetFields";
+import { fmtDate, fmtMonth, fmtMonthShort, fmtRange } from "@/lib/dates";
 
 const shift = (m: string, d: number) => { const [y, mo] = m.split("-").map(Number); const t = new Date(Date.UTC(y, mo - 1 + d, 1)); return t.toISOString().slice(0, 7); };
 
@@ -31,7 +32,7 @@ export default async function Timesheets({ searchParams }: { searchParams: Promi
   const covering = await all<any>(
     `SELECT sb.from_date, sb.to_date, pr.name AS project, o.name AS owner FROM substitutions sb JOIN assignments a ON a.id=sb.assignment_id
      JOIN projects pr ON pr.id=a.project_id JOIN people o ON o.id=a.person_id WHERE sb.person_id=? AND sb.from_date<=? AND sb.to_date>=?`, pid, end, start);
-  const entries = new Map((await all<any>(`SELECT assignment_id,work_date,hours,status,invoice_id,payout_id FROM timesheet_entries WHERE worker_id=? AND work_date BETWEEN ? AND ?`, pid, start, end)).map((e) => [`${e.assignment_id}_${e.work_date}`, e]));
+  const entries = new Map((await all<any>(`SELECT assignment_id,work_date,hours,status,invoice_id,payout_id FROM timesheet_entries WHERE worker_id=? AND work_date BETWEEN ? AND ?`, pid, start, end)).map((e) => [`${e.assignment_id}_${fmtDate(e.work_date)}`, e]));
   const leave = await all<any>("SELECT * FROM leave WHERE person_id=? AND status IN ('requested','approved') AND to_date>=? AND from_date<=? ORDER BY from_date", pid, start, end);
   const holidays = await personHolidays(pid, start, end);
   const onLeave = (d: string) => leave.some((l) => l.status === "approved" && l.from_date <= d && d <= l.to_date);
@@ -45,15 +46,15 @@ export default async function Timesheets({ searchParams }: { searchParams: Promi
 
   return (
     <>
-      <h2>Timesheet {month}</h2><Flash sp={sp} />
+      <h2>Timesheet {fmtMonth(month)}</h2><Flash sp={sp} />
       <div className="bar">
         {manager && <form className="row"><input type="hidden" name="month" value={month} />
           <Field label="Person"><select name="person" defaultValue={pid}>{people.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></Field><button className="sec">Show</button></form>}
-        <Link className="btn sec" href={q(shift(month, -1))}>&larr; {shift(month, -1)}</Link>
-        <Link className="btn sec" href={q(shift(month, 1))}>{shift(month, 1)} &rarr;</Link>
+        <Link className="btn sec" href={q(shift(month, -1))}>&larr; {fmtMonthShort(shift(month, -1))}</Link>
+        <Link className="btn sec" href={q(shift(month, 1))}>{fmtMonthShort(shift(month, 1))} &rarr;</Link>
         <span className="muted">{person.name}: enter hours per day. Yellow = submitted, green = approved, red = rejected, orange = leave, hatched = public holiday.</span>
       </div>
-      {covering.map((c, k) => <div className="flash err" key={k} style={{ background: "var(--warnbg)", color: "var(--warn)" }}><b>{person.name} is covering for {c.owner}</b> on {c.project} from {c.from_date} to {c.to_date}. Hours entered on those days are {person.name}'s own hours: the client invoice shows {c.owner} only, and {person.name} is paid at the substitute rate.</div>)}
+      {covering.map((c, k) => <div className="flash err" key={k} style={{ background: "var(--warnbg)", color: "var(--warn)" }}><b>{person.name} is covering for {c.owner}</b> on {c.project} on {fmtRange(c.from_date, c.to_date)}. Hours entered on those days are {person.name}'s own hours: the client invoice shows {c.owner} only, and {person.name} is paid at the substitute rate.</div>)}
       {billedCount > 0 && <div className="flash err">{billedCount} day(s) this month are already invoiced or paid out (dashed cells) and locked. {manager ? <Link href={`/unlock?person=${pid}&month=${month}`}>Unlock billed hours</Link> : "Ask a manager if something must be corrected."}</div>}
       {!rows.length ? <div className="card muted">No assignments or substitutions in this month.</div> : (
         <form action={saveTimesheet}>
@@ -78,7 +79,7 @@ export default async function Timesheets({ searchParams }: { searchParams: Promi
         </form>
       )}
       <h3>Leave</h3>
-      <table><tbody>{leave.map((l) => <tr key={l.id}><td>{l.type}</td><td>{l.from_date} to {l.to_date}</td><td><Badge v={l.status} /></td></tr>)}
+      <table><tbody>{leave.map((l) => <tr key={l.id}><td>{l.type}</td><td>{fmtRange(l.from_date, l.to_date)}</td><td><Badge v={l.status} /></td></tr>)}
         {!leave.length && <tr><td className="muted">No leave this month. Leave is not billable.</td></tr>}</tbody></table>
       <p><Link href="/leave">Request or manage leave</Link></p>
     </>

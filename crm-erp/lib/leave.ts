@@ -2,6 +2,7 @@ import { all, get, run, setting } from "./db.ts";
 import { audit } from "./audit.ts";
 import { sendMail } from "./mail.ts";
 import { personHolidays, workingDaysWith } from "./holidays.ts";
+import { fmtRange } from "./dates.ts";
 import type { User } from "./auth.ts";
 
 export type LeaveType = "vacation" | "sick" | "holiday" | "other";
@@ -74,7 +75,7 @@ export async function leaveTimeline(personId: number, year: number) {
 
 interface LeaveRow { id: number; person_id: number; name: string; type: string; from_date: string; to_date: string; days: number }
 const threadKey = (id: number) => `leave:${id}`;
-const threadSubject = (l: Pick<LeaveRow, "name" | "from_date" | "to_date">) => `Leave request: ${l.name}, ${l.from_date} to ${l.to_date}`;
+const threadSubject = (l: Pick<LeaveRow, "name" | "from_date" | "to_date">) => `Leave request: ${l.name}, ${fmtRange(l.from_date, l.to_date)}`;
 
 /** Message in the request's thread: to the approvers, copy to the employee. The first message opens the thread, later ones reply to it. */
 async function threadMail(l: LeaveRow, text: string, opts: { exclude?: string } = {}) {
@@ -100,7 +101,7 @@ export async function createLeave(actor: User, i: LeaveInput): Promise<Result<{ 
   if (!manager && (i.type === "vacation" || i.type === "other") && i.from < todayStr()) return { ok: false, error: "Vacation cannot start in the past. Ask a manager to record it." };
   const clash = await get<{ from_date: string; to_date: string; status: string }>(
     "SELECT from_date,to_date,status FROM leave WHERE person_id=? AND status IN ('requested','approved') AND from_date<=? AND to_date>=?", i.personId, i.to, i.from);
-  if (clash) return { ok: false, error: `This overlaps with ${clash.status} leave from ${clash.from_date} to ${clash.to_date}.` };
+  if (clash) return { ok: false, error: `This overlaps with ${clash.status} leave on ${fmtRange(clash.from_date, clash.to_date)}.` };
 
   // vacation beyond the yearly allowance is allowed but flagged to the approver
   let warning: string | undefined;
@@ -117,10 +118,10 @@ export async function createLeave(actor: User, i: LeaveInput): Promise<Result<{ 
     `INSERT INTO leave (person_id,type,from_date,to_date,notes,status,days,requested_by,requested_at,decided_by,decided_by_name,decided_at,decision_note) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     i.personId, i.type, i.from, i.to, i.notes?.trim() || null, status, days, actor.id, nowStr(),
     pending ? null : manager ? actor.id : null, pending ? null : manager ? actor.name : "automatic", pending ? null : nowStr(), pending ? null : manager ? null : "Reported by the worker");
-  await audit(actor, pending ? "leave_request" : "leave_record", "leave", id, `${person.name}: ${i.type} ${i.from} to ${i.to} (${plural(days, "working day")}) ${pending ? "requested" : "recorded"}`, { details: { notes: i.notes ?? null, warning: warning ?? null } });
+  await audit(actor, pending ? "leave_request" : "leave_record", "leave", id, `${person.name}: ${i.type} ${fmtRange(i.from, i.to)} (${plural(days, "working day")}) ${pending ? "requested" : "recorded"}`, { details: { notes: i.notes ?? null, warning: warning ?? null } });
 
   const l: LeaveRow = { id, person_id: i.personId, name: person.name, type: i.type, from_date: i.from, to_date: i.to, days };
-  const range = `${i.from} to ${i.to} (${plural(days, "working day")})`;
+  const range = `${fmtRange(i.from, i.to)} (${plural(days, "working day")})`;
   const link = `${appUrl()}/leave/${id}`;
   if (pending) {
     await threadMail(l, `${person.name} asks for ${i.type} leave.\n\nDates: ${range}\n${i.notes ? `Note: ${i.notes}\n` : ""}${warning ? `\nHeads up: ${warning}\n` : ""}\nOpen the request to approve or reject: ${link}\n\nThe decision will be sent as a reply in this thread.`, { exclude: actor.email });
@@ -146,8 +147,8 @@ export async function decideLeave(actor: User, id: number, decision: "approved" 
   if (l.person_id === actor.person_id) return { ok: false, error: "You cannot decide your own request. Ask another manager." };
   if (decision === "rejected" && note.trim().length < 3) return { ok: false, error: "Please give a short reason for rejecting." };
   await run("UPDATE leave SET status=?, decided_by=?, decided_by_name=?, decided_at=?, decision_note=? WHERE id=? AND status='requested'", decision, actor.id, actor.name, nowStr(), note.trim() || null, id);
-  await audit(actor, decision === "approved" ? "leave_approve" : "leave_reject", "leave", id, `${decision === "approved" ? "Approved" : "Rejected"} ${l.type} leave for ${l.name}, ${l.from_date} to ${l.to_date}`, { reason: note.trim() || undefined });
-  await threadMail(l, `${decision === "approved" ? "Approved" : "Rejected"} by ${actor.name}.\n${note.trim() ? `\nNote: ${note.trim()}\n` : ""}\n${l.name}: ${l.type} leave ${l.from_date} to ${l.to_date} (${plural(l.days, "working day")}).\n${appUrl()}/leave/${id}`);
+  await audit(actor, decision === "approved" ? "leave_approve" : "leave_reject", "leave", id, `${decision === "approved" ? "Approved" : "Rejected"} ${l.type} leave for ${l.name}, ${fmtRange(l.from_date, l.to_date)}`, { reason: note.trim() || undefined });
+  await threadMail(l, `${decision === "approved" ? "Approved" : "Rejected"} by ${actor.name}.\n${note.trim() ? `\nNote: ${note.trim()}\n` : ""}\n${l.name}: ${l.type} leave ${fmtRange(l.from_date, l.to_date)} (${plural(l.days, "working day")}).\n${appUrl()}/leave/${id}`);
   return { ok: true };
 }
 
@@ -164,8 +165,8 @@ export async function revokeLeave(actor: User, id: number, note: string): Promis
   if (l.from_date < todayStr()) return { ok: false, error: "This leave has already started, so it cannot be withdrawn." };
   if (note.trim().length < 3) return { ok: false, error: "Please give the employee a reason." };
   await run("UPDATE leave SET status='revoked', decided_by=?, decided_by_name=?, decided_at=?, decision_note=? WHERE id=? AND status='approved'", actor.id, actor.name, nowStr(), note.trim(), id);
-  await audit(actor, "leave_revoke", "leave", id, `Withdrew approved ${l.type} leave for ${l.name}, ${l.from_date} to ${l.to_date}`, { reason: note.trim() });
-  await threadMail(l, `Update: ${actor.name} withdrew the approval of this leave.\n\nReason: ${note.trim()}\n\n${l.name}: ${l.type} leave ${l.from_date} to ${l.to_date}. ${plural(l.days, "working day")} go back to the employee's allowance. Please do not take these days off.\n${appUrl()}/leave/${id}`);
+  await audit(actor, "leave_revoke", "leave", id, `Withdrew approved ${l.type} leave for ${l.name}, ${fmtRange(l.from_date, l.to_date)}`, { reason: note.trim() });
+  await threadMail(l, `Update: ${actor.name} withdrew the approval of this leave.\n\nReason: ${note.trim()}\n\n${l.name}: ${l.type} leave ${fmtRange(l.from_date, l.to_date)}. ${plural(l.days, "working day")} go back to the employee's allowance. Please do not take these days off.\n${appUrl()}/leave/${id}`);
   return { ok: true };
 }
 
@@ -177,8 +178,8 @@ export async function cancelLeave(actor: User, id: number): Promise<Result> {
   if (l.status !== "requested" && l.status !== "approved") return { ok: false, error: `This leave is already ${l.status}.` };
   if (!manager && l.status === "approved" && l.to_date < todayStr()) return { ok: false, error: "Past leave cannot be cancelled. Ask a manager." };
   await run("UPDATE leave SET status='cancelled', decision_note=?, decided_by=?, decided_by_name=?, decided_at=? WHERE id=?", `Cancelled by ${actor.name}`, actor.id, actor.name, nowStr(), id);
-  await audit(actor, "leave_cancel", "leave", id, `Cancelled ${l.status} ${l.type} leave for ${l.name}, ${l.from_date} to ${l.to_date}`);
-  await threadMail(l, `${actor.name} ${l.status === "approved" ? "cancelled the approved leave" : "withdrew the request"}.\n\n${l.name}: ${l.type} leave ${l.from_date} to ${l.to_date}. The days are back in the allowance.`, { exclude: actor.email });
+  await audit(actor, "leave_cancel", "leave", id, `Cancelled ${l.status} ${l.type} leave for ${l.name}, ${fmtRange(l.from_date, l.to_date)}`);
+  await threadMail(l, `${actor.name} ${l.status === "approved" ? "cancelled the approved leave" : "withdrew the request"}.\n\n${l.name}: ${l.type} leave ${fmtRange(l.from_date, l.to_date)}. The days are back in the allowance.`, { exclude: actor.email });
   return { ok: true };
 }
 

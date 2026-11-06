@@ -6,6 +6,7 @@ import { can } from "@/lib/auth";
 import { addMilestone, addRate, addSubstitution, deleteRate, deleteSubstitution, setMilestone, updateSubstitutionCost } from "@/app/actions";
 import { billedThrough } from "@/lib/history";
 import { Badge, CurrencySelect, Field, Flash, Hidden, money, today } from "@/components/ui";
+import { fmtDate, fmtSpan } from "@/lib/dates";
 
 export default async function AssignmentPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string; err?: string }> }) {
   const user = await requireManager();
@@ -25,7 +26,7 @@ export default async function AssignmentPage({ params, searchParams }: { params:
   return (
     <>
       <h2>{a.person} on {a.project}</h2><Flash sp={sp} />
-      <p className="muted"><Link href={`/projects/${a.project_id}`}>Back to project</Link> · contract: {a.contract ?? "-"} ({a.payment_terms}, net {a.net_days}) · {a.billing_type} · {a.hours_per_day}h/day · {a.start_date} to {a.end_date ?? "open"} · {a.worker_type}
+      <p className="muted"><Link href={`/projects/${a.project_id}`}>Back to project</Link> · contract: {a.contract ?? "-"} ({a.payment_terms}, net {a.net_days}) · {a.billing_type} · {a.hours_per_day}h/day · {fmtSpan(a.start_date, a.end_date)} · {a.worker_type}
         {a.direct_to_client ? " · works directly with the client" : ""}</p>
       {through && <div className="flash err">Hours up to {through} are already invoiced or paid out. Changes that reach back before that date need a reason and are logged. <Link href={`/unlock?person=${a.person_id}&month=${through.slice(0, 7)}`}>Unlock billed hours</Link></div>}
       <p>{hours.map((h) => <span key={h.status} style={{ marginRight: 10 }}><Badge v={h.status} /> {h.h}h</span>)}{!hours.length && <span className="muted">No hours logged yet.</span>}</p>
@@ -34,7 +35,7 @@ export default async function AssignmentPage({ params, searchParams }: { params:
         <h3>Rates {unit}</h3>
         <p className="muted">Rates are effective-dated: a new rate applies from its date onward and old invoices keep the old rate.</p>
         <table><thead><tr><th>Kind</th><th>Amount</th><th>Effective from</th><th></th></tr></thead><tbody>
-          {rates.map((r) => <tr key={r.id}><td>{r.kind === "bill" ? "Bill (client pays)" : "Cost (we pay)"}</td><td>{money(r.amount, r.currency)}</td><td>{r.effective_from}</td>
+          {rates.map((r) => <tr key={r.id}><td>{r.kind === "bill" ? "Bill (client pays)" : "Cost (we pay)"}</td><td>{money(r.amount, r.currency)}</td><td>{fmtDate(r.effective_from)}</td>
             <td><form action={deleteRate} className="row"><Hidden name="rid" value={r.id} />
               {through && r.effective_from <= through && <><input name="reason" placeholder="Reason" minLength={5} style={{ width: 130 }} /><label className="f"><span><input type="checkbox" name="confirm_history" /> I know hours up to {through} are billed</span></label></>}
               <button className="danger sm">Remove</button></form></td></tr>)}
@@ -55,7 +56,7 @@ export default async function AssignmentPage({ params, searchParams }: { params:
         <h3>Substitutions</h3>
         <p className="muted">When {a.person} is away and someone else works instead, the client invoice still shows {a.person} only, with the substitute's hours included. The substitute is paid separately (external substitutes only; internal ones are on payroll).</p>
         <table><thead><tr><th>Substitute</th><th>From</th><th>To</th><th>Reason</th>{fin && <th>Cost rate {unit}</th>}<th></th></tr></thead><tbody>
-          {subs.map((s) => <tr key={s.id}><td>{s.name} <span className="muted">({s.worker_type})</span></td><td>{s.from_date}</td><td>{s.to_date}</td><td>{s.reason}</td>
+          {subs.map((s) => <tr key={s.id}><td>{s.name} <span className="muted">({s.worker_type})</span></td><td>{fmtDate(s.from_date)}</td><td>{fmtDate(s.to_date)}</td><td>{s.reason}</td>
             {fin && <td><form action={updateSubstitutionCost} className="row"><Hidden name="rid" value={s.id} /><Hidden name="_back" value={back} />
               {s.worker_type === "external" ? <><input name="cost_amount" type="number" step="0.01" defaultValue={s.cost_amount ?? ""} style={{ width: 90 }} placeholder="missing" /><CurrencySelect name="cost_currency" value={s.cost_currency} /><button className="sec sm">Save</button></> : <span className="muted">payroll</span>}</form></td>}
             <td><form action={deleteSubstitution}><Hidden name="rid" value={s.id} /><Hidden name="_back" value={back} /><button className="danger sm">Remove</button></form></td></tr>)}
@@ -74,7 +75,7 @@ export default async function AssignmentPage({ params, searchParams }: { params:
         <h3>Milestones</h3>
         <p className="muted">Approve a milestone when the work is accepted. It is then invoiced in the next invoice run (its own invoice if the client contract is "per milestone").</p>
         <table><thead><tr><th>Milestone</th><th>Due</th><th className="num">Bill</th>{fin && <th className="num">Cost</th>}<th>Status</th><th></th></tr></thead><tbody>
-          {milestones.map((m) => <tr key={m.id}><td>{m.title}</td><td>{m.due_date}</td><td className="num">{money(m.bill_amount, m.bill_currency)}</td>{fin && <td className="num">{money(m.cost_amount, m.cost_currency)}</td>}
+          {milestones.map((m) => <tr key={m.id}><td>{m.title}</td><td>{fmtDate(m.due_date)}</td><td className="num">{money(m.bill_amount, m.bill_currency)}</td>{fin && <td className="num">{money(m.cost_amount, m.cost_currency)}</td>}
             <td><Badge v={m.status} />{m.invoice_id ? " invoiced" : ""}</td>
             <td>{!m.invoice_id && !m.payout_id && <form action={setMilestone} className="row"><Hidden name="rid" value={m.id} />
               {m.status !== "approved" && <button name="status" value="approved" className="sec sm">Approve</button>}

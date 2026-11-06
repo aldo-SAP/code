@@ -7,6 +7,7 @@ import { leaveContext } from "@/lib/leave";
 import { auditFor } from "@/lib/audit";
 import { cancelLeaveAction, decideLeaveAction, revokeLeaveAction } from "@/app/actions";
 import { Badge, Flash, Hidden, num, today } from "@/components/ui";
+import { fmtDateTime, fmtRange } from "@/lib/dates";
 
 export default async function LeaveDetail({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string; err?: string }> }) {
   const user = await requireUser();
@@ -23,9 +24,9 @@ export default async function LeaveDetail({ params, searchParams }: { params: Pr
       <p><Link href="/leave">&larr; Leave</Link></p>
       <h2>{l.name}: {l.type} <Badge v={l.status} /></h2><Flash sp={sp} />
       <div className="card">
-        <b>{l.from_date} to {l.to_date}</b> ({l.days} working day{l.days === 1 ? "" : "s"})
+        <b>{fmtRange(l.from_date, l.to_date)}</b> ({l.days} working day{l.days === 1 ? "" : "s"})
         {l.notes && <p>Note: {l.notes}</p>}
-        <p className="muted" style={{ marginBottom: 0 }}>Requested {l.requested_at?.slice(0, 16)} UTC{l.decided_by_name ? ` · ${l.status} by ${l.decided_by_name}${l.decided_at ? " on " + l.decided_at.slice(0, 16) : ""}` : ""}{l.decision_note ? ` · "${l.decision_note}"` : ""}</p>
+        <p className="muted" style={{ marginBottom: 0 }}>Requested {fmtDateTime(l.requested_at)} UTC{l.decided_by_name ? ` · ${l.status} by ${l.decided_by_name}${l.decided_at ? " on " + fmtDateTime(l.decided_at) : ""}` : ""}{l.decision_note ? ` · "${l.decision_note}"` : ""}</p>
       </div>
 
       {ctx && (
@@ -33,11 +34,11 @@ export default async function LeaveDetail({ params, searchParams }: { params: Pr
           <b>Before you decide</b>
           <ul>
             {ctx.assignments.length ? ctx.assignments.map((a) => <li key={a.id}>Works on <Link href={`/assignments/${a.id}`}>{a.project}</Link> ({a.client}, {a.billing_type}).</li>) : <li>No active assignment in this period.</li>}
-            {ctx.substitutes.map((s, k) => <li key={k}>Substitute arranged: {s.substitute}, {s.from_date} to {s.to_date}.</li>)}
+            {ctx.substitutes.map((s, k) => <li key={k}>Substitute arranged: {s.substitute}, {fmtRange(s.from_date, s.to_date)}.</li>)}
             {uncovered.length > 0 && <li><b>No substitute is set</b> for {uncovered.map((a) => a.project).join(", ")}. Add one on the assignment page if the client needs cover.</li>}
             {ctx.logged.n > 0 && <li><b>{ctx.logged.n} day(s) with {num(ctx.logged.h)}h are already logged</b> inside these dates.</li>}
             <li>{ctx.balance.year} allowance: <b>{num(ctx.balance.remaining)}</b> of {num(ctx.balance.allowance)} days left ({num(ctx.balance.taken)} taken, {num(ctx.balance.planned)} planned, {num(ctx.balance.pending)} waiting). <Link href={`/people/${l.person_id}?year=${ctx.balance.year}`}>See the full year</Link>.</li>
-            {ctx.colleagues.map((c, k) => <li key={k}>Colleague on the same project: {c.name} is off {c.from_date} to {c.to_date} ({c.status}).</li>)}
+            {ctx.colleagues.map((c, k) => <li key={k}>Colleague on the same project: {c.name} is off {fmtRange(c.from_date, c.to_date)} ({c.status}).</li>)}
           </ul>
         </div>
       )}
@@ -65,7 +66,7 @@ export default async function LeaveDetail({ params, searchParams }: { params: Pr
 
       {history.length > 0 && <>
         <h3>History</h3>
-        <table><tbody>{history.map((h) => <tr key={h.id}><td style={{ whiteSpace: "nowrap" }}>{h.created_at}</td><td>{h.user_name}</td><td>{h.summary}{h.reason ? <span className="muted"> - {h.reason}</span> : null}</td></tr>)}</tbody></table>
+        <table><tbody>{history.map((h) => <tr key={h.id}><td style={{ whiteSpace: "nowrap" }}>{fmtDateTime(h.created_at)}</td><td>{h.user_name}</td><td>{h.summary}{h.reason ? <span className="muted"> - {h.reason}</span> : null}</td></tr>)}</tbody></table>
       </>}
     </>
   );

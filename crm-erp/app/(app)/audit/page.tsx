@@ -1,6 +1,7 @@
 import { all } from "@/lib/db";
 import { requireAdmin } from "@/lib/session";
 import { Field } from "@/components/ui";
+import { fmtDateTime } from "@/lib/dates";
 
 export default async function Audit({ searchParams }: { searchParams: Promise<{ q?: string; entity?: string; user?: string; action?: string }> }) {
   await requireAdmin();
@@ -27,7 +28,7 @@ export default async function Audit({ searchParams }: { searchParams: Promise<{ 
         <button className="sec">Filter</button>
       </form>
       <div className="tw"><table><thead><tr><th>When (UTC)</th><th>Who</th><th>From</th><th>Action</th><th>What happened</th><th>Reason</th></tr></thead><tbody>
-        {rows.map((r) => <tr key={r.id}><td style={{ whiteSpace: "nowrap" }}>{r.created_at}</td><td>{r.user_name}</td><td className="muted">{[r.country, r.ip].filter(Boolean).join(" ")}</td>
+        {rows.map((r) => <tr key={r.id}><td style={{ whiteSpace: "nowrap" }}>{fmtDateTime(r.created_at)}</td><td>{r.user_name}</td><td className="muted">{[r.country, r.ip].filter(Boolean).join(" ")}</td>
           <td><span className={`badge ${risky.has(r.action) ? "err" : ""}`}>{r.action}</span></td>
           <td>{r.summary}{r.details && <details><summary className="muted" style={{ cursor: "pointer" }}>details</summary><pre style={{ whiteSpace: "pre-wrap", fontSize: 12, margin: 4 }}>{JSON.stringify(JSON.parse(r.details), null, 2)}</pre></details>}</td>
           <td>{r.reason}</td></tr>)}

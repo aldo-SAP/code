@@ -1,4 +1,5 @@
 import { all, get, run, tx } from "./db.ts";
+import { fmtMonthShort } from "./dates.ts";
 import { monthFraction, periodRange, priceEntries, rateAt, round2, toEur, type Rate } from "./billing.ts";
 
 interface AssignmentRow {
@@ -28,7 +29,7 @@ const approvedEntries = (assignmentId: number, end: string) =>
     assignmentId, end,
   );
 
-const monthTag = (month: string, period: string) => (month === period ? "" : ` (${month})`);
+const monthTag = (month: string, period: string) => (month === period ? "" : ` (${fmtMonthShort(month)})`);
 const fmtQty = (n: number) => String(Math.round(n * 100) / 100);
 
 // ---------------------------------------------------------------- invoices
