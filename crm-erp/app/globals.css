@@ -137,3 +137,8 @@ body{padding-left:env(safe-area-inset-left,0);padding-right:env(safe-area-inset-
 .ts .ph{background:repeating-linear-gradient(135deg,var(--bg) 0 4px,var(--line) 4px 5px)}
 .cal td.h{color:var(--muted);background:repeating-linear-gradient(135deg,var(--bg) 0 4px,var(--line) 4px 5px)}
 .tl u{position:absolute;bottom:0;height:7px;width:2px;background:var(--muted);text-decoration:none}
+
+/* iPhone Safari gives date/month inputs a fixed intrinsic width that pushes them out of their box */
+label.f{min-width:0}
+input[type=month],input[type=date]{-webkit-appearance:none;appearance:none;min-width:0;max-width:100%;text-align:left;line-height:1.2;min-height:40px}
+@media (max-width:820px){input[type=month],input[type=date]{display:block;width:100%}}
