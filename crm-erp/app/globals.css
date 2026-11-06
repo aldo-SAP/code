@@ -39,6 +39,7 @@ label.f input,label.f select{color:var(--text);font-size:14px}
 .deal{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:8px;margin-bottom:8px}
 .ts td,.ts th{padding:2px 3px;text-align:center}.ts input{width:36px;padding:3px;text-align:center}
 .ts .we{background:var(--bg)}.ts .lv{background:var(--warnbg)}
+.ts input.billed{background:var(--bg);border-style:dashed;color:var(--muted)}
 .ts input.approved{background:var(--okbg)}.ts input.submitted{background:var(--warnbg)}.ts input.rejected{background:var(--errbg)}
 .login{max-width:340px;margin:12vh auto}
 .invoice{background:#fff;color:#111;max-width:820px;padding:36px;border:1px solid var(--line)}

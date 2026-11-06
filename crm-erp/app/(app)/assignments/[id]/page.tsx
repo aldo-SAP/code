@@ -4,6 +4,7 @@ import { all, get } from "@/lib/db";
 import { requireManager } from "@/lib/session";
 import { can } from "@/lib/auth";
 import { addMilestone, addRate, addSubstitution, deleteRate, deleteSubstitution, setMilestone, updateSubstitutionCost } from "@/app/actions";
+import { billedThrough } from "@/lib/history";
 import { Badge, CurrencySelect, Field, Flash, Hidden, money, today } from "@/components/ui";
 
 export default async function AssignmentPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string; err?: string }> }) {
@@ -19,12 +20,14 @@ export default async function AssignmentPage({ params, searchParams }: { params:
   const candidates = all<any>("SELECT id,name,worker_type FROM people WHERE stage IN ('ready','placed') AND id<>? ORDER BY name", a.person_id);
   const hours = all<any>(`SELECT status, SUM(hours) h FROM timesheet_entries WHERE assignment_id=? GROUP BY status`, a.id);
   const back = `/assignments/${a.id}`;
+  const through = billedThrough(a.id);
   const unit = { hourly: "per hour", daily: "per day", monthly: "per month", fixed: "" }[a.billing_type as string];
   return (
     <>
       <h2>{a.person} on {a.project}</h2><Flash sp={sp} />
       <p className="muted"><Link href={`/projects/${a.project_id}`}>Back to project</Link> · contract: {a.contract ?? "-"} ({a.payment_terms}, net {a.net_days}) · {a.billing_type} · {a.hours_per_day}h/day · {a.start_date} to {a.end_date ?? "open"} · {a.worker_type}
         {a.direct_to_client ? " · works directly with the client" : ""}</p>
+      {through && <div className="flash err">Hours up to {through} are already invoiced or paid out. Changes that reach back before that date need a reason and are logged. <Link href={`/unlock?person=${a.person_id}&month=${through.slice(0, 7)}`}>Unlock billed hours</Link></div>}
       <p>{hours.map((h) => <span key={h.status} style={{ marginRight: 10 }}><Badge v={h.status} /> {h.h}h</span>)}{!hours.length && <span className="muted">No hours logged yet.</span>}</p>
 
       {a.billing_type !== "fixed" && <>
@@ -32,7 +35,9 @@ export default async function AssignmentPage({ params, searchParams }: { params:
         <p className="muted">Rates are effective-dated: a new rate applies from its date onward and old invoices keep the old rate.</p>
         <table><thead><tr><th>Kind</th><th>Amount</th><th>Effective from</th><th></th></tr></thead><tbody>
           {rates.map((r) => <tr key={r.id}><td>{r.kind === "bill" ? "Bill (client pays)" : "Cost (we pay)"}</td><td>{money(r.amount, r.currency)}</td><td>{r.effective_from}</td>
-            <td><form action={deleteRate}><Hidden name="id" value={r.id} /><button className="danger sm">Remove</button></form></td></tr>)}
+            <td><form action={deleteRate} className="row"><Hidden name="id" value={r.id} />
+              {through && r.effective_from <= through && <><input name="reason" placeholder="Reason" minLength={5} style={{ width: 130 }} /><label className="f"><span><input type="checkbox" name="confirm_history" /> I know hours up to {through} are billed</span></label></>}
+              <button className="danger sm">Remove</button></form></td></tr>)}
           {!rates.length && <tr><td colSpan={4} className="muted">No rates.</td></tr>}</tbody></table>
         <form action={addRate} className="row" style={{ marginTop: 8 }}>
           <Hidden name="assignment_id" value={a.id} />
@@ -40,6 +45,8 @@ export default async function AssignmentPage({ params, searchParams }: { params:
           <Field label="Amount"><input name="amount" type="number" step="0.01" required style={{ width: 110 }} /></Field>
           <Field label="Currency"><CurrencySelect value={a.client_currency} /></Field>
           <Field label="Effective from"><input type="date" name="effective_from" defaultValue={today()} required /></Field>
+          {through && <><Field label={`Reason (needed if effective on/before ${through})`}><input name="reason" /></Field>
+            <label className="f"><span><input type="checkbox" name="confirm_history" /> Hours up to {through} are already billed; I confirm</span></label></>}
           <button className="sec">Add rate</button>
         </form>
       </>}

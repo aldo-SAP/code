@@ -37,6 +37,7 @@ export default async function Approvals({ searchParams }: { searchParams: Promis
         {submitted.map((g) => row(g, <form action={reviewEntries} className="row"><Hidden name="ids" value={g.ids.join(",")} />
           <button name="decision" value="approve" className="sm">Approve</button><button name="decision" value="reject" className="danger sm">Reject</button></form>))}
         {!submitted.length && <tr><td colSpan={6} className="muted">Nothing waiting.</td></tr>}</tbody></table></div>
+      <p className="muted">Hours already on an invoice or payout are locked. To correct them use <Link href="/unlock">Unlock billed hours</Link> (needs a reason, everything is logged).</p>
       <h3>Approved, not yet invoiced</h3>
       <div className="tw"><table><thead><tr><th>Person</th><th>Project</th><th>Month</th><th className="num">Total</th><th>Days: hours</th><th></th></tr></thead><tbody>
         {approved.map((g) => row(g, <form action={reopenEntries}><Hidden name="ids" value={g.ids.join(",")} /><button className="sec sm">Reopen</button></form>))}

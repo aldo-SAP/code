@@ -4,10 +4,12 @@ import { all, get, setting } from "@/lib/db";
 import { requireManager } from "@/lib/session";
 import { issueInv, payInv, voidInv } from "@/app/actions";
 import PrintButton from "@/components/PrintButton";
+import { auditFor } from "@/lib/audit";
+import { can } from "@/lib/auth";
 import { Badge, Flash, Hidden, money, num } from "@/components/ui";
 
 export default async function InvoicePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string; err?: string }> }) {
-  await requireManager();
+  const user = await requireManager();
   const { id } = await params; const sp = await searchParams;
   const inv = get<any>("SELECT i.*, c.name AS client, c.address, c.country, c.email FROM invoices i JOIN clients c ON c.id=i.client_id WHERE i.id=?", Number(id));
   if (!inv) notFound();
@@ -20,11 +22,21 @@ export default async function InvoicePage({ params, searchParams }: { params: Pr
           <Link href={`/invoices?period=${inv.period}`}>&larr; Invoices</Link><Badge v={inv.status} />
           {inv.status === "draft" && <form action={issueInv}><Hidden name="id" value={inv.id} /><button>Issue (assign number)</button></form>}
           {inv.status === "issued" && <form action={payInv}><Hidden name="id" value={inv.id} /><button>Mark paid</button></form>}
-          {(inv.status === "draft" || inv.status === "issued") && <form action={voidInv}><Hidden name="id" value={inv.id} /><button className="danger">{inv.status === "draft" ? "Discard draft" : "Void"}</button></form>}
+          {inv.status === "draft" && <form action={voidInv}><Hidden name="id" value={inv.id} /><button className="danger">Discard draft</button></form>}
+          {inv.status !== "void" && <Link className="btn sec" href={`/unlock?invoice=${inv.id}`}>Reopen hours of this invoice</Link>}
           <a className="btn sec" href={`/invoices/${inv.id}/csv`}>Download CSV</a>
           <PrintButton />
         </div>
       </div>
+      {inv.status === "issued" && can.admin(user) && (
+        <form action={voidInv} className="row card no-print">
+          <Hidden name="id" value={inv.id} />
+          <b>Void this issued invoice</b>
+          <input name="reason" placeholder="Reason (required)" minLength={5} required style={{ minWidth: 240 }} />
+          <input name="confirm" placeholder="Type VOID" required autoComplete="off" style={{ width: 110 }} />
+          <button className="danger">Void invoice</button>
+        </form>
+      )}
       <div className="invoice">
         <h2 style={{ marginBottom: 2 }}>{inv.status === "draft" ? "DRAFT invoice" : `Invoice ${inv.number}`}</h2>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 20, margin: "14px 0" }}>
@@ -36,6 +48,13 @@ export default async function InvoicePage({ params, searchParams }: { params: Pr
           {lines.map((l) => <tr key={l.id}><td>{l.description}</td><td className="num">{num(l.quantity)} {unit(l)}</td><td className="num">{money(l.unit_price, inv.currency)}</td><td className="num">{money(l.amount, inv.currency)}</td><td className="no-print muted">{l.detail}</td></tr>)}
         </tbody><tfoot><tr><td colSpan={3} className="num"><b>Total</b></td><td className="num"><b>{money(inv.total, inv.currency)}</b></td><td className="no-print" /></tr></tfoot></table>
         <p style={{ marginTop: 18 }}>Payment to: {setting("company_iban", "-")}</p>
+      </div>
+      <div className="no-print">
+        <h3>History</h3>
+        <table><tbody>
+          {auditFor("invoice", inv.id).map((h) => <tr key={h.id}><td style={{ whiteSpace: "nowrap" }}>{h.at}</td><td>{h.user_name}</td><td>{h.summary}{h.reason ? <span className="muted"> - {h.reason}</span> : null}</td></tr>)}
+          {!auditFor("invoice", inv.id).length && <tr><td className="muted">No logged actions.</td></tr>}
+        </tbody></table>
       </div>
     </>
   );

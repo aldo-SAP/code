@@ -113,4 +113,12 @@ CREATE TABLE IF NOT EXISTS fx_rates (
   UNIQUE (currency, as_of)
 );
 CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+-- Append-only history of who did what. The triggers make edits and deletes impossible.
+CREATE TABLE IF NOT EXISTS audit_log (
+  id INTEGER PRIMARY KEY, at TEXT NOT NULL DEFAULT (datetime('now')), user_id INTEGER, user_name TEXT NOT NULL,
+  action TEXT NOT NULL, entity TEXT NOT NULL, entity_id INTEGER, summary TEXT NOT NULL, details TEXT, reason TEXT
+);
+CREATE INDEX IF NOT EXISTS ix_audit_entity ON audit_log(entity, entity_id);
+CREATE TRIGGER IF NOT EXISTS audit_no_update BEFORE UPDATE ON audit_log BEGIN SELECT RAISE(ABORT, 'audit log is append-only'); END;
+CREATE TRIGGER IF NOT EXISTS audit_no_delete BEFORE DELETE ON audit_log BEGIN SELECT RAISE(ABORT, 'audit log is append-only'); END;
 `;

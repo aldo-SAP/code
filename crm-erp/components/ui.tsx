@@ -26,7 +26,7 @@ export function Nav({ user }: { user: User }) {
     : [["/", "Dashboard"], ["/clients", "Clients"], ["/deals", "Pipeline"], ["/people", "People"], ["/courses", "Training"],
        ["/projects", "Projects"], ["/timesheets", "Timesheets"], ["/approvals", "Approvals"], ["/invoices", "Invoices"],
        ...(can.finance(user) ? [["/payouts", "Payouts"], ["/reports", "Margin"]] as [string, string][] : []),
-       ["/import", "CSV import"], ...(can.admin(user) ? [["/settings", "Settings"]] as [string, string][] : [])];
+       ["/unlock", "Unlock billed hours"], ["/import", "CSV import"], ...(can.admin(user) ? [["/audit", "Audit log"], ["/settings", "Settings"]] as [string, string][] : [])];
   return (
     <nav className="side">
       <h1>Talent CRM/ERP</h1>

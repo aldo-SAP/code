@@ -26,7 +26,7 @@ export default async function Timesheets({ searchParams }: { searchParams: Promi
     WHERE a.billing_type IN ('hourly','daily') AND (a.person_id=? OR a.id IN (SELECT assignment_id FROM substitutions WHERE person_id=? AND to_date>=? AND from_date<=?))
       AND a.start_date<=? AND (a.end_date IS NULL OR a.end_date>=?) ORDER BY pr.name`, pid, pid, start, end, end, start);
   const subs = all<any>("SELECT assignment_id,from_date,to_date FROM substitutions WHERE person_id=?", pid);
-  const entries = new Map(all<any>(`SELECT assignment_id,work_date,hours,status FROM timesheet_entries WHERE worker_id=? AND work_date BETWEEN ? AND ?`, pid, start, end).map((e) => [`${e.assignment_id}_${e.work_date}`, e]));
+  const entries = new Map(all<any>(`SELECT assignment_id,work_date,hours,status,invoice_id,payout_id FROM timesheet_entries WHERE worker_id=? AND work_date BETWEEN ? AND ?`, pid, start, end).map((e) => [`${e.assignment_id}_${e.work_date}`, e]));
   const leave = all<any>("SELECT * FROM leave WHERE person_id=? AND to_date>=? AND from_date<=? ORDER BY from_date", pid, start, end);
   const onLeave = (d: string) => leave.some((l) => l.from_date <= d && d <= l.to_date);
   const allowed = (r: any, d: string) =>
@@ -35,6 +35,7 @@ export default async function Timesheets({ searchParams }: { searchParams: Promi
   const statuses = [...entries.values()].map((e) => e.status);
   const pending = statuses.filter((s) => s === "draft" || s === "rejected").length;
   const back = q(month);
+  const billedCount = [...entries.values()].filter((e) => e.invoice_id != null || e.payout_id != null).length;
 
   return (
     <>
@@ -46,6 +47,7 @@ export default async function Timesheets({ searchParams }: { searchParams: Promi
         <Link className="btn sec" href={q(shift(month, 1))}>{shift(month, 1)} &rarr;</Link>
         <span className="muted">{person.name}: enter hours per day. Yellow = submitted, green = approved, red = rejected, shaded = leave.</span>
       </div>
+      {billedCount > 0 && <div className="flash err">{billedCount} day(s) this month are already invoiced or paid out (dashed cells) and locked. {manager ? <Link href={`/unlock?person=${pid}&month=${month}`}>Unlock billed hours</Link> : "Ask a manager if something must be corrected."}</div>}
       {!rows.length ? <div className="card muted">No assignments or substitutions in this month.</div> : (
         <form action={saveTimesheet}>
           <Hidden name="month" value={month} /><Hidden name="person_id" value={pid} />
@@ -60,10 +62,11 @@ export default async function Timesheets({ searchParams }: { searchParams: Promi
                     const e = entries.get(`${r.id}_${d}`);
                     if (e) total += e.hours;
                     const ok = allowed(r, d);
-                    const locked = e && (e.status === "approved" || (e.status === "submitted" && !manager));
+                    const isBilled = !!e && (e.invoice_id != null || e.payout_id != null);
+                    const locked = e && (e.status === "approved" || isBilled || (e.status === "submitted" && !manager));
                     const wk = [0, 6].includes(new Date(d).getUTCDay());
                     return <td key={d} className={onLeave(d) ? "lv" : wk ? "we" : ""}>
-                      <input name={`h_${r.id}_${d}`} defaultValue={e?.hours ?? ""} disabled={!ok || !!locked} className={e?.status ?? ""} inputMode="decimal" aria-label={`${r.project} ${d}`} /></td>;
+                      <input name={`h_${r.id}_${d}`} defaultValue={e?.hours ?? ""} disabled={!ok || !!locked} className={isBilled ? "billed" : e?.status ?? ""} title={isBilled ? "Billed: locked. Use Unlock billed hours to change." : undefined} inputMode="decimal" aria-label={`${r.project} ${d}`} /></td>;
                   })}
                   <td className="num"><b>{total}</b></td>
                 </tr>

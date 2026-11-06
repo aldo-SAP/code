@@ -45,15 +45,21 @@ export function get<T = Record<string, any>>(sql: string, ...p: Param[]): T | un
 export function run(sql: string, ...p: Param[]): number {
   return Number(db().prepare(sql).run(...p).lastInsertRowid);
 }
+let depth = 0;
+/** Transaction; nested calls become savepoints so a failure rolls back the whole outer unit. */
 export function tx<T>(fn: () => T): T {
   const d = db();
-  d.exec("BEGIN");
+  const sp = `sp${depth}`;
+  d.exec(depth === 0 ? "BEGIN" : `SAVEPOINT ${sp}`);
+  depth++;
   try {
     const out = fn();
-    d.exec("COMMIT");
+    depth--;
+    d.exec(depth === 0 ? "COMMIT" : `RELEASE ${sp}`);
     return out;
   } catch (e) {
-    d.exec("ROLLBACK");
+    depth--;
+    d.exec(depth === 0 ? "ROLLBACK" : `ROLLBACK TO ${sp}; RELEASE ${sp}`);
     throw e;
   }
 }

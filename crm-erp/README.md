@@ -45,6 +45,16 @@ Set `ADMIN_EMAIL` / `ADMIN_PASSWORD` before seeding to choose your own login. Fo
 - Currencies: amounts keep their own currency; the margin report converts to EUR with the rates in Settings.
 - **Roles**: admin (everything), manager (CRM, projects, approvals, invoices; no cost rates, payouts or margin), worker (own timesheet and leave only).
 
+### Protecting history
+- **Billed hours are locked.** Once a day is on an invoice or a payout it shows as a dashed cell and cannot be edited, removed or re-approved.
+- **Reopening needs three things:** a written reason, typing `REOPEN`, and the right role. Open *Unlock billed hours* (or the link on the timesheet or invoice).
+  - Day is on a **draft** invoice/payout: it is rebuilt without the day.
+  - Day is on an **issued** invoice or **approved** payout: admin only. The invoice is **voided and kept** (number not reused), then you correct, re-approve and regenerate.
+  - **Paid** invoices and paid payouts cannot be reopened at all.
+- **Rates and substitutions:** adding or removing a rate that reaches back before already-billed hours needs a reason and a tick. A substitution whose hours are billed cannot be edited or removed.
+- **Voiding an issued invoice** needs an admin, a reason and typing `VOID`.
+- **Audit log** (admin): every sign-in, create, change, approval, invoice action and unlock with who, when, reason and before/after values. The table is append-only (database triggers block edits and deletes). Each invoice also shows its own history.
+
 ### Known limits (v1)
 - No VAT (amounts only, as requested). Invoices print to PDF from the browser or export as CSV.
 - Substitution on a **monthly** or **fixed** assignment is not priced; substitutions apply to hourly/daily work.

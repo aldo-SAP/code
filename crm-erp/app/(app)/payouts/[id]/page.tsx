@@ -12,7 +12,10 @@ export default async function PayoutPage({ params }: { params: Promise<{ id: str
   const p = get<any>("SELECT p.*, per.name, per.worker_type FROM payouts p JOIN people per ON per.id=p.person_id WHERE p.id=?", Number(id));
   if (!p) notFound();
   const lines = all<any>("SELECT * FROM payout_lines WHERE payout_id=? ORDER BY id", p.id);
-  const set = (status: string, label: string) => <form action={setPayout}><Hidden name="id" value={p.id} /><Hidden name="_back" value={`/payouts/${p.id}`} /><button name="status" value={status} className="sec">{label}</button></form>;
+  const set = (status: string, label: string) => (
+    <form action={setPayout} className="row"><Hidden name="id" value={p.id} /><Hidden name="_back" value={`/payouts/${p.id}`} />
+      {p.status === "paid" && <><input name="reason" placeholder="Reason (required)" required minLength={5} /><input name="confirm" placeholder="Type REOPEN" required autoComplete="off" style={{ width: 120 }} /></>}
+      <button name="status" value={status} className="sec">{label}</button></form>);
   return (
     <>
       <div className="bar no-print"><Link href={`/payouts?period=${p.period}`}>&larr; Payouts</Link><Badge v={p.status} />
