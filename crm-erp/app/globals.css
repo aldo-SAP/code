@@ -415,9 +415,10 @@ button.navhead:hover{background:none;color:var(--text)}
 .ts-pager button[aria-pressed=true]{background:var(--brand);color:var(--brand-fg)}
 .ts th[hidden],.ts td[hidden]{display:none}
 .ts-top{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
-/* thin blue sideways scrollbar, always visible so it is clear a long month continues to the right */
+/* slim blue sideways scrollbar, always visible so it is clear a long month continues to the right */
 .tstab-card .tw{overflow-x:auto}
-.tstab-card .tw::-webkit-scrollbar{height:8px;background:transparent}
-.tstab-card .tw::-webkit-scrollbar-track{background:var(--bg);border-radius:4px;margin:0 12px}
-.tstab-card .tw::-webkit-scrollbar-thumb{background:var(--brand);border-radius:4px}
+.tstab-card .tw::-webkit-scrollbar{height:6px;background:transparent}                      /* Chrome, Edge, Safari */
+.tstab-card .tw::-webkit-scrollbar-track{background:var(--bg);border-radius:3px;margin:0 12px}
+.tstab-card .tw::-webkit-scrollbar-thumb{background:var(--brand);border-radius:3px}
 .tstab-card .tw::-webkit-scrollbar-thumb:hover{background:var(--brand-d)}
+@supports (-moz-appearance:none){.tstab-card .tw{scrollbar-width:thin;scrollbar-color:var(--brand) var(--bg)}}   /* Firefox */
