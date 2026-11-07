@@ -388,3 +388,23 @@ button.navhead:hover{background:none;color:var(--text)}
 .ts-foot{padding:10px 14px;color:var(--muted);text-align:right}.ts-foot b{color:var(--text)}
 .ts-nonwork{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:13px}.ts-nonwork input{min-height:0;width:auto}
 @media (max-width:820px){.ts-tools{padding:10px 12px}.ts-tools-btns{width:100%}.ts-tools-btns button{flex:1}.tsm .card{padding:0;margin:0}}
+
+/* timesheet view switcher, project tabs, table view */
+.ts-switch{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;width:max-content;max-width:100%}
+.ts-switch button{background:var(--card);color:var(--muted);border:0;border-radius:0;padding:7px 14px;font-weight:500}
+.ts-switch button:hover{background:var(--bg);color:var(--text)}
+.ts-switch button[aria-pressed=true]{background:var(--brand);color:var(--brand-fg)}
+.ts-projects{display:flex;gap:6px;flex-wrap:wrap}
+.ts-projects button{background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 12px;display:inline-flex;gap:10px;align-items:center}
+.ts-projects button:hover{background:var(--bg)}
+.ts-projects button[aria-selected=true]{border-color:var(--brand);color:var(--brand);font-weight:600;background:color-mix(in srgb,var(--brand) 8%,var(--card))}
+.ts-projects button span{color:var(--muted);font-weight:400;font-size:12px}
+.tstab-card{padding:0;overflow:hidden}
+.ts th.dn{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding-bottom:0}
+.ts th.we,.ts th.dn.we{opacity:.65}
+.ts-proj{text-align:left;white-space:nowrap;min-width:150px}.ts-proj .linkbtn{font-weight:600;font-size:14px}
+.ts-proj .ts-tools-btns{display:flex;gap:6px;margin-top:6px}
+.ts td.we input:disabled,.ts td.ph input:disabled,.ts td.lv input:disabled{background:transparent;border-color:transparent;color:var(--muted)}
+.ts .ph{background:repeating-linear-gradient(135deg,var(--bg) 0 5px,var(--line) 5px 6px)}
+.ts td{padding:3px 2px}.ts input{width:34px}
+.tstab-card .tw+.tw{border-top:1px solid var(--line)}.ts input{width:36px}.ts-month{font-size:11px;white-space:nowrap}

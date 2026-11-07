@@ -23,6 +23,11 @@ export default function TimesheetFields({ days, rows, dayHours = 8 }: { days: st
   const initial = useMemo(() => Object.fromEntries(rows.flatMap((r) => days.map((d) => [`h_${r.id}_${d}`, r.cells[d].v]))), [rows, days]);
   const [vals, setVals] = useState<Record<string, string>>(initial);
   const [bump, setBump] = useState(0);
+  const many = rows.length > 1;
+  const [view, setViewState] = useState<"calendar" | "table">(many ? "table" : "calendar");   // several projects: overview first, one project: its calendar
+  const [active, setActive] = useState<number>(rows[0]?.id ?? 0);
+  useEffect(() => { try { const v = localStorage.getItem("ts_view"); if (v === "calendar" || v === "table") setViewState(v); } catch { /* private window: keep the default */ } }, []);
+  const setView = (v: "calendar" | "table") => { setViewState(v); try { localStorage.setItem("ts_view", v); } catch { /* ignore */ } };
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => { if (bump) ref.current?.closest("form")?.dispatchEvent(new Event("input", { bubbles: true })); }, [bump]);   // lets the hours summary recount after a fill
 
@@ -53,40 +58,84 @@ export default function TimesheetFields({ days, rows, dayHours = 8 }: { days: st
       {nonworking && <input type="hidden" name="nonworking" value="1" />}</label>
   );
 
-  if (!phone) {
+  const monthTotal = (r: Row) => days.reduce((t, d) => t + num(vals[`h_${r.id}_${d}`] ?? ""), 0);
+  const switcher = (
+    <div className="ts-switch" role="group" aria-label="Timesheet view">
+      <button type="button" aria-pressed={view === "calendar"} onClick={() => setView("calendar")}>Calendar</button>
+      <button type="button" aria-pressed={view === "table"} onClick={() => setView("table")}>All days in a row</button>
+    </div>
+  );
+
+  const calendar = (r: Row) => {
     const first = (dow(days[0]) + 6) % 7;                                       // Monday = 0
+    const slots: (string | null)[] = [...Array(first).fill(null), ...days]; while (slots.length % 7) slots.push(null);
+    const weeks = Array.from({ length: slots.length / 7 }, (_, k) => slots.slice(k * 7, k * 7 + 7));
+    return (
+      <section key={r.id} className="card tscal-card" hidden={many && active !== r.id}>
+        {toolbar(r)}
+        <div className="tscal-grid" role="grid">
+          {HEAD.map((h, i) => <div key={h} className={`tscal-h${i > 4 ? " we" : ""}`}>{h}</div>)}
+          <div className="tscal-h tot">Week</div>
+          {weeks.map((w, wi) => (
+            <div className="tscal-week" key={wi}>
+              {w.map((d, i) => {
+                if (!d) return <div key={i} className="tscal-day blank" />;
+                const c = r.cells[d], isOpen = open(c);
+                return (
+                  <label key={d} className={`tscal-day${i > 4 ? " we" : ""}${c.holiday ? " ph" : ""}${c.leave ? " lv" : ""}${!isOpen ? " off" : ""}`}>
+                    <span className="tscal-n">{Number(d.slice(8))}{c.leave && <em>Leave</em>}{c.holiday && !c.leave && <em title={c.holiday}>Holiday</em>}</span>
+                    {input(r, d, c)}
+                  </label>
+                );
+              })}
+              <div className="tscal-day tot"><b>{fmt(w.reduce((t, d) => t + (d ? num(vals[`h_${r.id}_${d}`] ?? "") : 0), 0))}</b><span>h</span></div>
+            </div>
+          ))}
+        </div>
+        <div className="ts-foot"><span>Month total for this project: <b>{fmt(monthTotal(r))} h</b></span></div>
+      </section>
+    );
+  };
+
+  // a month does not fit in one row on a normal screen: two halves, each with its own subtotal
+  const chunks = days.length > 16 ? [days.slice(0, 16), days.slice(16)] : [days];
+  const table = (
+    <section className="card tstab-card">
+      {chunks.map((chunk, ci) => (
+        <div className="tw" key={ci}><table className="ts nostack">
+          <thead>
+            <tr><th rowSpan={2} style={{ textAlign: "left" }}>{ci === 0 ? "Project" : ""}</th>{chunk.map((d) => <th key={d} className={`dn${[0, 6].includes(dow(d)) ? " we" : ""}`}>{WD[dow(d)].slice(0, 2)}</th>)}<th rowSpan={2}>{chunks.length > 1 ? `Days ${Number(chunk[0].slice(8))}–${Number(chunk[chunk.length - 1].slice(8))}` : "Total"}</th></tr>
+            <tr>{chunk.map((d) => <th key={d} className={[0, 6].includes(dow(d)) ? "we" : ""}>{Number(d.slice(8))}</th>)}</tr>
+          </thead>
+          <tbody>{rows.map((r) => (
+            <tr key={r.id}>
+              <td className="ts-proj">
+                {ci === 0 ? (
+                  <>
+                    <button type="button" className="linkbtn" onClick={() => { setActive(r.id); setView("calendar"); }} title="Open this project as a calendar">{r.project}</button>
+                    {r.substituting && <><br /><span className="muted">covering for {r.substituting}</span></>}
+                    <span className="ts-tools-btns"><button type="button" className="sec sm" onClick={() => fill(r)}>Fill {dayHours} h</button><button type="button" className="sec sm" onClick={() => clear(r)}>Clear</button></span>
+                  </>
+                ) : <span className="muted">{r.project}</span>}
+              </td>
+              {chunk.map((d) => { const c = r.cells[d]; return <td key={d} className={c.leave ? "lv" : c.holiday ? "ph" : c.weekend ? "we" : ""} title={c.holiday}>{input(r, d, c)}</td>; })}
+              <td className="num"><b>{fmt(chunk.reduce((t, d) => t + num(vals[`h_${r.id}_${d}`] ?? ""), 0))}</b>{ci === chunks.length - 1 && chunks.length > 1 && <div className="muted ts-month">month {fmt(monthTotal(r))} h</div>}</td>
+            </tr>))}</tbody>
+        </table></div>
+      ))}
+    </section>
+  );
+
+  if (!phone) {
     return (
       <div ref={ref} className="tscal">
-        {rows.map((r) => {
-          const slots: (string | null)[] = [...Array(first).fill(null), ...days]; while (slots.length % 7) slots.push(null);
-          const weeks = Array.from({ length: slots.length / 7 }, (_, k) => slots.slice(k * 7, k * 7 + 7));
-          const total = days.reduce((t, d) => t + num(vals[`h_${r.id}_${d}`] ?? ""), 0);
-          return (
-            <section key={r.id} className="card tscal-card">
-              {toolbar(r)}
-              <div className="tscal-grid" role="grid">
-                {HEAD.map((h, i) => <div key={h} className={`tscal-h${i > 4 ? " we" : ""}`}>{h}</div>)}
-                <div className="tscal-h tot">Week</div>
-                {weeks.map((w, wi) => (
-                  <div className="tscal-week" key={wi}>
-                    {w.map((d, i) => {
-                      if (!d) return <div key={i} className="tscal-day blank" />;
-                      const c = r.cells[d], isOpen = open(c);
-                      return (
-                        <label key={d} className={`tscal-day${i > 4 ? " we" : ""}${c.holiday ? " ph" : ""}${c.leave ? " lv" : ""}${!isOpen ? " off" : ""}`}>
-                          <span className="tscal-n">{Number(d.slice(8))}{c.leave && <em>Leave</em>}{c.holiday && !c.leave && <em title={c.holiday}>Holiday</em>}</span>
-                          {input(r, d, c)}
-                        </label>
-                      );
-                    })}
-                    <div className="tscal-day tot"><b>{fmt(w.reduce((t, d) => t + (d ? num(vals[`h_${r.id}_${d}`] ?? "") : 0), 0))}</b><span>h</span></div>
-                  </div>
-                ))}
-              </div>
-              <div className="ts-foot"><span>Month total for this assignment: <b>{fmt(total)} h</b></span></div>
-            </section>
-          );
-        })}
+        {switcher}
+        {view === "table" ? table : (
+          <>
+            {many && <div className="ts-projects" role="tablist" aria-label="Project">{rows.map((r) => <button key={r.id} type="button" role="tab" aria-selected={active === r.id} onClick={() => setActive(r.id)}>{r.project}{r.substituting ? ` (covering ${r.substituting})` : ""}<span>{fmt(monthTotal(r))} h</span></button>)}</div>}
+            {rows.map((r) => calendar(r))}
+          </>
+        )}
         {switchBox}
       </div>
     );
