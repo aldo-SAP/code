@@ -23,6 +23,7 @@ export default function TimesheetFields({ days, rows, dayHours = 8 }: { days: st
   const initial = useMemo(() => Object.fromEntries(rows.flatMap((r) => days.map((d) => [`h_${r.id}_${d}`, r.cells[d].v]))), [rows, days]);
   const [vals, setVals] = useState<Record<string, string>>(initial);
   const [bump, setBump] = useState(0);
+  const [sel, setSel] = useState<Set<number>>(new Set());          // projects ticked in the table view (checkboxes have no name, so they are never saved)
   const many = rows.length > 1;
   const [view, setViewState] = useState<"calendar" | "table">(many ? "table" : "calendar");   // several projects: overview first, one project: its calendar
   const [active, setActive] = useState<number>(rows[0]?.id ?? 0);
@@ -36,6 +37,10 @@ export default function TimesheetFields({ days, rows, dayHours = 8 }: { days: st
   const set = (key: string, v: string) => setVals((s) => ({ ...s, [key]: v }));
   const fill = (r: Row) => { setVals((s) => { const n = { ...s }; for (const d of days) { const c = r.cells[d]; if (c.disabled) continue; if (c.leave) n[`h_${r.id}_${d}`] = ""; else if (!closed(c)) n[`h_${r.id}_${d}`] = String(dayHours); } return n; }); setBump((b) => b + 1); };
   const clear = (r: Row) => { setVals((s) => { const n = { ...s }; for (const d of days) { const c = r.cells[d]; if (!c.disabled) n[`h_${r.id}_${d}`] = ""; } return n; }); setBump((b) => b + 1); };
+  const picked = rows.filter((r) => sel.has(r.id));
+  const allOn = rows.length > 0 && picked.length === rows.length;
+  const toggle = (id: number) => setSel((o) => { const n = new Set(o); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const bulk = (f: (r: Row) => void) => picked.forEach(f);
   const cls = (c: Cell) => (c.billed ? "billed" : c.status || "");
   const hint = (c: Cell) => (c.billed ? "Billed: locked. Use Unlock billed hours to change." : c.holiday ?? (c.leave ? "Approved leave" : undefined));
 
@@ -101,6 +106,14 @@ export default function TimesheetFields({ days, rows, dayHours = 8 }: { days: st
   const chunks = days.length > 16 ? [days.slice(0, 16), days.slice(16)] : [days];
   const table = (
     <section className="card tstab-card">
+      <div className="ts-tools ts-bulk">
+        <label className="ts-all"><input type="checkbox" checked={allOn} ref={(el) => { if (el) el.indeterminate = picked.length > 0 && !allOn; }} onChange={() => setSel(allOn ? new Set() : new Set(rows.map((r) => r.id)))} /> Select all</label>
+        <span className="muted">{picked.length ? `${picked.length} of ${rows.length} selected` : "Tick the projects you want to fill or clear"}</span>
+        <span className="ts-tools-btns">
+          <button type="button" className="sec sm" disabled={!picked.length} onClick={() => { picked.forEach((r) => fill(r)); }}>Fill working days ({dayHours} h)</button>
+          <button type="button" className="sec sm" disabled={!picked.length} onClick={() => { picked.forEach((r) => clear(r)); }}>Clear unsent days</button>
+        </span>
+      </div>
       {chunks.map((chunk, ci) => (
         <div className="tw" key={ci}><table className="ts nostack">
           <thead>
@@ -111,11 +124,13 @@ export default function TimesheetFields({ days, rows, dayHours = 8 }: { days: st
             <tr key={r.id}>
               <td className="ts-proj">
                 {ci === 0 ? (
-                  <>
-                    <button type="button" className="linkbtn" onClick={() => { setActive(r.id); setView("calendar"); }} title="Open this project as a calendar">{r.project}</button>
-                    {r.substituting && <><br /><span className="muted">covering for {r.substituting}</span></>}
-                    <span className="ts-tools-btns"><button type="button" className="sec sm" onClick={() => fill(r)}>Fill {dayHours} h</button><button type="button" className="sec sm" onClick={() => clear(r)}>Clear</button></span>
-                  </>
+                  <label className="ts-pick">
+                    <input type="checkbox" checked={sel.has(r.id)} onChange={() => toggle(r.id)} aria-label={`Select ${r.project}`} />
+                    <span>
+                      <button type="button" className="linkbtn" onClick={(e) => { e.preventDefault(); setActive(r.id); setView("calendar"); }} title="Open this project as a calendar">{r.project}</button>
+                      {r.substituting && <><br /><span className="muted">covering for {r.substituting}</span></>}
+                    </span>
+                  </label>
                 ) : <span className="muted">{r.project}</span>}
               </td>
               {chunk.map((d) => { const c = r.cells[d]; return <td key={d} className={c.leave ? "lv" : c.holiday ? "ph" : c.weekend ? "we" : ""} title={c.holiday}>{input(r, d, c)}</td>; })}

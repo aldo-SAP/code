@@ -408,3 +408,6 @@ button.navhead:hover{background:none;color:var(--text)}
 .ts .ph{background:repeating-linear-gradient(135deg,var(--bg) 0 5px,var(--line) 5px 6px)}
 .ts td{padding:3px 2px}.ts input{width:34px}
 .tstab-card .tw+.tw{border-top:1px solid var(--line)}.ts input{width:36px}.ts-month{font-size:11px;white-space:nowrap}
+.ts-bulk{border-bottom:1px solid var(--line);flex-wrap:wrap}.ts-all{display:inline-flex;gap:8px;align-items:center;font-weight:600;margin:0}
+.ts-pick{display:flex;gap:10px;align-items:center;text-align:left;margin:0;cursor:pointer}.ts-pick>input,.ts-all>input{width:18px;height:18px;min-height:0;flex:none}
+.ts-bulk .ts-tools-btns{margin-left:auto}.ts-bulk button:disabled{opacity:.45;cursor:default}
