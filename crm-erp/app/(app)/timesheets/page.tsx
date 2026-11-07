@@ -65,7 +65,7 @@ export default async function Timesheets({ searchParams }: { searchParams: Promi
         <span className="muted">{person.name} · Weekends and public holidays are closed. Yellow = submitted, green = approved, red = rejected, orange = leave.</span>
       </div>
       {covering.map((c, k) => <div className="flash err" key={k} style={{ background: "var(--warnbg)", color: "var(--warn)" }}><b>{person.name} is covering for {c.owner}</b> on {c.project} on {fmtRange(c.from_date, c.to_date)}. Hours entered on those days are {person.name}'s own hours: the client invoice shows {c.owner} only, and {person.name} is paid at the substitute rate.</div>)}
-      {billedCount > 0 && <div className="flash err">{billedCount} day(s) this month are already invoiced or paid out (dashed cells) and locked. {manager ? <Link href={`/unlock?person=${pid}&month=${month}`}>Unlock billed hours</Link> : "Ask a manager if something must be corrected."}</div>}
+      {billedCount > 0 && <div className="flash err">{billedCount} {billedCount === 1 ? "day is" : "days are"} already invoiced or paid out (dashed cells) and locked. {manager ? <Link href={`/unlock?person=${pid}&month=${month}`}>Unlock billed hours</Link> : "Ask a manager if something must be corrected."}</div>}
       {!rows.length ? <div className="card muted">No assignments or substitutions in this month.</div> : (
         <form action={saveTimesheet}>
           <Hidden name="month" value={month} /><Hidden name="person_id" value={pid} />
@@ -84,8 +84,8 @@ export default async function Timesheets({ searchParams }: { searchParams: Promi
           })} />
           <div className="bar ts-actions" style={{ marginTop: 12 }}>
             <button name="intent" value="save" className="sec">Save draft</button>
-            <button name="intent" value="submit" data-confirm="Submit this month for approval? Submitted days are locked until a manager approves or rejects them.">Submit month for approval{pending ? ` (${pending} day(s) pending)` : ""}</button>
-            <span className="muted">Submitted days are locked until a manager approves or rejects them.</span>
+            <button name="intent" value="submit" data-confirm="Send this month for approval? Days you send are locked until a manager approves or rejects them.">Send month for approval{pending ? ` (${pending} ${pending === 1 ? "day" : "days"} not yet sent)` : ""}</button>
+            <span className="muted">Days you send are locked until a manager approves or rejects them.</span>
           </div>
         </form>
       )}

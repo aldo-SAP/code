@@ -414,3 +414,9 @@ button.navhead:hover{background:none;color:var(--text)}
 .ts-range{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.ts-pager{display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap}
 .ts-pager button[aria-pressed=true]{background:var(--brand);color:var(--brand-fg)}
 .ts th[hidden],.ts td[hidden]{display:none}
+.ts-top{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+/* the sideways scrollbar is always visible, so it is clear that a long month continues to the right */
+.tstab-card .tw{overflow-x:auto}
+.tstab-card .tw::-webkit-scrollbar{height:12px;background:var(--bg)}
+.tstab-card .tw::-webkit-scrollbar-thumb{background:var(--muted);border-radius:6px;border:2px solid var(--bg)}
+.tstab-card .tw::-webkit-scrollbar-thumb:hover{background:var(--text)}

@@ -57,7 +57,7 @@ export default function TimesheetFields({ days, rows, dayHours = 8 }: { days: st
       <b>{r.project}{r.substituting && <small> covering for {r.substituting}</small>}</b>
       <span className="ts-tools-btns">
         <button type="button" className="sec sm" onClick={() => fill(r)}>Fill working days ({dayHours} h)</button>
-        <button type="button" className="sec sm" onClick={() => clear(r)}>Clear unsent days</button>
+        <button type="button" className="sec sm" onClick={() => clear(r)}>Clear days not yet sent</button>
       </span>
     </div>
   );
@@ -75,7 +75,7 @@ export default function TimesheetFields({ days, rows, dayHours = 8 }: { days: st
   const switcher = (
     <div className="ts-switch" role="group" aria-label="Timesheet view">
       <button type="button" aria-pressed={view === "calendar"} onClick={() => setView("calendar")}>Calendar</button>
-      <button type="button" aria-pressed={view === "table"} onClick={() => setView("table")}>All days in a row</button>
+      <button type="button" aria-pressed={view === "table"} onClick={() => setView("table")}>All projects</button>
     </div>
   );
 
@@ -119,6 +119,7 @@ export default function TimesheetFields({ days, rows, dayHours = 8 }: { days: st
       <div className="ts-switch" role="group" aria-label="How many days to show">
         {(["week", "half", "month"] as Range[]).map((r) => <button key={r} type="button" aria-pressed={range === r} onClick={() => setRange(r)}>{r === "week" ? "Week" : r === "half" ? "Half month" : "Month"}</button>)}
       </div>
+      {range === "month" && <span className="muted ts-hint">Scroll sideways to see all days &rarr;</span>}
       {range === "week" && <span className="ts-pager"><button type="button" className="sec sm" disabled={weekIdx === 0} onClick={() => setWeekIdx(weekIdx - 1)} aria-label="Previous week">&larr;</button><b>{rangeLabel}</b><button type="button" className="sec sm" disabled={weekIdx >= weeks.length - 1} onClick={() => setWeekIdx(weekIdx + 1)} aria-label="Next week">&rarr;</button><span className="muted">Week {weekIdx + 1} of {weeks.length}</span></span>}
       {range === "half" && <span className="ts-pager"><button type="button" className="sec sm" aria-pressed={halfIdx === 0} onClick={() => setHalfIdx(0)}>Days 1–15</button><button type="button" className="sec sm" aria-pressed={halfIdx === 1} onClick={() => setHalfIdx(1)}>Days 16–{Number(days[days.length - 1].slice(8))}</button></span>}
     </div>
@@ -130,7 +131,7 @@ export default function TimesheetFields({ days, rows, dayHours = 8 }: { days: st
         <span className="muted">{picked.length ? `${picked.length} of ${rows.length} selected` : "Tick the projects you want to fill or clear"}</span>
         <span className="ts-tools-btns">
           <button type="button" className="sec sm" disabled={!picked.length} onClick={() => { picked.forEach((r) => fill(r)); }}>Fill working days ({dayHours} h)</button>
-          <button type="button" className="sec sm" disabled={!picked.length} onClick={() => { picked.forEach((r) => clear(r)); }}>Clear unsent days</button>
+          <button type="button" className="sec sm" disabled={!picked.length} onClick={() => { picked.forEach((r) => clear(r)); }}>Clear days not yet sent</button>
         </span>
       </div>
       <div className="tw"><table className="ts nostack">
@@ -159,8 +160,8 @@ export default function TimesheetFields({ days, rows, dayHours = 8 }: { days: st
   if (!phone) {
     return (
       <div ref={ref} className="tscal">
-        {switcher}
-        {view === "table" ? <>{rangeBar}{table}</> : (
+        <div className="ts-top">{switcher}{view === "table" && rangeBar}</div>
+        {view === "table" ? table : (
           <>
             {many && <div className="ts-projects" role="tablist" aria-label="Project">{rows.map((r) => <button key={r.id} type="button" role="tab" aria-selected={active === r.id} onClick={() => setActive(r.id)}>{r.project}{r.substituting ? ` (covering ${r.substituting})` : ""}<span>{fmt(monthTotal(r))} h</span></button>)}</div>}
             {rows.map((r) => calendar(r))}

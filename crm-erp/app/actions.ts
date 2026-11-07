@@ -520,7 +520,8 @@ export async function saveTimesheet(fd: FormData) {
     if (changes.length || submit)
       await audit(u, submit ? "timesheet_submit" : "timesheet_save", "timesheet", personId, `${submit ? "Submitted" : "Saved"} timesheet ${month} for person #${personId}: ${changes.length} change(s)${submit ? `, ${submitted} day(s) now submitted` : ""}`, { details: { changes } });
   });
-  back(path, `${submit ? "Submitted" : "Saved"} ${saved} day(s)${skipped ? `; ${skipped} cell(s) skipped (locked, billed, outside the assignment, or invalid)` : ""}`);
+  const days = (n: number) => `${n} day${n === 1 ? "" : "s"}`;
+  back(path, `${submit ? "Sent for approval" : "Saved"}: ${days(saved)}.${skipped ? ` ${skipped} ${skipped === 1 ? "entry was" : "entries were"} not saved: the day is locked or already invoiced, outside the project dates, a weekend or holiday (tick the box if the customer asked for it), or not a valid number.` : ""}`);
 }
 async function db_run_count(personId: number, month: string): Promise<number> {
   await run(`UPDATE timesheet_entries SET status='submitted' WHERE worker_id=? AND status IN ('draft','rejected') AND substr(work_date,1,7)=?`, personId, month);
