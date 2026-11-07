@@ -1,13 +1,13 @@
 "use client";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { flexRender, getCoreRowModel, getFilteredRowModel, getPaginationRowModel, getSortedRowModel, useReactTable, type ColumnDef, type SortingState } from "@tanstack/react-table";
 import { tone } from "@/lib/tone";
 
 /** A cell is plain text, a number, or text with a link, a status badge and a small second line. */
 /** A small form shown in a cell: hidden fields, an optional text box, and one or more buttons. `action` is a server action. */
 export interface CellForm { action: (fd: FormData) => void | Promise<void>; hidden: Record<string, string | number>; input?: { name: string; placeholder: string }; buttons: { label: string; variant?: "danger" | "sec"; name?: string; value?: string }[] }
-export type Cell = string | number | null | { t: string; s?: string | number; href?: string; badge?: boolean; bad?: boolean; muted?: boolean; sub?: string; detail?: string; forms?: CellForm[] };
+export type Cell = string | number | null | { t: string; s?: string | number; href?: string; badge?: boolean; bad?: boolean; muted?: boolean; sub?: string; detail?: string; forms?: CellForm[]; lines?: [string, string][] };
 export type Row = { id: string | number } & Record<string, Cell>;
 export interface Col { key: string; label: string; filter?: "text" | "select" | "none"; num?: boolean; phoneHidden?: boolean; sort?: false }
 
@@ -47,6 +47,10 @@ export default function DataTable({ cols, rows, tabs, tabLabel = "All", empty = 
   const render = (c: Cell) => {
     if (c == null || c === "") return "-";
     if (typeof c !== "object") return c;
+    if (c.lines) {
+      const dl = <dl className="daylines">{c.lines.map(([a, b], i) => <Fragment key={i}><dt>{a}</dt><dd>{b}</dd></Fragment>)}</dl>;
+      return c.lines.length > 5 ? <details><summary>{c.lines.length} entries</summary>{dl}</details> : dl;
+    }
     if (c.forms) return <span className="cellforms">{c.forms.map((f, i) => (
       <form key={i} action={f.action} className="cellform">
         {Object.entries(f.hidden).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}

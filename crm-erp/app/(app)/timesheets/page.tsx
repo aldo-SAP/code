@@ -10,6 +10,8 @@ import { personHolidays } from "@/lib/holidays";
 import TimesheetFields, { type Cell } from "@/components/TimesheetFields";
 import { fmtDate, fmtMonth, fmtMonthShort, fmtRange } from "@/lib/dates";
 import PageHead from "@/components/PageHead";
+import HoursSummary from "@/components/HoursSummary";
+import { expectedHours } from "@/lib/expected";
 
 const shift = (m: string, d: number) => { const [y, mo] = m.split("-").map(Number); const t = new Date(Date.UTC(y, mo - 1 + d, 1)); return t.toISOString().slice(0, 7); };
 
@@ -43,6 +45,8 @@ export default async function Timesheets({ searchParams }: { searchParams: Promi
   const allowed = (r: any, d: string) =>
     (r.owner_id === pid && d >= r.start_date && (!r.end_date || d <= r.end_date)) || subs.some((s) => s.assignment_id === r.id && s.from_date <= d && d <= s.to_date);
   const q = (m: string) => `/timesheets?month=${m}${manager ? `&person=${pid}` : ""}`;
+  const expected = await expectedHours(pid, month);
+  const logged = [...entries.values()].reduce((t, e) => t + Number(e.hours), 0);
   const statuses = [...entries.values()].map((e) => e.status);
   const pending = statuses.filter((s) => s === "draft" || s === "rejected").length;
   const back = q(month);
@@ -65,6 +69,7 @@ export default async function Timesheets({ searchParams }: { searchParams: Promi
       {!rows.length ? <div className="card muted">No assignments or substitutions in this month.</div> : (
         <form action={saveTimesheet}>
           <Hidden name="month" value={month} /><Hidden name="person_id" value={pid} />
+          <HoursSummary logged={logged} expected={expected.hours} days={expected.days} perDay={expected.perDay} />
           <TimesheetFields days={days} rows={rows.map((r) => {
             const cells: Record<string, Cell> = {};
             let total = 0;

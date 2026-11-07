@@ -37,11 +37,9 @@ export default function TimesheetFields({ days, rows }: { days: string[]; rows: 
   }
 
   // phone: one row per day, hide days that are outside every assignment and empty
-  const total = rows.reduce((s, r) => s + r.total, 0);
   const shown = days.filter((d) => rows.some((r) => !r.cells[d].disabled || r.cells[d].v !== "") || rows.some((r) => r.cells[d].holiday || r.cells[d].leave));
   return (
     <div className="tsm">
-      <div className="tsm-sum"><b>{total}</b> hours logged this month</div>
       {shown.map((d) => {
         const dt = new Date(d + "T00:00:00Z"), wd = dt.getUTCDay();
         const any = rows[0].cells[d];

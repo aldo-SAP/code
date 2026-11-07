@@ -124,7 +124,7 @@ body{padding-left:env(safe-area-inset-left,0);padding-right:env(safe-area-inset-
   .stack:has(thead) tr:has(> td:nth-child(6)):not(:has(> td:nth-child(7))){grid-template-columns:repeat(3,minmax(0,1fr))}   /* five small values: three to a row */
   .stack:has(thead) td:first-child{grid-column:1/-1;font-weight:600;font-size:15px}
   .stack:has(thead) td:first-child::before{content:none}
-  .stack:has(thead) td:has(form),.stack:has(thead) td:has(button),.stack:has(thead) td:has(input),.stack:has(thead) td:has(select),.stack:has(thead) td:has(a.btn),.stack:has(thead) td[colspan],.stack:has(thead) td[data-label="Days: hours"]{grid-column:1/-1}
+  .stack:has(thead) td:has(form),.stack:has(thead) td:has(button),.stack:has(thead) td:has(input),.stack:has(thead) td:has(select),.stack:has(thead) td:has(a.btn),.stack:has(thead) td[colspan],.stack:has(thead) td[data-label="Days"]{grid-column:1/-1}
   /* lists without column headings: one compact row per item, name at the left, status and amount at the right */
   .stack:not(:has(thead)) tr{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 12px;padding:10px 12px}
   .stack:not(:has(thead)) td{padding:0;display:block;text-align:right}
@@ -352,3 +352,15 @@ button.navhead:hover{background:none;color:var(--text)}
 .cellform input[name]:not([type=hidden]){height:30px;font-size:13px;width:180px}
 .dt th.sort button:disabled{cursor:default;color:inherit}
 @media (max-width:820px){.cellform input[name]:not([type=hidden]){width:100%}.cellform{width:100%}}
+
+/* hours entered against expected */
+.hs{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:12px;display:grid;gap:8px}
+.hs-top{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+.hs-fig b{font-size:26px;font-variant-numeric:tabular-nums}.hs-of{font-size:16px;color:var(--muted);font-variant-numeric:tabular-nums}
+.hs-msg{font-weight:600}.hs.under .hs-msg{color:var(--warn)}.hs.full .hs-msg{color:var(--ok)}.hs.over .hs-msg{color:var(--brand)}
+.hs-bar{height:8px;border-radius:4px;background:var(--bg);overflow:hidden}.hs-bar span{display:block;height:100%;background:var(--brand);border-radius:4px;transition:width .15s}
+.hs.full .hs-bar span{background:var(--ok)}.hs.under .hs-bar span{background:var(--warn)}
+.hs-note{font-size:12px;color:var(--muted)}
+/* day lines: range left, hours right */
+.daylines{display:grid;grid-template-columns:1fr auto;gap:2px 18px;margin:0;min-width:180px}.daylines dt{margin:0}.daylines dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.dt td details>summary{cursor:pointer;color:var(--muted)}
