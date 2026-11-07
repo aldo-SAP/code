@@ -17,7 +17,7 @@ export default async function Clients({ searchParams }: { searchParams: Promise<
         <Drawer button="New client" title="New client">
           <form action={addClient}>
             <div className="drawer-fields">
-              <Field label="Name *" full><input name="name" required /></Field>
+              <Field label="Name" full><input name="name" required /></Field>
               <Field label="Country"><input name="country" /></Field>
               <Field label="Invoice currency"><CurrencySelect /></Field>
               <Field label="Billing email" full><input name="email" type="email" /></Field>

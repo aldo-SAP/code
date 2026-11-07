@@ -57,11 +57,17 @@ async function q(sql: string, p: Param[]): Promise<any[]> {
   return conn.query(toPg(sql), p);
 }
 
+/** Postgres says the value cannot be a number or is out of range: a hand-typed id such as /people/abc or /people/99999999999. For a plain read that simply means "no such row". */
+const unusableValue = (e: any) => ["22003", "22P02", "22007", "22008"].includes(e?.code);
+async function read(sql: string, p: Param[]): Promise<any[]> {
+  try { return await q(sql, p); }
+  catch (e) { if (!als.getStore() && unusableValue(e) && /^\s*(select|with)\s/i.test(sql)) return []; throw e; }
+}
 export async function all<T = Record<string, any>>(sql: string, ...p: Param[]): Promise<T[]> {
-  return (await q(sql, p)) as T[];
+  return (await read(sql, p)) as T[];
 }
 export async function get<T = Record<string, any>>(sql: string, ...p: Param[]): Promise<T | undefined> {
-  return (await q(sql, p))[0] as T | undefined;
+  return (await read(sql, p))[0] as T | undefined;
 }
 /** Runs a statement. INSERTs return the new row id (tables without an id column, or with ON CONFLICT, return 0). */
 export async function run(sql: string, ...p: Param[]): Promise<number> {

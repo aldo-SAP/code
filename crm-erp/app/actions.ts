@@ -17,7 +17,9 @@ import { addHoliday, addHolidaysBulk, copyHolidayYear, deleteHoliday, setHoliday
 import { billedThrough, reopenBilled } from "@/lib/history";
 import { currentUser } from "@/lib/session";
 
-const s = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
+const s = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim().slice(0, 2000);
+/** A required short name: not empty, at most 200 characters. */
+const nameOk = (v: string) => v.length > 0 && v.length <= 200;
 const n = (fd: FormData, k: string) => { const v = s(fd, k); return v === "" ? null : Number(v.replace(",", ".")); };
 const i = (fd: FormData, k: string) => { const v = s(fd, k); return v === "" ? null : Number.parseInt(v, 10); };
 const nz = (v: string) => (v === "" ? null : v);
@@ -149,7 +151,7 @@ export async function logout() {
 // ------------------------------------------------------------------ CRM
 export async function addClient(fd: FormData) {
   const u = await requireManager();
-  if (!s(fd, "name")) back("/clients", "Name is required", "err");
+  if (!nameOk(s(fd, "name"))) back("/clients", s(fd, "name") ? "Name is too long (200 characters at most)" : "Name is required", "err");
   const id = await run("INSERT INTO clients (name,country,address,email,currency,notes) VALUES (?,?,?,?,?,?)", s(fd, "name"), nz(s(fd, "country")), nz(s(fd, "address")), nz(s(fd, "email")), cur(fd), nz(s(fd, "notes")));
   await audit(u, "create", "client", id, `Created client ${s(fd, "name")}`);
   back(`/clients/${id}`, "Client created");
@@ -223,8 +225,11 @@ export async function addContract(fd: FormData) {
 }
 export async function addDeal(fd: FormData) {
   const u = await requireManager();
+  if (!nameOk(s(fd, "title"))) back("/deals", s(fd, "title") ? "Title is too long (200 characters at most)" : "Title is required", "err");
+  const val = n(fd, "value") ?? 0;
+  if (!Number.isFinite(val) || val < 0 || val > 1e12) back("/deals", "Value must be a number between 0 and 1,000,000,000,000.", "err");
   const did = await run("INSERT INTO deals (title,client_id,company_name,contact_name,stage,value,currency,expected_close,notes) VALUES (?,?,?,?,?,?,?,?,?)",
-    s(fd, "title"), i(fd, "client_id"), nz(s(fd, "company_name")), nz(s(fd, "contact_name")), s(fd, "stage") || "lead", n(fd, "value") ?? 0, cur(fd), nz(s(fd, "expected_close")), nz(s(fd, "notes")));
+    s(fd, "title"), i(fd, "client_id"), nz(s(fd, "company_name")), nz(s(fd, "contact_name")), s(fd, "stage") || "lead", val, cur(fd), nz(s(fd, "expected_close")), nz(s(fd, "notes")));
   await audit(u, "create", "deal", did, `Added deal ${s(fd, "title")}`);
   back("/deals", "Deal added");
 }
@@ -245,7 +250,7 @@ export async function deleteDeal(fd: FormData) {
 // ------------------------------------------------------------------ talent
 export async function addPerson(fd: FormData) {
   const u = await requireManager();
-  if (!s(fd, "name")) back("/people", "Name is required", "err");
+  if (!nameOk(s(fd, "name"))) back("/people", s(fd, "name") ? "Name is too long (200 characters at most)" : "Name is required", "err");
   const id = await run("INSERT INTO people (name,email,phone,country,worker_type,stage,skills,notes) VALUES (?,?,?,?,?,?,?,?)",
     s(fd, "name"), nz(s(fd, "email")), nz(s(fd, "phone")), nz(s(fd, "country")), s(fd, "worker_type") === "internal" ? "internal" : "external", s(fd, "stage") || "applicant", nz(s(fd, "skills")), nz(s(fd, "notes")));
   await audit(u, "create", "person", id, `Created person ${s(fd, "name")}`);
@@ -284,6 +289,8 @@ export async function copyHolidayYearAction(fd: FormData) {
 }
 export async function addCourse(fd: FormData) {
   const u = await requireManager();
+  if (!nameOk(s(fd, "name"))) back("/courses", s(fd, "name") ? "Name is too long (200 characters at most)" : "Name is required", "err");
+  if (s(fd, "start_date") && s(fd, "end_date") && s(fd, "end_date") < s(fd, "start_date")) back("/courses", "The course cannot end before it starts.", "err");
   await audit(u, "create", "course", null, `Added course ${s(fd, "name")}`);
   await run("INSERT INTO courses (name,start_date,end_date,description) VALUES (?,?,?,?)", s(fd, "name"), nz(s(fd, "start_date")), nz(s(fd, "end_date")), nz(s(fd, "description")));
   back("/courses", "Course added");

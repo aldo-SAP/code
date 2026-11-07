@@ -17,7 +17,7 @@ export default async function Deals({ searchParams }: { searchParams: Promise<{ 
         <Drawer button="New deal" title="New deal / lead">
           <form action={addDeal}>
             <div className="drawer-fields">
-              <Field label="Title *" full><input name="title" required /></Field>
+              <Field label="Title" full><input name="title" required /></Field>
               <Field label="Existing client" full><select name="client_id"><option value="">- new company -</option>{clients.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></Field>
               <Field label="Company (if new)"><input name="company_name" /></Field>
               <Field label="Contact"><input name="contact_name" /></Field>

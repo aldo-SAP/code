@@ -18,7 +18,7 @@ export default async function People({ searchParams }: { searchParams: Promise<{
         <Drawer button="New person" title="New person">
           <form action={addPerson}>
             <div className="drawer-fields">
-              <Field label="Name *" full><input name="name" required /></Field>
+              <Field label="Name" full><input name="name" required /></Field>
               <Field label="Email" full><input name="email" type="email" /></Field>
               <Field label="Country"><input name="country" /></Field>
               <Field label="Type"><select name="worker_type"><option value="external">external (contractor)</option><option value="internal">internal (payroll)</option></select></Field>

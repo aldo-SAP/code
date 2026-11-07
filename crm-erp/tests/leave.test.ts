@@ -245,3 +245,10 @@ test("Resend: thread headers, cc, and failures are recorded and retryable", asyn
   await mail.retryMail(rows[0].id, env, ok);
   assert.equal((await get<any>("SELECT status,attempts FROM email_outbox WHERE id=?", rows[0].id))!.status, "sent");
 });
+
+test("absurd dates are refused: year 0001, year 9999, and one entry longer than a year", async () => {
+  for (const [from, to] of [["0001-01-01", "0001-01-05"], ["2026-01-01", "9999-12-31"], ["2026-01-01", "2027-06-01"]]) {
+    const r = await leave.createLeave(admin as any, { personId: wp, type: "sick", from, to });
+    assert.equal(r.ok, false, `${from}..${to} should be refused`);
+  }
+});

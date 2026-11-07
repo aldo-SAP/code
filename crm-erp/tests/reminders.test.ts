@@ -42,3 +42,10 @@ test("forecast: an assignment that ends frees the person afterwards", async () =
   assert.equal(cy.freeFrom, "2026-05-01"); assert.equal(cy.ending[0].end, "2026-04-30");
   assert.equal(t.people.find((p) => p.name === "Ana")!.freeFrom, null);        // open-ended assignment
 });
+
+test("a hand-typed id that is not a number reads as 'no such row', not an error", async () => {
+  const { get } = await import("../lib/db.ts");
+  assert.equal(await get("SELECT * FROM people WHERE id=?", NaN), undefined);
+  assert.equal(await get("SELECT * FROM people WHERE id=?", 99999999999999), undefined);
+  assert.deepEqual(await (await import("../lib/db.ts")).all("SELECT * FROM people WHERE id=?", Number("abc")), []);
+});

@@ -94,6 +94,8 @@ export async function createLeave(actor: User, i: LeaveInput): Promise<Result<{ 
   const manager = isManager(actor);
   if (!LEAVE_TYPES.includes(i.type)) return { ok: false, error: "Choose a leave type." };
   if (!isDate(i.from) || !isDate(i.to) || i.to < i.from) return { ok: false, error: "Check the dates: the end must not be before the start." };
+  if (i.from < "2000-01-01" || i.to > "2100-12-31") return { ok: false, error: "Check the year: dates must be between 2000 and 2100." };
+  if ((Date.parse(i.to + "T00:00:00Z") - Date.parse(i.from + "T00:00:00Z")) / 86400000 > 365) return { ok: false, error: "One entry can cover at most a year. Split longer absences into several entries." };
   if (!manager && i.personId !== actor.person_id) return { ok: false, error: "You can only request leave for yourself." };
   if (i.type === "holiday" && !manager) return { ok: false, error: "Public holidays are recorded by a manager." };
   const person = await get<{ name: string }>("SELECT name FROM people WHERE id=?", i.personId);

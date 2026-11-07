@@ -20,7 +20,7 @@ export default async function Courses({ searchParams }: { searchParams: Promise<
         <Drawer button="New course" title="New course">
           <form action={addCourse}>
             <div className="drawer-fields">
-              <Field label="Name *" full><input name="name" required /></Field>
+              <Field label="Name" full><input name="name" required /></Field>
               <Field label="Start"><input type="date" name="start_date" /></Field>
               <Field label="End"><input type="date" name="end_date" /></Field>
               <Field label="Description" full><input name="description" /></Field>

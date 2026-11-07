@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { all, get } from "@/lib/db";
 import { requireUser } from "@/lib/session";
 import { can } from "@/lib/auth";
@@ -18,9 +19,11 @@ export default async function Timesheets({ searchParams }: { searchParams: Promi
   const manager = can.manage(user);
   const month = /^\d{4}-\d{2}$/.test(sp.month ?? "") ? sp.month! : thisMonth();
   const people = manager ? await all<any>("SELECT id,name FROM people WHERE stage IN ('ready','placed') ORDER BY name") : [];
-  const pid = manager ? Number(sp.person ?? people[0]?.id ?? 0) : user.person_id;
+  const asked = Number(sp.person);
+  const pid = manager ? (Number.isInteger(asked) && asked > 0 ? asked : people[0]?.id ?? 0) : user.person_id;
   if (!pid) return <div className="card"><h1>Timesheet</h1><p className="muted">{manager ? "No people are ready to be placed yet." : "Your login is not linked to a person record. Ask an admin."}</p></div>;
   const person = await get<any>("SELECT * FROM people WHERE id=?", pid);
+  if (!person) notFound();
   const { start, end } = periodRange(month);
   const days = Array.from({ length: Number(end.slice(8)) }, (_, k) => `${month}-${String(k + 1).padStart(2, "0")}`);
 
@@ -33,7 +36,7 @@ export default async function Timesheets({ searchParams }: { searchParams: Promi
   const covering = await all<any>(
     `SELECT sb.from_date, sb.to_date, pr.name AS project, o.name AS owner FROM substitutions sb JOIN assignments a ON a.id=sb.assignment_id
      JOIN projects pr ON pr.id=a.project_id JOIN people o ON o.id=a.person_id WHERE sb.person_id=? AND sb.from_date<=? AND sb.to_date>=?`, pid, end, start);
-  const entries = new Map((await all<any>(`SELECT assignment_id,work_date,hours,status,invoice_id,payout_id FROM timesheet_entries WHERE worker_id=? AND work_date BETWEEN ? AND ?`, pid, start, end)).map((e) => [`${e.assignment_id}_${fmtDate(e.work_date)}`, e]));
+  const entries = new Map((await all<any>(`SELECT assignment_id,work_date,hours,status,invoice_id,payout_id FROM timesheet_entries WHERE worker_id=? AND work_date BETWEEN ? AND ?`, pid, start, end)).map((e) => [`${e.assignment_id}_${e.work_date}`, e]));
   const leave = await all<any>("SELECT * FROM leave WHERE person_id=? AND status IN ('requested','approved') AND to_date>=? AND from_date<=? ORDER BY from_date", pid, start, end);
   const holidays = await personHolidays(pid, start, end);
   const onLeave = (d: string) => leave.some((l) => l.status === "approved" && l.from_date <= d && d <= l.to_date);

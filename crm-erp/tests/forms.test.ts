@@ -11,3 +11,9 @@ test("no form field is named id", () => {
   const offenders = [...walk("app"), ...walk("components")].filter((f) => /name="id"/.test(readFileSync(f, "utf8")));
   assert.deepEqual(offenders, []);
 });
+
+// Readable dates ("12 Dec 2026") are for people. Keys and lookups use the ISO date. Keying a map with fmtDate() once made every timesheet look empty.
+test("display dates are never used as lookup keys", () => {
+  const offenders = [...walk("app"), ...walk("components")].filter((f) => /\[`[^`]*\$\{fmtDate\(/.test(readFileSync(f, "utf8")));
+  assert.deepEqual(offenders, []);
+});
