@@ -1,7 +1,6 @@
 import { all } from "./db.ts";
 import { periodRange } from "./billing.ts";
 import { personHolidays } from "./holidays.ts";
-import { fmtRange } from "./dates.ts";
 
 /** A normal working day is 8 hours. People may enter more or less; this is the yardstick. */
 export const DAY_HOURS = 8;
@@ -27,7 +26,7 @@ export async function expectedHours(personId: number, month: string): Promise<Ex
   return countExpected(days, [...own.map((r) => ({ from: r.s, to: r.e })), ...subs.map((r) => ({ from: r.s, to: r.e }))], hol, leave.map((l) => ({ from: l.s, to: l.e })));
 }
 
-/** "3–6 Nov 2026: 8 h" lines. Consecutive working days with the same hours become one line, so a month reads in a few lines. */
+/** "Mon 2 – Wed 4: 8 h" lines (no month or year: the page already says which month). Consecutive working days with the same hours become one line, so a month reads in a few lines. */
 export function dayLines(entries: { date: string; hours: number }[]): [string, string][] {
   const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
   const out: { from: string; to: string; hours: number }[] = [];
@@ -41,5 +40,7 @@ export function dayLines(entries: { date: string; hours: number }[]): [string, s
     out.push({ from: e.date, to: e.date, hours: e.hours });
   }
   const h = (n: number) => `${Number.isInteger(n) ? n : n.toFixed(2).replace(/\.?0+$/, "")} h`;
-  return out.map((r) => [fmtRange(r.from, r.to), h(r.hours)]);
+  const WD = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const one = (d: string) => `${WD[new Date(d + "T00:00:00Z").getUTCDay()]} ${Number(d.slice(8))}`;
+  return out.map((r) => [r.from === r.to ? one(r.from) : `${one(r.from)} – ${one(r.to)}`, h(r.hours)]);
 }

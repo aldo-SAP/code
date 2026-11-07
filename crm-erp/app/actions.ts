@@ -15,6 +15,8 @@ import { sendMail, retryMail } from "@/lib/mail";
 import { sendReminders } from "@/lib/reminders";
 import { addHoliday, addHolidaysBulk, copyHolidayYear, deleteHoliday, setHolidayCountry } from "@/lib/holidays";
 import { billedThrough, reopenBilled } from "@/lib/history";
+import { personHolidays } from "@/lib/holidays";
+import { periodRange } from "@/lib/billing";
 import { currentUser } from "@/lib/session";
 
 const s = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim().slice(0, 2000);
@@ -478,6 +480,10 @@ export async function saveTimesheet(fd: FormData) {
   const path = `/timesheets?month=${month}${can.manage(u) ? `&person=${personId}` : ""}`;
   const submit = s(fd, "intent") === "submit";
   let saved = 0, skipped = 0;
+  // weekends and public holidays are closed unless the customer asked for that work (the tick box on the timesheet)
+  const monthOk = /^\d{4}-\d{2}$/.test(month);
+  const nonWorking = monthOk ? await personHolidays(personId, periodRange(month).start, periodRange(month).end) : new Map<string, string>();
+  const nonworkingOk = s(fd, "nonworking") === "1";
   const changes: { assignment: number; date: string; from: number | null; to: number | null }[] = [];
   await tx(async () => {
     for (const [key, raw] of fd.entries()) {
@@ -491,6 +497,8 @@ export async function saveTimesheet(fd: FormData) {
       const existing = await get<{ id: number; status: string; hours: number; invoice_id: number | null; payout_id: number | null }>("SELECT id,status,hours,invoice_id,payout_id FROM timesheet_entries WHERE assignment_id=? AND worker_id=? AND work_date=?", aid, personId, date);
       const billed = !!existing && (existing.invoice_id != null || existing.payout_id != null);
       const locked = existing && (existing.status === "approved" || billed || (existing.status === "submitted" && !can.manage(u)));
+      const closedDay = [0, 6].includes(new Date(date + "T00:00:00Z").getUTCDay()) || nonWorking.has(date);
+      if (closedDay && !nonworkingOk && String(raw).trim() !== "" && Number(String(raw).replace(",", ".")) !== existing?.hours) { skipped++; continue; }
       if (!allowed || locked) { if (String(raw).trim() !== "" && Number(String(raw).replace(",", ".")) !== existing?.hours) skipped++; continue; }
       const hours = Number(String(raw).replace(",", "."));
       if (String(raw).trim() === "" || hours === 0) {

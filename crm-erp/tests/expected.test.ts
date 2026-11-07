@@ -19,6 +19,7 @@ test("day lines: runs of equal hours become one readable line, weekends do not b
     { date: "2026-11-05", hours: 8 }, { date: "2026-11-06", hours: 8 }, { date: "2026-11-09", hours: 8 },
   ]);
   assert.deepEqual(lines.map((l) => l[1]), ["8 h", "5 h", "8 h"]);
-  assert.match(lines[0][0], /2.3 Nov/);
-  assert.match(lines[2][0], /5.9 Nov/);                                 // Thu 5, Fri 6, Mon 9 in one run
+  assert.equal(lines[0][0], "Mon 2 – Tue 3");
+  assert.equal(lines[1][0], "Wed 4");
+  assert.equal(lines[2][0], "Thu 5 – Mon 9");                          // Thu, Fri and the next Monday are one run
 });
