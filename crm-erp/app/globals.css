@@ -411,3 +411,6 @@ button.navhead:hover{background:none;color:var(--text)}
 .ts-bulk{border-bottom:1px solid var(--line);flex-wrap:wrap}.ts-all{display:inline-flex;gap:8px;align-items:center;font-weight:600;margin:0}
 .ts-pick{display:flex;gap:10px;align-items:center;text-align:left;margin:0;cursor:pointer}.ts-pick>input,.ts-all>input{width:18px;height:18px;min-height:0;flex:none}
 .ts-bulk .ts-tools-btns{margin-left:auto}.ts-bulk button:disabled{opacity:.45;cursor:default}
+.ts-range{display:flex;gap:14px;align-items:center;flex-wrap:wrap}.ts-pager{display:inline-flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ts-pager button[aria-pressed=true]{background:var(--brand);color:var(--brand-fg)}
+.ts th[hidden],.ts td[hidden]{display:none}

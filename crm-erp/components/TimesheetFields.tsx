@@ -23,6 +23,14 @@ export default function TimesheetFields({ days, rows, dayHours = 8 }: { days: st
   const initial = useMemo(() => Object.fromEntries(rows.flatMap((r) => days.map((d) => [`h_${r.id}_${d}`, r.cells[d].v]))), [rows, days]);
   const [vals, setVals] = useState<Record<string, string>>(initial);
   const [bump, setBump] = useState(0);
+  type Range = "week" | "half" | "month";
+  const weeks = useMemo(() => { const out: string[][] = []; for (const d of days) { if (!out.length || dow(d) === 1) out.push([]); out[out.length - 1].push(d); } return out; }, [days]);
+  const [range, setRangeState] = useState<Range>("month");
+  const [weekIdx, setWeekIdx] = useState(0);
+  const [halfIdx, setHalfIdx] = useState(0);
+  useEffect(() => { try { const r = localStorage.getItem("ts_range"); if (r === "week" || r === "half" || r === "month") setRangeState(r); } catch { /* keep default */ } }, []);
+  useEffect(() => { const i = weeks.findIndex((w) => w.includes(new Date().toISOString().slice(0, 10))); if (i >= 0) setWeekIdx(i); }, [weeks]);   // this week, when the month is the current one
+  const setRange = (r: Range) => { setRangeState(r); try { localStorage.setItem("ts_range", r); } catch { /* ignore */ } };
   const [sel, setSel] = useState<Set<number>>(new Set());          // projects ticked in the table view (checkboxes have no name, so they are never saved)
   const many = rows.length > 1;
   const [view, setViewState] = useState<"calendar" | "table">(many ? "table" : "calendar");   // several projects: overview first, one project: its calendar
@@ -102,8 +110,19 @@ export default function TimesheetFields({ days, rows, dayHours = 8 }: { days: st
     );
   };
 
-  // a month does not fit in one row on a normal screen: two halves, each with its own subtotal
-  const chunks = days.length > 16 ? [days.slice(0, 16), days.slice(16)] : [days];
+  // every day stays on the page (so Save sends everything); the range only hides columns
+  const visible = new Set(range === "month" ? days : range === "week" ? weeks[Math.min(weekIdx, weeks.length - 1)] : days.filter((d) => (Number(d.slice(8)) <= 15) === (halfIdx === 0)));
+  const vis = days.filter((d) => visible.has(d));
+  const rangeLabel = range === "month" ? "Whole month" : `Days ${Number(vis[0].slice(8))}–${Number(vis[vis.length - 1].slice(8))}`;
+  const rangeBar = (
+    <div className="ts-range">
+      <div className="ts-switch" role="group" aria-label="How many days to show">
+        {(["week", "half", "month"] as Range[]).map((r) => <button key={r} type="button" aria-pressed={range === r} onClick={() => setRange(r)}>{r === "week" ? "Week" : r === "half" ? "Half month" : "Month"}</button>)}
+      </div>
+      {range === "week" && <span className="ts-pager"><button type="button" className="sec sm" disabled={weekIdx === 0} onClick={() => setWeekIdx(weekIdx - 1)} aria-label="Previous week">&larr;</button><b>{rangeLabel}</b><button type="button" className="sec sm" disabled={weekIdx >= weeks.length - 1} onClick={() => setWeekIdx(weekIdx + 1)} aria-label="Next week">&rarr;</button><span className="muted">Week {weekIdx + 1} of {weeks.length}</span></span>}
+      {range === "half" && <span className="ts-pager"><button type="button" className="sec sm" aria-pressed={halfIdx === 0} onClick={() => setHalfIdx(0)}>Days 1–15</button><button type="button" className="sec sm" aria-pressed={halfIdx === 1} onClick={() => setHalfIdx(1)}>Days 16–{Number(days[days.length - 1].slice(8))}</button></span>}
+    </div>
+  );
   const table = (
     <section className="card tstab-card">
       <div className="ts-tools ts-bulk">
@@ -114,30 +133,26 @@ export default function TimesheetFields({ days, rows, dayHours = 8 }: { days: st
           <button type="button" className="sec sm" disabled={!picked.length} onClick={() => { picked.forEach((r) => clear(r)); }}>Clear unsent days</button>
         </span>
       </div>
-      {chunks.map((chunk, ci) => (
-        <div className="tw" key={ci}><table className="ts nostack">
-          <thead>
-            <tr><th rowSpan={2} style={{ textAlign: "left" }}>{ci === 0 ? "Project" : ""}</th>{chunk.map((d) => <th key={d} className={`dn${[0, 6].includes(dow(d)) ? " we" : ""}`}>{WD[dow(d)].slice(0, 2)}</th>)}<th rowSpan={2}>{chunks.length > 1 ? `Days ${Number(chunk[0].slice(8))}–${Number(chunk[chunk.length - 1].slice(8))}` : "Total"}</th></tr>
-            <tr>{chunk.map((d) => <th key={d} className={[0, 6].includes(dow(d)) ? "we" : ""}>{Number(d.slice(8))}</th>)}</tr>
-          </thead>
-          <tbody>{rows.map((r) => (
-            <tr key={r.id}>
-              <td className="ts-proj">
-                {ci === 0 ? (
-                  <label className="ts-pick">
-                    <input type="checkbox" checked={sel.has(r.id)} onChange={() => toggle(r.id)} aria-label={`Select ${r.project}`} />
-                    <span>
-                      <button type="button" className="linkbtn" onClick={(e) => { e.preventDefault(); setActive(r.id); setView("calendar"); }} title="Open this project as a calendar">{r.project}</button>
-                      {r.substituting && <><br /><span className="muted">covering for {r.substituting}</span></>}
-                    </span>
-                  </label>
-                ) : <span className="muted">{r.project}</span>}
-              </td>
-              {chunk.map((d) => { const c = r.cells[d]; return <td key={d} className={c.leave ? "lv" : c.holiday ? "ph" : c.weekend ? "we" : ""} title={c.holiday}>{input(r, d, c)}</td>; })}
-              <td className="num"><b>{fmt(chunk.reduce((t, d) => t + num(vals[`h_${r.id}_${d}`] ?? ""), 0))}</b>{ci === chunks.length - 1 && chunks.length > 1 && <div className="muted ts-month">month {fmt(monthTotal(r))} h</div>}</td>
-            </tr>))}</tbody>
-        </table></div>
-      ))}
+      <div className="tw"><table className="ts nostack">
+        <thead>
+          <tr><th rowSpan={2} style={{ textAlign: "left" }}>Project</th>{days.map((d) => <th key={d} hidden={!visible.has(d)} className={`dn${[0, 6].includes(dow(d)) ? " we" : ""}`}>{WD[dow(d)].slice(0, 2)}</th>)}<th rowSpan={2}>{range === "month" ? "Total" : "Shown"}</th></tr>
+          <tr>{days.map((d) => <th key={d} hidden={!visible.has(d)} className={[0, 6].includes(dow(d)) ? "we" : ""}>{Number(d.slice(8))}</th>)}</tr>
+        </thead>
+        <tbody>{rows.map((r) => (
+          <tr key={r.id}>
+            <td className="ts-proj">
+              <label className="ts-pick">
+                <input type="checkbox" checked={sel.has(r.id)} onChange={() => toggle(r.id)} aria-label={`Select ${r.project}`} />
+                <span>
+                  <button type="button" className="linkbtn" onClick={(e) => { e.preventDefault(); setActive(r.id); setView("calendar"); }} title="Open this project as a calendar">{r.project}</button>
+                  {r.substituting && <><br /><span className="muted">covering for {r.substituting}</span></>}
+                </span>
+              </label>
+            </td>
+            {days.map((d) => { const c = r.cells[d]; return <td key={d} hidden={!visible.has(d)} className={c.leave ? "lv" : c.holiday ? "ph" : c.weekend ? "we" : ""} title={c.holiday}>{input(r, d, c)}</td>; })}
+            <td className="num"><b>{fmt(vis.reduce((t, d) => t + num(vals[`h_${r.id}_${d}`] ?? ""), 0))}</b>{range !== "month" && <div className="muted ts-month">month {fmt(monthTotal(r))} h</div>}</td>
+          </tr>))}</tbody>
+      </table></div>
     </section>
   );
 
@@ -145,7 +160,7 @@ export default function TimesheetFields({ days, rows, dayHours = 8 }: { days: st
     return (
       <div ref={ref} className="tscal">
         {switcher}
-        {view === "table" ? table : (
+        {view === "table" ? <>{rangeBar}{table}</> : (
           <>
             {many && <div className="ts-projects" role="tablist" aria-label="Project">{rows.map((r) => <button key={r.id} type="button" role="tab" aria-selected={active === r.id} onClick={() => setActive(r.id)}>{r.project}{r.substituting ? ` (covering ${r.substituting})` : ""}<span>{fmt(monthTotal(r))} h</span></button>)}</div>}
             {rows.map((r) => calendar(r))}
