@@ -422,3 +422,17 @@ button.navhead:hover{background:none;color:var(--text)}
 .tstab-card .tw::-webkit-scrollbar-thumb{background:var(--brand);border-radius:3px}
 .tstab-card .tw::-webkit-scrollbar-thumb:hover{background:var(--brand-d)}
 @supports (-moz-appearance:none){.tstab-card .tw{scrollbar-width:thin;scrollbar-color:var(--brand) var(--bg)}}   /* Firefox */
+
+/* all projects: the project names are a fixed column; only the days scroll sideways, so the scrollbar starts after the names */
+.ts-split{display:grid;grid-template-columns:210px minmax(0,1fr);border-top:1px solid var(--line)}
+.ts-names{border-right:1px solid var(--line);background:var(--card)}
+.ts-names-h{height:50px;display:flex;align-items:center;padding:0 12px;font-size:12px;font-weight:600;color:var(--muted);background:var(--bg);border-bottom:1px solid var(--line)}
+.ts-name{height:56px;margin:0;padding:0 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;box-sizing:border-box}
+.ts-split .tw{border-top:0}
+.ts-split table.ts{border:0;border-radius:0}
+.ts-split table.ts thead tr:nth-child(1) th{height:24px;padding:0 2px;border-bottom:0}
+.ts-split table.ts thead tr:nth-child(2) th{height:26px;padding:0 2px;border-bottom:1px solid var(--line)}
+.ts-split table.ts thead th[rowspan]{height:50px;border-bottom:1px solid var(--line)}
+.ts-split table.ts tbody td{height:56px;padding:0 2px;border-bottom:1px solid var(--line);box-sizing:border-box;vertical-align:middle}
+.ts-split .tw .ts-month{white-space:nowrap}
+@media (max-width:820px){.ts-split{grid-template-columns:150px minmax(0,1fr)}}

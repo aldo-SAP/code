@@ -134,26 +134,31 @@ export default function TimesheetFields({ days, rows, dayHours = 8 }: { days: st
           <button type="button" className="sec sm" disabled={!picked.length} onClick={() => { picked.forEach((r) => clear(r)); }}>Clear days not yet sent</button>
         </span>
       </div>
-      <div className="tw"><table className="ts nostack">
-        <thead>
-          <tr><th rowSpan={2} style={{ textAlign: "left" }}>Project</th>{days.map((d) => <th key={d} hidden={!visible.has(d)} className={`dn${[0, 6].includes(dow(d)) ? " we" : ""}`}>{WD[dow(d)].slice(0, 2)}</th>)}<th rowSpan={2}>{range === "month" ? "Total" : "Shown"}</th></tr>
-          <tr>{days.map((d) => <th key={d} hidden={!visible.has(d)} className={[0, 6].includes(dow(d)) ? "we" : ""}>{Number(d.slice(8))}</th>)}</tr>
-        </thead>
-        <tbody>{rows.map((r) => (
-          <tr key={r.id}>
-            <td className="ts-proj">
-              <label className="ts-pick">
-                <input type="checkbox" checked={sel.has(r.id)} onChange={() => toggle(r.id)} aria-label={`Select ${r.project}`} />
-                <span>
-                  <button type="button" className="linkbtn" onClick={(e) => { e.preventDefault(); setActive(r.id); setView("calendar"); }} title="Open this project as a calendar">{r.project}</button>
-                  {r.substituting && <><br /><span className="muted">covering for {r.substituting}</span></>}
-                </span>
-              </label>
-            </td>
-            {days.map((d) => { const c = r.cells[d]; return <td key={d} hidden={!visible.has(d)} className={c.leave ? "lv" : c.holiday ? "ph" : c.weekend ? "we" : ""} title={c.holiday}>{input(r, d, c)}</td>; })}
-            <td className="num"><b>{fmt(vis.reduce((t, d) => t + num(vals[`h_${r.id}_${d}`] ?? ""), 0))}</b>{range !== "month" && <div className="muted ts-month">month {fmt(monthTotal(r))} h</div>}</td>
-          </tr>))}</tbody>
-      </table></div>
+      <div className="ts-split">
+        <div className="ts-names" aria-hidden={false}>
+          <div className="ts-names-h">Project</div>
+          {rows.map((r) => (
+            <label className="ts-name ts-pick" key={r.id}>
+              <input type="checkbox" checked={sel.has(r.id)} onChange={() => toggle(r.id)} aria-label={`Select ${r.project}`} />
+              <span>
+                <button type="button" className="linkbtn" onClick={(e) => { e.preventDefault(); setActive(r.id); setView("calendar"); }} title="Open this project as a calendar">{r.project}</button>
+                {r.substituting && <><br /><span className="muted">covering for {r.substituting}</span></>}
+              </span>
+            </label>
+          ))}
+        </div>
+        <div className="tw"><table className="ts nostack">
+          <thead>
+            <tr>{days.map((d) => <th key={d} hidden={!visible.has(d)} className={`dn${[0, 6].includes(dow(d)) ? " we" : ""}`}>{WD[dow(d)].slice(0, 2)}</th>)}<th rowSpan={2}>{range === "month" ? "Total" : "Shown"}</th></tr>
+            <tr>{days.map((d) => <th key={d} hidden={!visible.has(d)} className={[0, 6].includes(dow(d)) ? "we" : ""}>{Number(d.slice(8))}</th>)}</tr>
+          </thead>
+          <tbody>{rows.map((r) => (
+            <tr key={r.id}>
+              {days.map((d) => { const c = r.cells[d]; return <td key={d} hidden={!visible.has(d)} className={c.leave ? "lv" : c.holiday ? "ph" : c.weekend ? "we" : ""} title={c.holiday}>{input(r, d, c)}</td>; })}
+              <td className="num"><b>{fmt(vis.reduce((t, d) => t + num(vals[`h_${r.id}_${d}`] ?? ""), 0))}</b>{range !== "month" && <div className="muted ts-month">month {fmt(monthTotal(r))} h</div>}</td>
+            </tr>))}</tbody>
+        </table></div>
+      </div>
     </section>
   );
 
