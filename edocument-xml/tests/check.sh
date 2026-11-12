@@ -22,5 +22,6 @@ done
 step "converter agrees with the platform's results" node converter/run.js
 step "request structure check"                     node converter/structure.js
 step "what to change in the request"               node converter/fixes.js
+step "document request: price discount, order line"  node converter/document.js
 [ $fail = 0 ] && echo "ALL CHECKS PASS" || echo "SOME CHECKS FAILED"
 exit $fail

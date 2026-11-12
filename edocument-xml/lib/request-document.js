@@ -39,6 +39,7 @@
     const used = new Set();    // "path" of every field that was read
     const path = (o, k) => (o.__path || "document[0]") + "." + k;
     const assumptions = [];
+    const why = {};     // path → why a field with a value is not written (shown in the list of what was not placed)
     const guess = (field, text) => { const s = "GUESS · " + field + ": " + text; if (!assumptions.includes(s)) assumptions.push(s); };
 
     // ---- reading fields: s = text, dt = date, n = number (zero: keep a 0), b = true only
@@ -197,12 +198,17 @@
       const qtyName = credit ? "CreditedQuantity" : "InvoicedQuantity";
       const price = (() => {
         // DE: the price discount is a list, UAE: two fields of the line
+        // a 0 discount is a value: with a gross price it is written ("0.00"), because every price AllowanceCharge needs its Amount; a missing or empty discount is not
         const disc = [];
-        list(L, "lineItemAllows").forEach((a) => disc.push([n(a, "itemPriceDiscount"), n(a, "itemGrossPrice")]));
-        disc.push([n(L, "itemPriceDiscount"), n(L, "itemGrossPrice")]);
+        const pair = (o) => [n(o, "itemPriceDiscount", true), n(o, "itemGrossPrice"), o];
+        list(L, "lineItemAllows").forEach((a) => disc.push(pair(a)));
+        disc.push(pair(L));
+        const writes = ([a, b]) => (a !== "" && b !== "") || (a !== "" && Number(a) !== 0);
+        // a gross price that is not written is listed with the fields that were not placed
+        disc.filter((x) => x[1] !== "" && !writes(x)).forEach(([, , o]) => { used.delete(path(o, "itemGrossPrice")); why[path(o, "itemGrossPrice")] = "not written without itemPriceDiscount: a price allowance needs its amount"; });
         return C("Price", [
           M("PriceAmount", n(L, "itemNetPrice", true)), B("BaseQuantity", n(L, "itemPriceBaseQty"), scheme(s(L, "itemPriceBaseQtyUOM"), { unitCode: s(L, "itemPriceBaseQtyUOM") })),
-          ...disc.filter(([a, b]) => a || b).map(([a, b]) => C("AllowanceCharge", [B("ChargeIndicator", "false"), M("Amount", a), M("BaseAmount", b)]))
+          ...disc.filter(writes).map(([a, b]) => C("AllowanceCharge", [B("ChargeIndicator", "false"), M("Amount", a), M("BaseAmount", b)]))
         ]);
       })();
       const taxInfos = list(L, "lineTaxInfos").map((t) => {
@@ -222,13 +228,15 @@
       const ext = C("ItemPriceExtension", [M("Amount", n(L, "lineAmountLocalCrcy", true), LOCAL), C("TaxTotal", [M("TaxAmount", n(L, "lineTaxAmountLocalCrcy", true), LOCAL)])]);
       if (ext) guess("lines[].lineAmountLocalCrcy / lineTaxAmountLocalCrcy", "the line amount and the line VAT in AED are ItemPriceExtension/Amount (BTAE-10) and ItemPriceExtension/TaxTotal/TaxAmount (BTAE-08), as rules ibr-104-ae and ibr-194-ae read them.");
       const lineDoc = s(L, "invLineObjID") ? C("DocumentReference", [B("ID", s(L, "invLineObjID"), scheme(s(L, "invLineObjID"), { schemeID: s(L, "invLineObjScheme") })), B("DocumentTypeCode", "130")]) : null;
-      if (s(L, "refPORef") || s(L, "despAdvLine") || s(L, "despAdvRef")) guess("lines[].refPORef / despAdvLine / despAdvRef", "the order reference of the line is OrderLineReference/OrderReference/ID; the despatch advice line and reference are DespatchLineReference/LineID and DocumentReference/ID.");
+      if (L.refPORef || s(L, "despAdvLine") || s(L, "despAdvRef")) guess("lines[].refPORef / despAdvLine / despAdvRef", "the order reference of the line is OrderLineReference/OrderReference/ID; the despatch advice line and reference are DespatchLineReference/LineID and DocumentReference/ID.");
       return C(lineTag, [
         B("ID", s(L, "invLineID")), B("Note", s(L, "invLineNote")),
         B(qtyName, n(L, "invoicedQty", true), scheme(s(L, "invoicedQtyUOM"), { unitCode: s(L, "invoicedQtyUOM") })), M("LineExtensionAmount", n(L, "invLineNetAmt", true)),
         B("AccountingCost", s(L, "invLineBuyerAccRef")),
         C("InvoicePeriod", [B("StartDate", dt(L, "invLinePeriodStartDate")), B("EndDate", dt(L, "invLinePeriodEndDate"))]),
-        C("OrderLineReference", [B("LineID", s(L, "refPOLineRef")), C("OrderReference", [B("ID", s(L, "refPORef"))])]),
+        // the order line reference needs its line id (UBL 2.1): without refPOLineRef it is not written, the order number is in the document's order reference
+        s(L, "refPOLineRef") ? C("OrderLineReference", [B("LineID", s(L, "refPOLineRef")), C("OrderReference", [B("ID", s(L, "refPORef"))])]) :
+          (why[path(L, "refPORef")] = "not written without refPOLineRef: the order line reference needs its line number", null),
         C("DespatchLineReference", [B("LineID", s(L, "despAdvLine")), C("DocumentReference", [B("ID", s(L, "despAdvRef"))])]),
         lineDoc,
         ...acLine(L, "lineAllows", "invLineAllow", false), ...acLine(L, "lineCharges", "invLineCharge", true),
@@ -328,7 +336,7 @@
       if (blank(o)) return;
       total++;
       if (used.has(p)) usedCount++;
-      else notMapped.push({ path: p, value: String(o), reason: "no place in the XML for this field yet" });
+      else notMapped.push({ path: p, value: String(o), reason: why[p] || "no place in the XML for this field yet" });
     })(d, "document[0]");
     return { xml, kind: credit ? "CreditNote" : "Invoice", notMapped, assumptions, total: docs.length, used: usedCount, fields: total, ruleSets: "detect", trace: traced.trace.map((t) => Object.assign(t, { field: t.field.replace(/^document\[0\]\./, "") })) };
   }

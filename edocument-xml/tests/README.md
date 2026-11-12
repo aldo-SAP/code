@@ -172,5 +172,7 @@ changes or a new answer arrives, add a case first, then change the converter.
 
 `converter/fixes.js` tests `../lib/request-fixes.js` (the "What to change" table and the hints for the other failing rules, which name the request field behind a BT number): for each case a wrong amount is made, the proposed values are put into the request, and the rules must then pass.
 
+`converter/document.js` tests the document request converter (price discount, order line reference).
+
 `converter/structure.js` tests `../lib/request-check.js`, which compares a request with the structure the provider gave (`gen-request-structure.js PROVIDER-FILE.json` writes `../lib/request-structure-fr.js`; only field names).
 The provider's own file must give no problem; each kind of problem (wrong level, unknown name, a control character in a value, a list given as one object …) must be found.
